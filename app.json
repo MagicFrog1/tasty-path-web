@@ -1,0 +1,43 @@
+{
+  "expo": {
+    "name": "TastyPath",
+    "slug": "TastyPath",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/new_icon_tastypath.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/new_icon_tastypath.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.magic1frog2.TastyPath",
+      "buildNumber": "1",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "config": {
+        "usesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/new_icon_tastypath.png",
+        "backgroundColor": "#ffffff"
+      },
+      "versionCode": 1,
+      "edgeToEdgeEnabled": true
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "cf5130f6-cac1-462b-9bcb-0bb210502deb"
+      }
+    }
+  }
+}
