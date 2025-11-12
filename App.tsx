@@ -17,6 +17,7 @@ const PlanDetailPage = React.lazy(() => import('./src/pages/PlanDetailPage'));
 const MedicalSourcesPage = React.lazy(() => import('./src/pages/MedicalSourcesPage'));
 const TermsPage = React.lazy(() => import('./src/pages/TermsPage'));
 const PrivacyPage = React.lazy(() => import('./src/pages/PrivacyPage'));
+const SecurityPage = React.lazy(() => import('./src/pages/SecurityPage'));
 const LegalInfoPage = React.lazy(() => import('./src/pages/LegalInfoPage'));
 const LoginPage = React.lazy(() => import('./src/pages/auth/Login'));
 
@@ -61,6 +62,7 @@ const AppRoutes: React.FC = () => {
           <Route path="/fuentes-medicas" element={<MedicalSourcesPage />} />
           <Route path="/terminos" element={<TermsPage />} />
           <Route path="/privacidad" element={<PrivacyPage />} />
+          <Route path="/seguridad" element={<SecurityPage />} />
           <Route path="/legal" element={<LegalInfoPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />

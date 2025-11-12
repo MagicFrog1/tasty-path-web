@@ -1,4 +1,11 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect, Dispatch, SetStateAction } from 'react';
+import { storage } from '../utils/storage';
+import {
+  parseIngredient,
+  categorizeIngredient,
+  getEstimatedPrice,
+  getInferredUnit,
+} from '../utils/shoppingListGenerator';
 
 export interface ShoppingItem {
   id: string;
@@ -10,11 +17,13 @@ export interface ShoppingItem {
   isChecked: boolean;
   notes?: string;
   sourcePlan?: string; // ID del plan que generó este ingrediente
+  planName?: string;
+  weekRange?: string;
 }
 
 interface ShoppingListContextType {
   shoppingList: ShoppingItem[];
-  setShoppingList: (items: ShoppingItem[]) => void;
+  setShoppingList: Dispatch<SetStateAction<ShoppingItem[]>>;
   addShoppingItem: (item: ShoppingItem) => void;
   addMultipleShoppingItems: (items: ShoppingItem[]) => void;
   updateShoppingItem: (id: string, updates: Partial<ShoppingItem>) => void;
@@ -22,7 +31,17 @@ interface ShoppingListContextType {
   toggleItemChecked: (id: string) => void;
   clearCheckedItems: () => void;
   clearAllItems: () => void;
-  updateShoppingListFromPlan: (planId: string, ingredients: any[]) => void;
+  updateShoppingListFromPlan: (
+    plan: {
+      id: string;
+      name?: string;
+      description?: string;
+      weekStart?: string;
+      weekEnd?: string;
+    },
+    ingredients: any[]
+  ) => void;
+  updatePlanMetadata: (planId: string, updates: { planName?: string; weekStart?: string; weekEnd?: string }) => void;
   getTotalCost: () => number;
   getCheckedItemsCount: () => number;
   getUncheckedItemsCount: () => number;
@@ -42,8 +61,21 @@ interface ShoppingListProviderProps {
   children: ReactNode;
 }
 
+const SHOPPING_LIST_STORAGE_KEY = 'tastypath:shoppingList';
+
 export const ShoppingListProvider: React.FC<ShoppingListProviderProps> = ({ children }) => {
   const [shoppingList, setShoppingList] = useState<ShoppingItem[]>([]);
+
+  useEffect(() => {
+    const stored = storage.get<ShoppingItem[]>(SHOPPING_LIST_STORAGE_KEY, []);
+    if (stored?.length) {
+      setShoppingList(stored);
+    }
+  }, []);
+
+  useEffect(() => {
+    storage.set(SHOPPING_LIST_STORAGE_KEY, shoppingList);
+  }, [shoppingList]);
 
   const addShoppingItem = (item: ShoppingItem) => {
     setShoppingList(prev => {
@@ -101,59 +133,166 @@ export const ShoppingListProvider: React.FC<ShoppingListProviderProps> = ({ chil
     setShoppingList([]);
   };
 
-  const updateShoppingListFromPlan = (planId: string, ingredients: any[]) => {
-    // Primero, eliminar items del plan anterior si existe
-    setShoppingList(prev => prev.filter(item => item.sourcePlan !== planId));
-    
-    // Luego, agregar los nuevos ingredientes del plan
-    const newItems: ShoppingItem[] = ingredients.map((ingredient, index) => {
-      // Mapear diferentes formatos de ingredientes
-      const name = ingredient.name || ingredient.ingredient || ingredient.item || 'Ingrediente';
-      const amount = ingredient.amount || ingredient.quantity || ingredient.qty || 1;
-      const unit = ingredient.unit || ingredient.measurement || 'unidad';
-      const price = ingredient.price || ingredient.estimatedPrice || ingredient.cost || 0;
-      
-      // Determinar la categoría basada en el nombre o tipo
-      let category = ingredient.category || 'Otros';
-      if (!ingredient.category) {
-        const lowerName = name.toLowerCase();
-        if (lowerName.includes('manzana') || lowerName.includes('plátano') || lowerName.includes('naranja') || 
-            lowerName.includes('fresa') || lowerName.includes('uva') || lowerName.includes('kiwi') ||
-            lowerName.includes('espinaca') || lowerName.includes('tomate') || lowerName.includes('lechuga') ||
-            lowerName.includes('zanahoria') || lowerName.includes('cebolla') || lowerName.includes('ajo')) {
-          category = 'Frutas y Verduras';
-        } else if (lowerName.includes('pollo') || lowerName.includes('carne') || lowerName.includes('ternera') ||
-                   lowerName.includes('cerdo') || lowerName.includes('cordero')) {
-          category = 'Carnes';
-        } else if (lowerName.includes('salmón') || lowerName.includes('atún') || lowerName.includes('pescado') ||
-                   lowerName.includes('marisco') || lowerName.includes('gambas')) {
-          category = 'Pescados';
-        } else if (lowerName.includes('huevo') || lowerName.includes('leche') || lowerName.includes('yogur') ||
-                   lowerName.includes('queso') || lowerName.includes('mantequilla')) {
-          category = 'Lácteos';
-        } else if (lowerName.includes('arroz') || lowerName.includes('pasta') || lowerName.includes('pan') ||
-                   lowerName.includes('avena') || lowerName.includes('quinoa') || lowerName.includes('trigo')) {
-          category = 'Granos';
-        } else if (lowerName.includes('aceite') || lowerName.includes('sal') || lowerName.includes('pimienta') ||
-                   lowerName.includes('especia') || lowerName.includes('condimento')) {
-          category = 'Condimentos';
-        }
-      }
+  const slugify = (value: string) =>
+    value
+      .toString()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .trim()
+      .replace(/\s+/g, '-')
+      .slice(0, 40);
 
-      return {
-        id: `${planId}_${index}`,
-        name: name,
-        amount: typeof amount === 'string' ? parseFloat(amount) || 1 : amount,
-        unit: unit,
-        price: typeof price === 'string' ? parseFloat(price) || 0 : price,
-        category: category,
-        isChecked: false,
-        notes: ingredient.notes || `Del plan: ${planId}`,
-        sourcePlan: planId,
-      };
+  const resolveQuantity = (rawAmount: any, parsedQuantity?: number) => {
+    if (typeof rawAmount === 'number' && Number.isFinite(rawAmount)) return rawAmount;
+    if (typeof rawAmount === 'string') {
+      const numeric = parseFloat(rawAmount.replace(',', '.'));
+      if (!Number.isNaN(numeric)) return numeric;
+    }
+    if (typeof parsedQuantity === 'number' && Number.isFinite(parsedQuantity)) return parsedQuantity;
+    return 1;
+  };
+
+  const resolveUnit = (rawUnit: any, parsedUnit: string | undefined, ingredientName: string) => {
+    if (typeof rawUnit === 'string' && rawUnit.trim().length > 0) return rawUnit;
+    if (parsedUnit && parsedUnit.length > 0) return parsedUnit;
+    return getInferredUnit(ingredientName) || '';
+  };
+
+  const computePrice = (basePrice: number, quantity: number, unit: string) => {
+    if (!basePrice || Number.isNaN(basePrice)) return 0;
+    const safeQuantity = Number.isFinite(quantity) && quantity > 0 ? quantity : 1;
+    const normalizedUnit = unit?.toLowerCase();
+
+    if (normalizedUnit === 'g' || normalizedUnit === 'ml') {
+      return Number(((basePrice / 1000) * safeQuantity).toFixed(2));
+    }
+
+    if (normalizedUnit === 'kg' || normalizedUnit === 'l') {
+      return Number((basePrice * safeQuantity).toFixed(2));
+    }
+
+    return Number((basePrice * safeQuantity).toFixed(2));
+  };
+
+  const composePlanNote = (planName?: string, weekRange?: string) =>
+    planName ? `Plan: ${planName}${weekRange ? ` · ${weekRange}` : ''}` : undefined;
+
+  const normalizeIngredient = (
+    ingredient: any,
+    index: number,
+    plan: { id: string; name?: string; weekStart?: string; weekEnd?: string }
+  ): ShoppingItem => {
+    const rawName =
+      (typeof ingredient === 'string' ? ingredient : ingredient?.name || ingredient?.ingredient || ingredient?.item) ||
+      'Ingrediente';
+
+    const parsed = parseIngredient(rawName);
+    const displayName = parsed?.name || rawName.charAt(0).toUpperCase() + rawName.slice(1);
+
+    const quantity = resolveQuantity(ingredient?.amount ?? ingredient?.quantity ?? ingredient?.qty, parsed?.quantity);
+    const unit = resolveUnit(ingredient?.unit ?? ingredient?.measurement, parsed?.unit, displayName);
+
+    const category = ingredient?.category || categorizeIngredient(displayName);
+
+    const rawPrice = ingredient?.price ?? ingredient?.estimatedPrice ?? ingredient?.cost;
+    const estimatedBase =
+      typeof rawPrice === 'number' && !Number.isNaN(rawPrice) ? rawPrice : getEstimatedPrice(displayName);
+    const price = computePrice(estimatedBase, quantity, unit);
+
+    const slug = slugify(displayName) || `item-${index}`;
+
+    const weekRange =
+      plan.weekStart && plan.weekEnd
+        ? `${new Date(plan.weekStart).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })} – ${new Date(
+            plan.weekEnd
+          ).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })}`
+        : undefined;
+
+    const note = composePlanNote(plan.name, weekRange);
+
+    return {
+      id: `${plan.id}-${slug}`,
+      name: displayName,
+      amount: Number.isFinite(quantity) ? Number(quantity.toFixed(2)) : quantity,
+      unit: unit || '',
+      price,
+      category,
+      isChecked: false,
+      notes: note,
+      sourcePlan: plan.id,
+      planName: plan.name,
+      weekRange,
+    };
+  };
+
+  const updateShoppingListFromPlan = (
+    plan: {
+      id: string;
+      name?: string;
+      description?: string;
+      weekStart?: string;
+      weekEnd?: string;
+    },
+    ingredients: any[]
+  ) => {
+    const normalizedItems: ShoppingItem[] = ingredients.map((ingredient, index) =>
+      normalizeIngredient(ingredient, index, plan)
+    );
+
+    setShoppingList(prev => {
+      const filtered = prev.filter(item => item.sourcePlan !== plan.id);
+      const merged = [...filtered];
+
+      normalizedItems.forEach(item => {
+        const existingIndex = merged.findIndex(
+          existing => existing.name.toLowerCase() === item.name.toLowerCase() && existing.category === item.category
+        );
+
+        if (existingIndex !== -1) {
+          const existing = merged[existingIndex];
+          const planName = item.planName ?? existing.planName;
+          const weekRange = item.weekRange ?? existing.weekRange;
+          merged[existingIndex] = {
+            ...existing,
+            amount: Number((existing.amount + item.amount).toFixed(2)),
+            price: Number((existing.price + item.price).toFixed(2)),
+            notes: composePlanNote(planName, weekRange),
+            sourcePlan: item.sourcePlan,
+            planName,
+            weekRange,
+          };
+        } else {
+          merged.push(item);
+        }
+      });
+
+      return merged;
     });
-    
-    addMultipleShoppingItems(newItems);
+  };
+
+  const updatePlanMetadata = (planId: string, updates: { planName?: string; weekStart?: string; weekEnd?: string }) => {
+    setShoppingList(prev =>
+      prev.map(item => {
+        if (item.sourcePlan !== planId) return item;
+        const weekRange =
+          updates.weekStart && updates.weekEnd
+            ? `${new Date(updates.weekStart).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })} – ${new Date(
+                updates.weekEnd
+              ).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })}`
+            : item.weekRange;
+
+        const planName = updates.planName ?? item.planName;
+
+        return {
+          ...item,
+          planName,
+          weekRange,
+          notes: composePlanNote(planName, weekRange),
+        };
+      })
+    );
   };
 
   const getTotalCost = () => {
@@ -180,6 +319,7 @@ export const ShoppingListProvider: React.FC<ShoppingListProviderProps> = ({ chil
       clearCheckedItems,
       clearAllItems,
       updateShoppingListFromPlan,
+      updatePlanMetadata,
       getTotalCost,
       getCheckedItemsCount,
       getUncheckedItemsCount,

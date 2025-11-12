@@ -129,7 +129,7 @@ function addIngredientToMap(ingredientMap: Map<string, ShoppingListItem>, ingred
 }
 
 // Nueva función para inferir la unidad basada en el nombre del ingrediente
-function getInferredUnit(name: string): string {
+export function getInferredUnit(name: string): string {
     const lowerName = name.toLowerCase();
 
     // Botellas
@@ -165,7 +165,7 @@ function getInferredUnit(name: string): string {
 
 
 // Función para analizar un ingrediente y extraer cantidad, unidad y nombre
-function parseIngredient(ingredient: string): { name: string; quantity: number; unit: string } | null {
+export function parseIngredient(ingredient: string): { name: string; quantity: number; unit: string } | null {
   const cleanedIngredient = ingredient.toLowerCase().trim();
   
   // Regex para capturar cantidad (incluyendo decimales y fracciones), unidad y nombre
@@ -211,7 +211,7 @@ function parseIngredient(ingredient: string): { name: string; quantity: number; 
 }
 
 // Función para categorizar ingredientes
-function categorizeIngredient(ingredient: string): string {
+export function categorizeIngredient(ingredient: string): string {
   const lowerIngredient = ingredient.toLowerCase();
   
   // Carnes y aves
@@ -387,7 +387,7 @@ function getDefaultUnit(ingredient: string): string {
 }
 
 // Función para obtener precio estimado
-function getEstimatedPrice(ingredient: string): number {
+export function getEstimatedPrice(ingredient: string): number {
   const lowerIngredient = ingredient.toLowerCase();
   
   // Carnes (precios más altos)

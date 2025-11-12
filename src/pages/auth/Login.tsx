@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import { useAuth } from '../../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 const Form = styled.form`
   display: grid;
@@ -30,6 +31,7 @@ const Error = styled.div`
 
 const Login: React.FC = () => {
   const { login } = useAuth();
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -57,6 +59,7 @@ const Login: React.FC = () => {
       isNewUser: false,
       hasSelectedPlan: true,
     });
+    navigate('/dashboard', { replace: true });
   };
 
   return (

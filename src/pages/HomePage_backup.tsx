@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import styled from 'styled-components';
 import { Link } from 'react-router-dom';
 import { FiArrowRight, FiCheckCircle, FiClock, FiShield, FiSun, FiTrendingUp } from 'react-icons/fi';
@@ -408,14 +408,14 @@ const QuickLinkFooter = styled.div`
 
 const HomePage: React.FC = () => {
   const entries = [
-    { to: '/generador', title: 'Generar Plan Semanal', subtitle: 'Crea menús con IA' },
+    { to: '/generador', title: 'Generar Plan Semanal', subtitle: 'Crea menÃºs con IA' },
     { to: '/planes', title: 'Mis Planes', subtitle: 'Revisa, edita y reutiliza' },
-    { to: '/lista-compra', title: 'Lista de Compras', subtitle: 'Ordena tu compra automáticamente' },
-    { to: '/suscripcion', title: 'Suscripción', subtitle: 'Desbloquea funciones premium' },
+    { to: '/lista-compra', title: 'Lista de Compras', subtitle: 'Ordena tu compra automÃ¡ticamente' },
+    { to: '/suscripcion', title: 'SuscripciÃ³n', subtitle: 'Desbloquea funciones premium' },
   ];
 
   const stats = [
-    { value: '99%', label: 'Precisión en macronutrientes' },
+    { value: '99%', label: 'PrecisiÃ³n en macronutrientes' },
     { value: '+12k', label: 'Planes personalizados generados' },
     { value: '5h', label: 'Promedio de tiempo ahorrado por semana' },
   ];
@@ -428,13 +428,13 @@ const HomePage: React.FC = () => {
     },
     {
       icon: FiShield,
-      title: 'Rigor nutricional y médico',
-      description: 'Cada recomendación se basa en fuentes médicas validadas y supervisión nutricional experta.',
+      title: 'Rigor nutricional y mÃ©dico',
+      description: 'Cada recomendaciÃ³n se basa en fuentes mÃ©dicas validadas y supervisiÃ³n nutricional experta.',
     },
     {
       icon: FiClock,
       title: 'Automatiza tu semana',
-      description: 'Recibe menús completos con lista de compra organizada en segundos, sin hojas de cálculo.',
+      description: 'Recibe menÃºs completos con lista de compra organizada en segundos, sin hojas de cÃ¡lculo.',
     },
     {
       icon: FiCheckCircle,
@@ -453,24 +453,24 @@ const HomePage: React.FC = () => {
               Experiencia IA 2025
             </HeroBadge>
             <HeroTitle>
-              Nutrición inteligente para tu vida diaria, impulsada por <span>IA avanzada</span>.
+              NutriciÃ³n inteligente para tu vida diaria, impulsada por <span>IA avanzada</span>.
             </HeroTitle>
             <HeroText>
               Crea planes semanales deliciosos, con el balance perfecto de macros, recetas variadas y listas de
-              compras optimizadas. TastyPath te acompaña para llevar tus objetivos a resultados reales.
+              compras optimizadas. TastyPath te acompaÃ±a para llevar tus objetivos a resultados reales.
             </HeroText>
             <HeroBenefits>
               <li>
                 <FiCheckCircle />
-                Menús completos con presencia balanceada de carnes, pescados y opciones vegetales.
+                MenÃºs completos con presencia balanceada de carnes, pescados y opciones vegetales.
               </li>
               <li>
                 <FiCheckCircle />
-                Ajustamos calorías, macros y raciones a tus metas y preferencias alimentarias.
+                Ajustamos calorÃ­as, macros y raciones a tus metas y preferencias alimentarias.
               </li>
               <li>
                 <FiCheckCircle />
-                Sincronización con compras inteligentes y recordatorios semanales.
+                SincronizaciÃ³n con compras inteligentes y recordatorios semanales.
               </li>
             </HeroBenefits>
             <HeroActions>
@@ -522,10 +522,10 @@ const HomePage: React.FC = () => {
 
       <Section>
         <SectionHeader>
-          <SectionTag>Acceso rápido</SectionTag>
+          <SectionTag>Acceso rÃ¡pido</SectionTag>
           <SectionTitle>Todo tu ecosistema nutricional a un clic</SectionTitle>
           <SectionDescription>
-            Navega por tus herramientas favoritas y mantén el control de tu alimentación semanal desde un solo lugar.
+            Navega por tus herramientas favoritas y mantÃ©n el control de tu alimentaciÃ³n semanal desde un solo lugar.
           </SectionDescription>
         </SectionHeader>
 

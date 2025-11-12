@@ -326,12 +326,8 @@ const PlanGeneratorScreen: React.FC<PlanGeneratorScreenProps> = ({ navigation, o
     
     return Array.from(ingredients.entries()).map(([name, details]) => ({
       name: name.charAt(0).toUpperCase() + name.slice(1),
-      quantity: details.quantity,
+      amount: parseFloat(details.quantity) || 1,
       unit: details.unit,
-      category: 'Otros',
-      estimatedPrice: 0,
-      isChecked: false,
-      priority: 'medium' as const,
     }));
   };
 
@@ -463,7 +459,16 @@ const PlanGeneratorScreen: React.FC<PlanGeneratorScreenProps> = ({ navigation, o
         
         const shoppingListItems = generateShoppingListFromMenu(response.weeklyMenu);
         if (shoppingListItems.length > 0) {
-          updateShoppingListFromPlan(weeklyPlan.id, shoppingListItems);
+          updateShoppingListFromPlan(
+            {
+              id: weeklyPlan.id,
+              name: weeklyPlan.name,
+              description: weeklyPlan.description,
+              weekStart: weeklyPlan.weekStart,
+              weekEnd: weeklyPlan.weekEnd,
+            },
+            shoppingListItems
+          );
           
           // Mostrar mensaje informativo sobre la lista de compras actualizada
           Alert.alert(
