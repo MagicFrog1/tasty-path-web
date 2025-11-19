@@ -39,8 +39,9 @@ export default defineConfig(({ mode }) => {
       port: 5173,
       open: true,
     },
-    // Exponer variables de entorno con prefijos VITE_ y NEXT_PUBLIC_
-    envPrefix: ['VITE_', 'NEXT_PUBLIC_'],
+    // Exponer variables de entorno - Vite solo expone VITE_* por defecto
+    // Usamos define para exponer NEXT_PUBLIC_* manualmente
+    envPrefix: 'VITE_',
     // Definir variables para acceso en el código
     define: defineVars,
   };
