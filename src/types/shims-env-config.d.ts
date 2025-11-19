@@ -6,6 +6,10 @@ declare module '../../env.config' {
     SUPABASE_URL: string;
     SUPABASE_ANON_KEY: string;
     REVENUECAT_PUBLIC_KEY: string;
+    STRIPE_PUBLISHABLE_KEY: string;
+    STRIPE_PRICE_WEEKLY: string;
+    STRIPE_PRICE_MONTHLY: string;
+    STRIPE_PRICE_ANNUAL: string;
     APP_NAME: string;
     APP_VERSION: string;
   };
@@ -20,6 +24,10 @@ declare module '../env.config' {
     SUPABASE_URL: string;
     SUPABASE_ANON_KEY: string;
     REVENUECAT_PUBLIC_KEY: string;
+    STRIPE_PUBLISHABLE_KEY: string;
+    STRIPE_PRICE_WEEKLY: string;
+    STRIPE_PRICE_MONTHLY: string;
+    STRIPE_PRICE_ANNUAL: string;
     APP_NAME: string;
     APP_VERSION: string;
   };
@@ -34,6 +42,10 @@ declare module '../../../env.config' {
     SUPABASE_URL: string;
     SUPABASE_ANON_KEY: string;
     REVENUECAT_PUBLIC_KEY: string;
+    STRIPE_PUBLISHABLE_KEY: string;
+    STRIPE_PRICE_WEEKLY: string;
+    STRIPE_PRICE_MONTHLY: string;
+    STRIPE_PRICE_ANNUAL: string;
     APP_NAME: string;
     APP_VERSION: string;
   };

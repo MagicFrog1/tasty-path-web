@@ -1,9 +1,12 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { FiCheckCircle, FiGift, FiStar, FiTrendingUp, FiZap, FiShield, FiLock } from 'react-icons/fi';
 import { TbCrown } from 'react-icons/tb';
 import { useSubscription } from '../context/SubscriptionContext';
 import { theme } from '../styles/theme';
+import { redirectToCheckout, isStripeConfigured } from '../services/stripeService';
+import { useAuth } from '../context/AuthContext';
+import { useLocation } from 'react-router-dom';
 
 const fadeInUp = keyframes`
   from {
@@ -429,6 +432,69 @@ const BenefitCard = styled.article`
 
 const SubscriptionPage: React.FC = () => {
   const { availablePlans, currentPlan, selectPlan } = useSubscription();
+  const { user } = useAuth();
+  const location = useLocation();
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [stripeAvailable, setStripeAvailable] = useState(false);
+
+  // Verificar si Stripe está configurado
+  useEffect(() => {
+    setStripeAvailable(isStripeConfigured());
+  }, []);
+
+  // Manejar redirección después del pago
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const success = params.get('success');
+    const canceled = params.get('canceled');
+    const plan = params.get('plan') as 'weekly' | 'monthly' | 'annual' | null;
+
+    if (success && plan) {
+      // El pago fue exitoso, actualizar la suscripción
+      selectPlan(plan).then(() => {
+        // Limpiar la URL
+        window.history.replaceState({}, '', '/suscripcion');
+      }).catch(error => {
+        console.error('Error actualizando suscripción después del pago:', error);
+      });
+    } else if (canceled) {
+      // El usuario canceló el pago
+      console.log('Pago cancelado por el usuario');
+      window.history.replaceState({}, '', '/suscripcion');
+    }
+  }, [location.search, selectPlan]);
+
+  const handleSelectPlan = async (planId: 'weekly' | 'monthly' | 'annual' | 'free') => {
+    if (planId === 'free') {
+      await selectPlan('free');
+      return;
+    }
+
+    if (!stripeAvailable) {
+      console.warn('⚠️ Stripe no está configurado, usando modo simulado');
+      // Fallback al modo simulado si Stripe no está configurado
+      await selectPlan(planId);
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      const result = await redirectToCheckout(
+        planId as 'weekly' | 'monthly' | 'annual',
+        user?.email
+      );
+
+      if (!result.success) {
+        alert(result.error || 'Error al procesar el pago');
+      }
+      // Si es exitoso, redirectToCheckout redirigirá al usuario a Stripe
+    } catch (error) {
+      console.error('Error seleccionando plan:', error);
+      alert('Error al procesar el pago. Por favor, intenta de nuevo.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   return (
     <PageWrapper>
@@ -520,10 +586,16 @@ const SubscriptionPage: React.FC = () => {
               <SelectButton 
                 highlight={highlight} 
                 isCurrent={isCurrent}
-                onClick={() => !isCurrent && selectPlan(plan.id)}
-                disabled={isCurrent}
+                onClick={() => !isCurrent && handleSelectPlan(plan.id as 'weekly' | 'monthly' | 'annual' | 'free')}
+                disabled={isCurrent || isProcessing}
               >
-                {isCurrent ? 'Plan actual' : 'Seleccionar plan'}
+                {isProcessing 
+                  ? 'Procesando...' 
+                  : isCurrent 
+                    ? 'Plan actual' 
+                    : plan.id === 'free'
+                      ? 'Seleccionar plan'
+                      : 'Suscribirse ahora'}
               </SelectButton>
             </PlanCard>
           );
