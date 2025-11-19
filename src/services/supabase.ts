@@ -5,12 +5,22 @@ import { ENV_CONFIG } from '../../env.config';
 const supabaseUrl = ENV_CONFIG.SUPABASE_URL;
 const supabaseKey = ENV_CONFIG.SUPABASE_ANON_KEY;
 
+// Debug: Verificar qué variables están disponibles
+console.log('🔍 Debug - Variables de entorno disponibles:');
+console.log('  - NEXT_PUBLIC_SUPABASE_URL:', import.meta?.env?.NEXT_PUBLIC_SUPABASE_URL || 'NO DISPONIBLE');
+console.log('  - VITE_SUPABASE_URL:', import.meta?.env?.VITE_SUPABASE_URL || 'NO DISPONIBLE');
+console.log('  - NEXT_PUBLIC_SUPABASE_ANON_KEY:', import.meta?.env?.NEXT_PUBLIC_SUPABASE_ANON_KEY ? 'DISPONIBLE' : 'NO DISPONIBLE');
+console.log('  - VITE_SUPABASE_ANON_KEY:', import.meta?.env?.VITE_SUPABASE_ANON_KEY ? 'DISPONIBLE' : 'NO DISPONIBLE');
+
 // Validar que las credenciales estén configuradas
 if (!supabaseUrl || !supabaseKey) {
   console.error('⚠️ Supabase no está configurado correctamente.');
   console.error('💡 Verifica las variables de entorno en Vercel:');
   console.error('   - NEXT_PUBLIC_SUPABASE_URL (prioridad) o VITE_SUPABASE_URL');
   console.error('   - NEXT_PUBLIC_SUPABASE_ANON_KEY (prioridad) o VITE_SUPABASE_ANON_KEY');
+  console.error('📝 Valores actuales:');
+  console.error('   - SUPABASE_URL:', supabaseUrl || 'VACÍO');
+  console.error('   - SUPABASE_ANON_KEY:', supabaseKey ? 'CONFIGURADA' : 'VACÍA');
 }
 
 // Log de configuración (sin exponer la key completa)
