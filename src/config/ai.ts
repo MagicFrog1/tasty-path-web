@@ -64,6 +64,15 @@ export const isAIConfigured = (): boolean => {
   console.log('🔑 Longitud de API Key:', apiKey?.length || 0);
   console.log('🔑 Empieza con sk-:', apiKey?.startsWith('sk-') || false);
   
+  if (!isConfigured) {
+    console.warn('⚠️ API Key de OpenAI no configurada correctamente.');
+    console.warn('💡 Para configurarla en Vercel:');
+    console.warn('   1. Ve a Settings → Environment Variables');
+    console.warn('   2. Agrega: VITE_OPENAI_API_KEY = sk-tu-clave-aqui');
+    console.warn('   3. Redespliega la aplicación');
+    console.warn('📖 Ver VERCEL_CONFIG.md para más detalles');
+  }
+  
   return isConfigured;
 };
 
