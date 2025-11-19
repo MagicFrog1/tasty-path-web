@@ -431,7 +431,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ title, subtitle }) => {
       <Sidebar isOpen={isMenuOpen}>
         <MobileHeader>
           <Brand>
-            <img src={encodeURI("/assets/posible logo tastypath.png")} alt="TastyPath" />
+            <img src="/assets/logo-tastypath-preview.png" alt="TastyPath" />
             <div>
               <h1>MyTastyPath</h1>
             </div>
@@ -442,7 +442,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ title, subtitle }) => {
         </MobileHeader>
 
         <DesktopBrand>
-          <img src={encodeURI("/assets/posible logo tastypath.png")} alt="TastyPath" />
+          <img src="/assets/logo-tastypath-preview.png" alt="TastyPath" />
           <div>
             <h1>MyTastyPath</h1>
             <span>Nutrición inteligente</span>
