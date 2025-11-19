@@ -161,7 +161,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
       <FormContainer>
         <Card>
           <BrandHeader>
-            <img src="/assets/new_icon_tastypath.png" alt="TastyPath" />
+            <img src="/assets/logo-tastypath-preview.png" alt="TastyPath" />
             <div>
               <h2>MyTastyPath</h2>
               <span>Bienestar gastronómico inteligente</span>
