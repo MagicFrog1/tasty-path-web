@@ -3,7 +3,7 @@
     "target": "ES2020",
     "useDefineForClassFields": true,
     "lib": ["DOM", "DOM.Iterable", "ES2020"],
-    "allowJs": false,
+    "allowJs": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
@@ -20,7 +20,7 @@
       "@/*": ["*"]
     }
   },
-  "include": ["src"],
+  "include": ["src", "env.config.js"],
   "references": [
     { "path": "./tsconfig.node.json" }
   ]

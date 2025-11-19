@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { ENV_CONFIG } from '../env.config';
+import { ENV_CONFIG } from '../../env.config';
 
 // Supabase: URL y anon key desde variables de entorno
 const supabaseUrl = ENV_CONFIG.SUPABASE_URL;
