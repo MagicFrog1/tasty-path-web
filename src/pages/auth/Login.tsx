@@ -282,7 +282,19 @@ const Login: React.FC = () => {
         
         if (signInError || !data.user) {
           console.error('Error en signIn:', signInError);
-          throw signInError || new Error('No se pudo iniciar sesión');
+          console.error('Error detallado en login/registro:', signInError);
+          
+          // Mensajes de error más específicos
+          let errorMessage = 'No se pudo iniciar sesión';
+          if (signInError?.message?.includes('Failed to fetch') || signInError?.message?.includes('ERR_NAME_NOT_RESOLVED')) {
+            errorMessage = 'Error de conexión con el servidor. Verifica tu conexión a internet o contacta con soporte.';
+          } else if (signInError?.message?.includes('Invalid login credentials')) {
+            errorMessage = 'Email o contraseña incorrectos';
+          } else if (signInError?.message) {
+            errorMessage = signInError.message;
+          }
+          
+          throw new Error(errorMessage);
         }
 
         console.log('Login exitoso, obteniendo perfil...');
@@ -314,7 +326,19 @@ const Login: React.FC = () => {
         
         if (signUpError || !data.user) {
           console.error('Error en signUp:', signUpError);
-          throw signUpError || new Error('No se pudo crear la cuenta');
+          console.error('Error detallado en login/registro:', signUpError);
+          
+          // Mensajes de error más específicos
+          let errorMessage = 'No se pudo crear la cuenta';
+          if (signUpError?.message?.includes('Failed to fetch') || signUpError?.message?.includes('ERR_NAME_NOT_RESOLVED')) {
+            errorMessage = 'Error de conexión con el servidor. Verifica tu conexión a internet o contacta con soporte.';
+          } else if (signUpError?.message?.includes('User already registered')) {
+            errorMessage = 'Este email ya está registrado. Intenta iniciar sesión.';
+          } else if (signUpError?.message) {
+            errorMessage = signUpError.message;
+          }
+          
+          throw new Error(errorMessage);
         }
 
         console.log('Usuario creado exitosamente, creando perfil...');

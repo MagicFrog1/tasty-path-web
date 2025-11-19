@@ -10,7 +10,43 @@ if (!supabaseUrl || !supabaseKey) {
   console.error('⚠️ Supabase no está configurado correctamente. Verifica las variables de entorno VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY');
 }
 
-export const supabase = createClient(supabaseUrl, supabaseKey);
+// Log de configuración (sin exponer la key completa)
+console.log('🔧 Configuración de Supabase:');
+console.log('📍 URL:', supabaseUrl);
+console.log('🔑 Key configurada:', supabaseKey ? `${supabaseKey.substring(0, 20)}...` : 'NO CONFIGURADA');
+
+// Crear cliente de Supabase con opciones de reintento
+export const supabase = createClient(supabaseUrl, supabaseKey, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+  },
+  global: {
+    fetch: (url, options = {}) => {
+      return fetch(url, {
+        ...options,
+        headers: {
+          ...options.headers,
+        },
+      }).catch((error) => {
+        console.error('❌ Error de conexión a Supabase:', error);
+        console.error('📍 URL intentada:', url);
+        
+        // Si es un error de DNS, proporcionar ayuda
+        if (error.message?.includes('Failed to fetch') || error.message?.includes('ERR_NAME_NOT_RESOLVED')) {
+          console.error('💡 Posibles soluciones:');
+          console.error('   1. Verifica que el proyecto de Supabase esté activo (no pausado)');
+          console.error('   2. Verifica que la URL de Supabase sea correcta en Vercel');
+          console.error('   3. Verifica que las variables VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY estén configuradas');
+          console.error('   4. Revisa el dashboard de Supabase: https://app.supabase.com/');
+        }
+        
+        throw error;
+      });
+    },
+  },
+});
 
 // Tipos para la base de datos
 export interface Database {
