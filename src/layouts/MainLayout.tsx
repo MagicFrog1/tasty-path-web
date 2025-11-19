@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import styled from 'styled-components';
-import { FiHome, FiCalendar, FiShoppingCart, FiUser, FiStar, FiBookOpen } from 'react-icons/fi';
+import { FiHome, FiCalendar, FiShoppingCart, FiUser, FiStar, FiBookOpen, FiMenu, FiX } from 'react-icons/fi';
 import { FaKitchenSet } from 'react-icons/fa6';
 import { theme } from '../styles/theme';
 import { useSubscription } from '../context/SubscriptionContext';
@@ -17,13 +17,14 @@ const LayoutWrapper = styled.div`
   }
 `;
 
-const Sidebar = styled.aside`
+const Sidebar = styled.aside<{ isOpen?: boolean }>`
   position: fixed;
   top: 0;
   left: 0;
   height: 100vh;
   width: 280px;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   background: linear-gradient(200deg, rgba(34, 139, 34, 0.95) 0%, rgba(73, 150, 102, 0.85) 100%);
   color: ${theme.colors.white};
   padding: 32px 24px;
@@ -31,18 +32,144 @@ const Sidebar = styled.aside`
   flex-direction: column;
   gap: 24px;
   box-shadow: 12px 0 32px rgba(27, 77, 62, 0.2);
-  z-index: 10;
+  z-index: 100;
 
   @media (max-width: 1024px) {
-    position: static;
-    height: auto;
-    overflow: visible;
-    flex-direction: row;
+    position: fixed;
+    top: 0;
+    left: ${props => props.isOpen ? '0' : '-100%'};
+    height: 100vh;
+    width: 280px;
+    max-width: 85vw;
+    transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow-y: auto;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+    padding: 24px 20px;
+    background: linear-gradient(200deg, rgba(34, 139, 34, 0.98) 0%, rgba(73, 150, 102, 0.95) 100%);
+    backdrop-filter: blur(20px);
+    box-shadow: ${props => props.isOpen ? '4px 0 24px rgba(0, 0, 0, 0.3)' : 'none'};
+  }
+
+  @media (max-width: 768px) {
+    width: 260px;
+    padding: 20px 16px;
+  }
+
+  @media (max-width: 480px) {
+    width: 100%;
+    max-width: 100vw;
+  }
+`;
+
+const MobileMenuOverlay = styled.div<{ isOpen: boolean }>`
+  display: none;
+
+  @media (max-width: 1024px) {
+    display: ${props => props.isOpen ? 'block' : 'none'};
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    z-index: 99;
+    animation: ${props => props.isOpen ? 'fadeIn' : 'fadeOut'} 0.3s ease;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes fadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+  }
+`;
+
+const MobileMenuButton = styled.button`
+  display: none;
+
+  @media (max-width: 1024px) {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    top: 16px;
+    left: 16px;
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: rgba(34, 139, 34, 0.95);
+    color: ${theme.colors.white};
+    border: none;
+    cursor: pointer;
+    z-index: 101;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transition: all 0.2s ease;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+
+    &:active {
+      transform: scale(0.95);
+    }
+
+    svg {
+      font-size: 24px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    width: 44px;
+    height: 44px;
+    top: 12px;
+    left: 12px;
+  }
+`;
+
+const MobileHeader = styled.div`
+  display: none;
+
+  @media (max-width: 1024px) {
+    display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 16px;
-    background: rgba(34, 139, 34, 0.95);
-    backdrop-filter: blur(12px);
+    width: 100%;
+    margin-bottom: 24px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  }
+`;
+
+const CloseButton = styled.button`
+  display: none;
+
+  @media (max-width: 1024px) {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.1);
+    color: ${theme.colors.white};
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+
+    &:active {
+      transform: scale(0.95);
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    svg {
+      font-size: 20px;
+    }
   }
 `;
 
@@ -58,6 +185,7 @@ const Brand = styled.div`
     object-fit: contain;
     background: transparent;
     box-shadow: none;
+    flex-shrink: 0;
   }
 
   h1 {
@@ -82,15 +210,34 @@ const Brand = styled.div`
       display: none;
     }
   }
+
+  @media (max-width: 480px) {
+    img {
+      width: 36px;
+      height: 36px;
+    }
+    h1 {
+      font-size: 16px;
+    }
+  }
+`;
+
+const DesktopBrand = styled(Brand)`
+  @media (max-width: 1024px) {
+    display: none;
+  }
 `;
 
 const Menu = styled.nav`
   display: flex;
   flex-direction: column;
   gap: 12px;
+  flex: 1;
+  overflow-y: auto;
 
   @media (max-width: 1024px) {
-    display: none;
+    width: 100%;
+    gap: 8px;
   }
 `;
 
@@ -106,10 +253,25 @@ const MenuItem = styled(NavLink)`
   transition: all 0.3s ease;
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid transparent;
+  text-decoration: none;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 
   svg {
     font-size: 18px;
     transition: transform .2s ease, opacity .2s ease;
+    flex-shrink: 0;
+  }
+
+  @media (max-width: 1024px) {
+    padding: 16px;
+    border-radius: 14px;
+    font-size: 15px;
+  }
+
+  @media (max-width: 480px) {
+    padding: 14px;
+    font-size: 14px;
   }
 
   &.active,
@@ -119,6 +281,17 @@ const MenuItem = styled(NavLink)`
     box-shadow: 0 12px 20px rgba(27, 77, 62, 0.35);
     transform: translateX(6px);
     svg { transform: translateX(2px); opacity: .95; }
+  }
+
+  @media (max-width: 1024px) {
+    &.active,
+    &:hover {
+      transform: translateX(4px);
+    }
+  }
+
+  &:active {
+    transform: scale(0.98);
   }
 `;
 
@@ -208,8 +381,17 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ title, subtitle }) => {
   const location = useLocation();
   const segments = location.pathname.split('/').filter(Boolean);
   const { currentPlan } = useSubscription();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const isPremium = currentPlan && ['weekly', 'monthly', 'annual'].includes(currentPlan.plan);
+
+  const toggleMenu = () => {
+    setIsMenuOpen(!isMenuOpen);
+  };
+
+  const closeMenu = () => {
+    setIsMenuOpen(false);
+  };
 
   const breadcrumb = [
     { label: 'Inicio', path: '/' },
@@ -240,18 +422,41 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ title, subtitle }) => {
 
   return (
     <LayoutWrapper>
-      <Sidebar>
-        <Brand>
+      <MobileMenuButton onClick={toggleMenu} aria-label="Abrir menú">
+        <FiMenu />
+      </MobileMenuButton>
+
+      <MobileMenuOverlay isOpen={isMenuOpen} onClick={closeMenu} />
+
+      <Sidebar isOpen={isMenuOpen}>
+        <MobileHeader>
+          <Brand>
+            <img src={encodeURI("/assets/posible logo tastypath.png")} alt="TastyPath" />
+            <div>
+              <h1>MyTastyPath</h1>
+            </div>
+          </Brand>
+          <CloseButton onClick={closeMenu} aria-label="Cerrar menú">
+            <FiX />
+          </CloseButton>
+        </MobileHeader>
+
+        <DesktopBrand>
           <img src={encodeURI("/assets/posible logo tastypath.png")} alt="TastyPath" />
           <div>
             <h1>MyTastyPath</h1>
             <span>Nutrición inteligente</span>
           </div>
-        </Brand>
+        </DesktopBrand>
 
         <Menu>
           {menuItems.map(item => (
-            <MenuItem key={item.to} to={item.to} end={item.to === '/'}>
+            <MenuItem 
+              key={item.to} 
+              to={item.to} 
+              end={item.to === '/'}
+              onClick={closeMenu}
+            >
               {item.icon}
               {item.label}
             </MenuItem>

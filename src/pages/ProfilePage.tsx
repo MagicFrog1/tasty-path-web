@@ -12,23 +12,42 @@ const PageWrapper = styled.div`
   max-width: 800px;
   margin: 0 auto;
   padding: 24px;
+  width: 100%;
+
+  @media (max-width: 768px) {
+    padding: 16px;
+  }
+
+  @media (max-width: 480px) {
+    padding: 12px;
+  }
 `;
 
 const Header = styled.div`
   margin-bottom: 32px;
+
+  @media (max-width: 768px) {
+    margin-bottom: 24px;
+  }
 `;
 
 const Title = styled.h1`
   margin: 0 0 8px 0;
-  font-size: 2.5rem;
+  font-size: clamp(1.75rem, 5vw, 2.5rem);
   font-weight: 700;
   color: ${theme.colors.textPrimary};
+  line-height: 1.2;
+
+  @media (max-width: 768px) {
+    margin-bottom: 6px;
+  }
 `;
 
 const Subtitle = styled.p`
   margin: 0;
   color: ${theme.colors.textSecondary};
-  font-size: 16px;
+  font-size: clamp(14px, 3vw, 16px);
+  line-height: 1.5;
 `;
 
 const ProfileCard = styled.div`
@@ -38,16 +57,42 @@ const ProfileCard = styled.div`
   box-shadow: ${theme.shadows.md};
   border: 1px solid rgba(139, 92, 246, 0.1);
   margin-bottom: 24px;
+
+  @media (max-width: 768px) {
+    padding: 24px;
+    border-radius: 20px;
+    margin-bottom: 20px;
+  }
+
+  @media (max-width: 480px) {
+    padding: 20px;
+    border-radius: 16px;
+    margin-bottom: 16px;
+  }
 `;
 
 const SectionTitle = styled.h2`
-  font-size: 1.4rem;
+  font-size: clamp(1.1rem, 4vw, 1.4rem);
   font-weight: 700;
   color: ${theme.colors.primary};
   margin: 0 0 20px 0;
   display: flex;
   align-items: center;
   gap: 10px;
+
+  @media (max-width: 768px) {
+    margin-bottom: 16px;
+    gap: 8px;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 1.1rem;
+    margin-bottom: 14px;
+  }
+
+  svg {
+    flex-shrink: 0;
+  }
 `;
 
 const FormGrid = styled.div`
@@ -73,9 +118,15 @@ const Input = styled.input`
   padding: 14px 16px;
   border-radius: 12px;
   border: 2px solid rgba(139, 92, 246, 0.15);
-  font-size: 15px;
+  font-size: clamp(14px, 3vw, 15px);
   transition: all 0.2s ease;
   background: ${theme.colors.white};
+  width: 100%;
+
+  @media (max-width: 480px) {
+    padding: 12px 14px;
+    font-size: 16px; /* Previene zoom en iOS */
+  }
 
   &:focus {
     outline: none;
@@ -88,18 +139,13 @@ const Input = styled.input`
   }
 `;
 
-const LegalCard = styled.div`
-  background: ${theme.colors.white};
-  border-radius: 24px;
-  padding: 32px;
-  box-shadow: ${theme.shadows.md};
-  border: 1px solid rgba(139, 92, 246, 0.1);
-  margin-top: 24px;
-`;
-
 const LegalLinksGrid = styled.div`
   display: grid;
   gap: 12px;
+
+  @media (max-width: 480px) {
+    gap: 10px;
+  }
 `;
 
 const LegalLink = styled(Link)`
@@ -114,12 +160,34 @@ const LegalLink = styled(Link)`
   border-radius: 16px;
   transition: all 0.25s ease;
   font-weight: 500;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+
+  @media (max-width: 768px) {
+    padding: 16px 18px;
+    border-radius: 14px;
+  }
+
+  @media (max-width: 480px) {
+    padding: 14px 16px;
+    border-radius: 12px;
+  }
 
   &:hover {
     transform: translateY(-2px);
     border-color: rgba(139, 92, 246, 0.3);
     background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(168, 85, 247, 0.1));
     box-shadow: 0 4px 12px rgba(139, 92, 246, 0.15);
+  }
+
+  @media (max-width: 768px) {
+    &:hover {
+      transform: none;
+    }
+  }
+
+  &:active {
+    transform: scale(0.98);
   }
 `;
 
@@ -139,10 +207,18 @@ const LegalLinkIcon = styled.div`
   background: rgba(139, 92, 246, 0.1);
   color: ${theme.colors.primary};
   font-size: 20px;
+  flex-shrink: 0;
+
+  @media (max-width: 480px) {
+    width: 36px;
+    height: 36px;
+    font-size: 18px;
+    border-radius: 10px;
+  }
 `;
 
 const LegalLinkText = styled.span`
-  font-size: 15px;
+  font-size: clamp(14px, 3vw, 15px);
   font-weight: 600;
   color: ${theme.colors.textPrimary};
 `;
@@ -176,10 +252,22 @@ const ActionButton = styled.button<{ variant?: 'danger' | 'primary' | 'secondary
     props.variant === 'danger' ? '#ef4444' :
     props.variant === 'primary' ? theme.colors.primary :
     theme.colors.textPrimary};
-  font-size: 15px;
+  font-size: clamp(14px, 3vw, 15px);
   font-weight: 600;
   cursor: pointer;
   transition: all 0.25s ease;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+
+  @media (max-width: 768px) {
+    padding: 16px 18px;
+    border-radius: 14px;
+  }
+
+  @media (max-width: 480px) {
+    padding: 14px 16px;
+    border-radius: 12px;
+  }
 
   &:hover {
     transform: translateY(-2px);
@@ -196,8 +284,14 @@ const ActionButton = styled.button<{ variant?: 'danger' | 'primary' | 'secondary
       'rgba(139, 92, 246, 0.15)'};
   }
 
+  @media (max-width: 768px) {
+    &:hover {
+      transform: none;
+    }
+  }
+
   &:active {
-    transform: translateY(0);
+    transform: translateY(0) scale(0.98);
   }
 
   &:disabled {
@@ -229,6 +323,14 @@ const ActionButtonIcon = styled.div<{ variant?: 'danger' | 'primary' | 'secondar
     props.variant === 'primary' ? theme.colors.primary :
     theme.colors.primary};
   font-size: 20px;
+  flex-shrink: 0;
+
+  @media (max-width: 480px) {
+    width: 36px;
+    height: 36px;
+    font-size: 18px;
+    border-radius: 10px;
+  }
 `;
 
 const ActionButtonText = styled.span`
@@ -243,11 +345,48 @@ const ActionsCard = styled.div`
   box-shadow: ${theme.shadows.md};
   border: 1px solid rgba(139, 92, 246, 0.1);
   margin-top: 24px;
+
+  @media (max-width: 768px) {
+    padding: 24px;
+    border-radius: 20px;
+    margin-top: 20px;
+  }
+
+  @media (max-width: 480px) {
+    padding: 20px;
+    border-radius: 16px;
+    margin-top: 16px;
+  }
 `;
 
 const ActionsGrid = styled.div`
   display: grid;
   gap: 12px;
+
+  @media (max-width: 480px) {
+    gap: 10px;
+  }
+`;
+
+const LegalCard = styled.div`
+  background: ${theme.colors.white};
+  border-radius: 24px;
+  padding: 32px;
+  box-shadow: ${theme.shadows.md};
+  border: 1px solid rgba(139, 92, 246, 0.1);
+  margin-top: 24px;
+
+  @media (max-width: 768px) {
+    padding: 24px;
+    border-radius: 20px;
+    margin-top: 20px;
+  }
+
+  @media (max-width: 480px) {
+    padding: 20px;
+    border-radius: 16px;
+    margin-top: 16px;
+  }
 `;
 
 const ProfilePage: React.FC = () => {

@@ -9,6 +9,16 @@ const Container = styled.div`
   max-width: 450px;
   margin: 0 auto;
   padding: 2rem;
+  width: 100%;
+
+  @media (max-width: 768px) {
+    padding: 1.5rem;
+    max-width: 100%;
+  }
+
+  @media (max-width: 480px) {
+    padding: 1rem;
+  }
 `;
 
 const Form = styled.form`
@@ -18,21 +28,47 @@ const Form = styled.form`
   padding: 2rem;
   border-radius: 16px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+
+  @media (max-width: 768px) {
+    padding: 1.5rem;
+    border-radius: 14px;
+    gap: 0.875rem;
+  }
+
+  @media (max-width: 480px) {
+    padding: 1.25rem;
+    border-radius: 12px;
+    gap: 0.75rem;
+  }
 `;
 
 const Title = styled.h2`
   margin: 0 0 0.5rem 0;
-  font-size: 1.75rem;
+  font-size: clamp(1.5rem, 5vw, 1.75rem);
   font-weight: 700;
   color: #1f2937;
   text-align: center;
+  line-height: 1.2;
+
+  @media (max-width: 480px) {
+    margin-bottom: 0.375rem;
+  }
 `;
 
 const Subtitle = styled.p`
   margin: 0 0 1.5rem 0;
-  font-size: 0.95rem;
+  font-size: clamp(0.875rem, 3vw, 0.95rem);
   color: #6b7280;
   text-align: center;
+  line-height: 1.5;
+
+  @media (max-width: 768px) {
+    margin-bottom: 1.25rem;
+  }
+
+  @media (max-width: 480px) {
+    margin-bottom: 1rem;
+  }
 `;
 
 const InputContainer = styled.div`
@@ -47,8 +83,15 @@ const Input = styled.input<{ $hasToggle?: boolean }>`
   padding-right: ${props => props.$hasToggle ? '45px' : '14px'};
   border-radius: 12px;
   border: 2px solid #e5e7eb;
-  font-size: 1rem;
+  font-size: clamp(14px, 3vw, 1rem);
   transition: all 0.2s;
+  
+  @media (max-width: 480px) {
+    padding: 14px 16px;
+    padding-right: ${props => props.$hasToggle ? '50px' : '16px'};
+    font-size: 16px; /* Previene zoom en iOS */
+    border-radius: 10px;
+  }
   
   &:focus {
     outline: none;
@@ -90,22 +133,41 @@ const Button = styled.button`
   background: #2e8b57;
   color: #fff;
   font-weight: 700;
-  font-size: 1rem;
+  font-size: clamp(14px, 3vw, 1rem);
   cursor: pointer;
   transition: all 0.2s;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  
+  @media (max-width: 768px) {
+    padding: 16px 20px;
+    border-radius: 10px;
+  }
+
+  @media (max-width: 480px) {
+    padding: 16px 18px;
+    font-size: 16px;
+    border-radius: 10px;
+  }
   
   &:hover:not(:disabled) {
     background: #256f47;
     transform: translateY(-1px);
     box-shadow: 0 4px 8px rgba(46, 139, 87, 0.3);
   }
+
+  @media (max-width: 768px) {
+    &:hover:not(:disabled) {
+      transform: none;
+    }
+  }
   
   &:active:not(:disabled) {
-    transform: translateY(0);
+    transform: translateY(0) scale(0.98);
   }
   
   &:disabled {
