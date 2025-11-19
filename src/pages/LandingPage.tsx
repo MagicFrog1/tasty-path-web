@@ -1143,7 +1143,7 @@ const LandingPage: React.FC = () => {
 
             <HeroPanel>
               <PanelBadge>
-                <PanelLogo src="/assets/posible logo tastypath.png" alt="Impacto real de TastyPath" />
+                <PanelLogo src={encodeURI("/assets/posible logo tastypath.png")} alt="Impacto real de TastyPath" />
               </PanelBadge>
               <HeroPanelHeading>
                 <h3>Tu plan ideal, en minutos</h3>

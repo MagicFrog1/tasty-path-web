@@ -242,7 +242,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ title, subtitle }) => {
     <LayoutWrapper>
       <Sidebar>
         <Brand>
-          <img src="/assets/posible logo tastypath.png" alt="TastyPath" />
+          <img src={encodeURI("/assets/posible logo tastypath.png")} alt="TastyPath" />
           <div>
             <h1>MyTastyPath</h1>
             <span>Nutrición inteligente</span>

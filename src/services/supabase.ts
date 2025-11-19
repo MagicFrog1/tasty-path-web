@@ -1,8 +1,14 @@
 import { createClient } from '@supabase/supabase-js';
+import { ENV_CONFIG } from '../env.config';
 
-// Supabase: URL y anon key provistos por el usuario
-const supabaseUrl = 'https://mxpxmdpydstdbhzxnxgm.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im14cHhtZHB5ZHN0ZGJoenhueGdtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MjQwMDQsImV4cCI6MjA3MzIwMDAwNH0.tK1WnB28V2a9py7QVsw5p30hVtoMMyu7euE45Y8eaP4';
+// Supabase: URL y anon key desde variables de entorno
+const supabaseUrl = ENV_CONFIG.SUPABASE_URL;
+const supabaseKey = ENV_CONFIG.SUPABASE_ANON_KEY;
+
+// Validar que las credenciales estén configuradas
+if (!supabaseUrl || !supabaseKey) {
+  console.error('⚠️ Supabase no está configurado correctamente. Verifica las variables de entorno VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY');
+}
 
 export const supabase = createClient(supabaseUrl, supabaseKey);
 
