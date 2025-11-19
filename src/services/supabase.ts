@@ -8,9 +8,9 @@ const supabaseKey = ENV_CONFIG.SUPABASE_ANON_KEY;
 // Validar que las credenciales estén configuradas
 if (!supabaseUrl || !supabaseKey) {
   console.error('⚠️ Supabase no está configurado correctamente.');
-  console.error('💡 Verifica las variables de entorno:');
-  console.error('   - VITE_SUPABASE_URL o NEXT_PUBLIC_SUPABASE_URL');
-  console.error('   - VITE_SUPABASE_ANON_KEY o NEXT_PUBLIC_SUPABASE_ANON_KEY');
+  console.error('💡 Verifica las variables de entorno en Vercel:');
+  console.error('   - NEXT_PUBLIC_SUPABASE_URL (prioridad) o VITE_SUPABASE_URL');
+  console.error('   - NEXT_PUBLIC_SUPABASE_ANON_KEY (prioridad) o VITE_SUPABASE_ANON_KEY');
 }
 
 // Log de configuración (sin exponer la key completa)
@@ -41,7 +41,7 @@ export const supabase = createClient(supabaseUrl, supabaseKey, {
           console.error('💡 Posibles soluciones:');
           console.error('   1. Verifica que el proyecto de Supabase esté activo (no pausado)');
           console.error('   2. Verifica que la URL de Supabase sea correcta en Vercel');
-          console.error('   3. Verifica que las variables VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY estén configuradas');
+          console.error('   3. Verifica que las variables NEXT_PUBLIC_SUPABASE_URL y NEXT_PUBLIC_SUPABASE_ANON_KEY estén configuradas en Vercel');
           console.error('   4. Revisa el dashboard de Supabase: https://app.supabase.com/');
         }
         
