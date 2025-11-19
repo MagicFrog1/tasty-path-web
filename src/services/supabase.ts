@@ -7,7 +7,10 @@ const supabaseKey = ENV_CONFIG.SUPABASE_ANON_KEY;
 
 // Validar que las credenciales estén configuradas
 if (!supabaseUrl || !supabaseKey) {
-  console.error('⚠️ Supabase no está configurado correctamente. Verifica las variables de entorno VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY');
+  console.error('⚠️ Supabase no está configurado correctamente.');
+  console.error('💡 Verifica las variables de entorno:');
+  console.error('   - VITE_SUPABASE_URL o NEXT_PUBLIC_SUPABASE_URL');
+  console.error('   - VITE_SUPABASE_ANON_KEY o NEXT_PUBLIC_SUPABASE_ANON_KEY');
 }
 
 // Log de configuración (sin exponer la key completa)
