@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import styled, { keyframes } from 'styled-components';
+import styled, { keyframes, css } from 'styled-components';
 import {
   FiArrowLeft,
   FiCalendar,
@@ -13,6 +13,8 @@ import {
   FiBook,
   FiCoffee,
   FiCheck,
+  FiChevronDown,
+  FiChevronUp,
 } from 'react-icons/fi';
 import { useWeeklyPlan } from '../context/WeeklyPlanContext';
 import { theme } from '../styles/theme';
@@ -37,9 +39,47 @@ const slideUp = keyframes`
   }
 `;
 
+const slideDown = keyframes`
+  from {
+    opacity: 0;
+    max-height: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    max-height: 2000px;
+    transform: translateY(0);
+  }
+`;
+
+const rotate = keyframes`
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(180deg);
+  }
+`;
+
 const PageWrapper = styled.div`
   display: grid;
   gap: 32px;
+  padding: 0;
+
+  @media (max-width: 1024px) {
+    gap: 24px;
+    padding: 0 16px;
+  }
+
+  @media (max-width: 768px) {
+    gap: 20px;
+    padding: 0 12px;
+  }
+
+  @media (max-width: 480px) {
+    gap: 16px;
+    padding: 0 8px;
+  }
 `;
 
 const BackLink = styled(Link)`
@@ -54,11 +94,38 @@ const BackLink = styled(Link)`
   color: ${theme.colors.primary};
   text-decoration: none;
   font-weight: 600;
+  font-size: 14px;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 
   &:hover {
     transform: translateY(-2px);
     box-shadow: 0 16px 32px rgba(46, 139, 87, 0.16);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+
+  @media (max-width: 768px) {
+    padding: 12px 16px;
+    font-size: 13px;
+    gap: 8px;
+  }
+
+  @media (max-width: 480px) {
+    padding: 10px 14px;
+    font-size: 12px;
+    gap: 6px;
+    width: 100%;
+    justify-content: center;
+  }
+
+  svg {
+    @media (max-width: 480px) {
+      font-size: 16px;
+    }
   }
 `;
 
@@ -68,8 +135,17 @@ const Header = styled.div`
 
   h1 {
     margin: 0;
-    font-size: clamp(2.2rem, 4vw, 2.8rem);
+    font-size: clamp(1.8rem, 4vw, 2.8rem);
     color: ${theme.colors.textPrimary};
+    line-height: 1.2;
+
+    @media (max-width: 768px) {
+      font-size: clamp(1.5rem, 5vw, 2rem);
+    }
+
+    @media (max-width: 480px) {
+      font-size: 1.5rem;
+    }
   }
 
   p {
@@ -77,6 +153,17 @@ const Header = styled.div`
     color: ${theme.colors.textSecondary};
     max-width: 720px;
     line-height: 1.7;
+    font-size: 16px;
+
+    @media (max-width: 768px) {
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    @media (max-width: 480px) {
+      font-size: 14px;
+      line-height: 1.5;
+    }
   }
 `;
 
@@ -84,6 +171,16 @@ const SummaryGrid = styled.div`
   display: grid;
   gap: 20px;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+
+  @media (max-width: 768px) {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+  }
+
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
 `;
 
 const SummaryCard = styled.div`
@@ -94,6 +191,18 @@ const SummaryCard = styled.div`
   background: linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(236, 253, 245, 0.9));
   border: 1px solid rgba(46, 139, 87, 0.16);
   box-shadow: 0 22px 52px rgba(46, 139, 87, 0.16);
+
+  @media (max-width: 768px) {
+    padding: 20px;
+    border-radius: 20px;
+    gap: 10px;
+  }
+
+  @media (max-width: 480px) {
+    padding: 16px;
+    border-radius: 16px;
+    gap: 8px;
+  }
 `;
 
 const SummaryLabel = styled.span`
@@ -115,6 +224,14 @@ const SummaryValue = styled.div`
   font-size: 1.3rem;
   font-weight: 700;
   color: ${theme.colors.primaryDark};
+
+  @media (max-width: 768px) {
+    font-size: 1.2rem;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 1.1rem;
+  }
 `;
 
 const ProgressWrapper = styled.div`
@@ -153,11 +270,274 @@ const WeekHeader = styled.div`
   h2 {
     margin: 0;
     font-size: clamp(1.8rem, 3vw, 2.2rem);
+    line-height: 1.2;
+
+    @media (max-width: 768px) {
+      font-size: clamp(1.5rem, 4vw, 1.8rem);
+    }
+
+    @media (max-width: 480px) {
+      font-size: 1.5rem;
+    }
   }
 
   p {
     margin: 0;
     color: ${theme.colors.textSecondary};
+    font-size: 16px;
+    line-height: 1.6;
+
+    @media (max-width: 768px) {
+      font-size: 15px;
+    }
+
+    @media (max-width: 480px) {
+      font-size: 14px;
+      line-height: 1.5;
+    }
+  }
+`;
+
+const CalendarContainer = styled.div`
+  display: grid;
+  gap: 16px;
+  padding: 24px;
+  border-radius: 24px;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(236, 253, 245, 0.9));
+  border: 1px solid rgba(46, 139, 87, 0.16);
+  box-shadow: 0 18px 45px rgba(46, 139, 87, 0.12);
+
+  @media (max-width: 768px) {
+    padding: 20px;
+    border-radius: 20px;
+    gap: 14px;
+  }
+
+  @media (max-width: 480px) {
+    padding: 16px;
+    border-radius: 16px;
+    gap: 12px;
+  }
+`;
+
+const CalendarTitle = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 18px;
+  font-weight: 700;
+  color: ${theme.colors.primaryDark};
+
+  svg {
+    color: ${theme.colors.primary};
+    font-size: 20px;
+  }
+
+  @media (max-width: 768px) {
+    font-size: 16px;
+    gap: 8px;
+
+    svg {
+      font-size: 18px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    font-size: 15px;
+    gap: 6px;
+
+    svg {
+      font-size: 16px;
+    }
+  }
+`;
+
+const CalendarGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 12px;
+
+  @media (max-width: 768px) {
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+  }
+
+  @media (max-width: 480px) {
+    gap: 6px;
+  }
+`;
+
+const CalendarDay = styled.button<{ isCompleted: boolean; isExpanded: boolean }>`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 16px 12px;
+  border-radius: 16px;
+  border: 2px solid ${({ isCompleted, isExpanded }) =>
+    isCompleted
+      ? theme.colors.primary
+      : isExpanded
+      ? 'rgba(46, 139, 87, 0.4)'
+      : 'rgba(46, 139, 87, 0.2)'};
+  background: ${({ isCompleted, isExpanded }) =>
+    isCompleted
+      ? 'linear-gradient(135deg, rgba(46, 139, 87, 0.95) 0%, rgba(46, 139, 87, 0.85) 100%)'
+      : isExpanded
+      ? 'linear-gradient(135deg, rgba(46, 139, 87, 0.15) 0%, rgba(46, 139, 87, 0.08) 100%)'
+      : 'rgba(255, 255, 255, 0.9)'};
+  color: ${({ isCompleted }) => (isCompleted ? '#ffffff' : theme.colors.textPrimary)};
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: ${({ isCompleted, isExpanded }) =>
+    isCompleted
+      ? '0 4px 12px rgba(46, 139, 87, 0.3)'
+      : isExpanded
+      ? '0 4px 12px rgba(46, 139, 87, 0.15)'
+      : '0 2px 8px rgba(46, 139, 87, 0.08)'};
+  position: relative;
+  overflow: hidden;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  min-height: 80px;
+
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: ${({ isCompleted }) =>
+      isCompleted
+        ? '0 6px 16px rgba(46, 139, 87, 0.4)'
+        : '0 4px 12px rgba(46, 139, 87, 0.2)'};
+    border-color: ${theme.colors.primary};
+  }
+
+  &:active {
+    transform: translateY(-1px);
+  }
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: ${({ isCompleted }) =>
+      isCompleted
+        ? 'rgba(255, 255, 255, 0.3)'
+        : 'linear-gradient(90deg, transparent, rgba(46, 139, 87, 0.3), transparent)'};
+    opacity: ${({ isExpanded }) => (isExpanded ? 1 : 0)};
+    transition: opacity 0.3s ease;
+  }
+
+  @media (max-width: 768px) {
+    padding: 12px 8px;
+    gap: 4px;
+    min-height: 70px;
+    border-radius: 12px;
+  }
+
+  @media (max-width: 480px) {
+    padding: 10px 6px;
+    gap: 3px;
+    min-height: 60px;
+    border-radius: 10px;
+    border-width: 1.5px;
+  }
+`;
+
+const CalendarDayName = styled.span`
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.8;
+
+  @media (max-width: 768px) {
+    font-size: 11px;
+    letter-spacing: 0.06em;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 10px;
+    letter-spacing: 0.04em;
+  }
+`;
+
+const CalendarDayNumber = styled.span`
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1;
+
+  @media (max-width: 768px) {
+    font-size: 18px;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 16px;
+  }
+`;
+
+const CalendarDayLabel = styled.span`
+  font-size: 11px;
+  font-weight: 500;
+  opacity: 0.7;
+  margin-top: 2px;
+
+  @media (max-width: 768px) {
+    font-size: 10px;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 9px;
+    display: none;
+  }
+`;
+
+const CalendarDayBadge = styled.div<{ isCompleted: boolean }>`
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: ${({ isCompleted }) =>
+    isCompleted
+      ? 'rgba(255, 255, 255, 0.3)'
+      : 'rgba(46, 139, 87, 0.2)'};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid ${({ isCompleted }) =>
+    isCompleted ? '#ffffff' : theme.colors.primary};
+
+  svg {
+    font-size: 12px;
+    color: ${({ isCompleted }) => (isCompleted ? '#ffffff' : theme.colors.primary)};
+  }
+
+  @media (max-width: 768px) {
+    width: 18px;
+    height: 18px;
+    top: 6px;
+    right: 6px;
+    border-width: 1.5px;
+
+    svg {
+      font-size: 10px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    width: 16px;
+    height: 16px;
+    top: 4px;
+    right: 4px;
+    border-width: 1.5px;
+
+    svg {
+      font-size: 9px;
+    }
   }
 `;
 
@@ -165,19 +545,45 @@ const DayGrid = styled.div`
   display: grid;
   gap: 18px;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  @media (max-width: 480px) {
+    gap: 12px;
+  }
 `;
 
-const DayCard = styled.div<{ isChecked?: boolean }>`
+const DayCard = styled.div<{ isChecked?: boolean; isExpanded?: boolean }>`
   display: grid;
   gap: 16px;
   padding: 22px;
   border-radius: 26px;
   background: ${({ isChecked }) => (isChecked ? 'rgba(46, 139, 87, 0.05)' : 'rgba(255, 255, 255, 0.94)')};
   border: ${({ isChecked }) => (isChecked ? '2px solid rgba(46, 139, 87, 0.4)' : '1px solid rgba(46, 139, 87, 0.16)')};
-  box-shadow: ${({ isChecked }) =>
-    isChecked ? '0 18px 45px rgba(46, 139, 87, 0.2)' : '0 18px 45px rgba(46, 139, 87, 0.12)'};
+  box-shadow: ${({ isChecked, isExpanded }) =>
+    isChecked
+      ? '0 18px 45px rgba(46, 139, 87, 0.2)'
+      : isExpanded
+      ? '0 20px 50px rgba(46, 139, 87, 0.18)'
+      : '0 18px 45px rgba(46, 139, 87, 0.12)'};
   position: relative;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+
+  @media (max-width: 768px) {
+    padding: 18px;
+    border-radius: 20px;
+    gap: 14px;
+  }
+
+  @media (max-width: 480px) {
+    padding: 16px;
+    border-radius: 16px;
+    gap: 12px;
+  }
 `;
 
 const DayHeader = styled.div`
@@ -192,6 +598,15 @@ const DayHeader = styled.div`
     font-size: 1.3rem;
     color: ${theme.colors.primaryDark};
     flex: 1;
+    line-height: 1.3;
+
+    @media (max-width: 768px) {
+      font-size: 1.2rem;
+    }
+
+    @media (max-width: 480px) {
+      font-size: 1.1rem;
+    }
   }
 
   span {
@@ -203,6 +618,77 @@ const DayHeader = styled.div`
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: rgba(46, 139, 87, 0.65);
+
+    @media (max-width: 480px) {
+      font-size: 11px;
+      gap: 6px;
+    }
+  }
+
+  button {
+    @media (max-width: 480px) {
+      padding: 6px 10px !important;
+      font-size: 11px !important;
+      gap: 4px !important;
+    }
+  }
+`;
+
+const DayToggleButton = styled.button<{ isExpanded: boolean }>`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 16px 20px;
+  border-radius: 16px;
+  border: 2px solid rgba(46, 139, 87, 0.2);
+  background: ${({ isExpanded }) =>
+    isExpanded
+      ? 'linear-gradient(135deg, rgba(46, 139, 87, 0.1) 0%, rgba(46, 139, 87, 0.05) 100%)'
+      : 'rgba(255, 255, 255, 0.9)'};
+  color: ${theme.colors.primaryDark};
+  font-weight: 700;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: ${({ isExpanded }) =>
+    isExpanded ? '0 4px 12px rgba(46, 139, 87, 0.15)' : '0 2px 8px rgba(46, 139, 87, 0.08)'};
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: ${({ isExpanded }) =>
+      isExpanded ? '0 6px 16px rgba(46, 139, 87, 0.2)' : '0 4px 12px rgba(46, 139, 87, 0.12)'};
+    border-color: ${theme.colors.primary};
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+
+  svg {
+    font-size: 20px;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transform: ${({ isExpanded }) => (isExpanded ? 'rotate(180deg)' : 'rotate(0deg)')};
+    color: ${theme.colors.primary};
+  }
+`;
+
+const DayContent = styled.div<{ isExpanded: boolean }>`
+  display: grid;
+  gap: 16px;
+  max-height: ${({ isExpanded }) => (isExpanded ? '5000px' : '0')};
+  overflow: hidden;
+  opacity: ${({ isExpanded }) => (isExpanded ? 1 : 0)};
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: ${({ isExpanded }) => (isExpanded ? slideDown : 'none')} 0.4s ease-out;
+
+  @media (max-width: 768px) {
+    gap: 14px;
+  }
+
+  @media (max-width: 480px) {
+    gap: 12px;
   }
 `;
 
@@ -226,6 +712,9 @@ const CheckInButton = styled.button<{ isChecked: boolean }>`
     isChecked ? '0 4px 12px rgba(46, 139, 87, 0.3)' : '0 2px 8px rgba(46, 139, 87, 0.1)'};
   margin-bottom: 12px;
   width: 100%;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  min-height: 44px;
 
   &:hover {
     transform: translateY(-2px);
@@ -239,6 +728,28 @@ const CheckInButton = styled.button<{ isChecked: boolean }>`
 
   svg {
     font-size: 16px;
+  }
+
+  @media (max-width: 768px) {
+    padding: 12px 16px;
+    font-size: 12px;
+    min-height: 48px;
+    gap: 6px;
+
+    svg {
+      font-size: 14px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    padding: 10px 14px;
+    font-size: 11px;
+    min-height: 44px;
+    gap: 6px;
+
+    svg {
+      font-size: 13px;
+    }
   }
 `;
 
@@ -265,13 +776,93 @@ const MealList = styled.div`
   gap: 14px;
 `;
 
-const MealItem = styled.div`
+const MealItem = styled.div<{ isExpanded: boolean }>`
   display: grid;
-  gap: 6px;
-  padding: 16px;
+  gap: 0;
   border-radius: 18px;
   background: rgba(236, 253, 245, 0.7);
   border: 1px solid rgba(46, 139, 87, 0.18);
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: ${({ isExpanded }) =>
+    isExpanded ? '0 4px 12px rgba(46, 139, 87, 0.15)' : '0 2px 6px rgba(46, 139, 87, 0.08)'};
+`;
+
+const MealToggleButton = styled.button<{ isExpanded: boolean }>`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 18px;
+  border: none;
+  background: ${({ isExpanded }) =>
+    isExpanded
+      ? 'linear-gradient(135deg, rgba(46, 139, 87, 0.15) 0%, rgba(46, 139, 87, 0.08) 100%)'
+      : 'transparent'};
+  color: ${theme.colors.textPrimary};
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  text-align: left;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  min-height: 44px;
+
+  &:hover {
+    background: ${({ isExpanded }) =>
+      isExpanded
+        ? 'linear-gradient(135deg, rgba(46, 139, 87, 0.2) 0%, rgba(46, 139, 87, 0.12) 100%)'
+        : 'rgba(46, 139, 87, 0.1)'};
+  }
+
+  &:active {
+    background: ${({ isExpanded }) =>
+      isExpanded
+        ? 'linear-gradient(135deg, rgba(46, 139, 87, 0.25) 0%, rgba(46, 139, 87, 0.15) 100%)'
+        : 'rgba(46, 139, 87, 0.15)'};
+  }
+
+  svg {
+    font-size: 18px;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transform: ${({ isExpanded }) => (isExpanded ? 'rotate(180deg)' : 'rotate(0deg)')};
+    color: ${theme.colors.primary};
+    flex-shrink: 0;
+  }
+
+  @media (max-width: 768px) {
+    padding: 12px 16px;
+    font-size: 14px;
+    gap: 10px;
+    min-height: 48px;
+
+    svg {
+      font-size: 16px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    padding: 10px 14px;
+    font-size: 13px;
+    gap: 8px;
+    min-height: 44px;
+
+    svg {
+      font-size: 15px;
+    }
+  }
+`;
+
+const MealContent = styled.div<{ isExpanded: boolean }>`
+  display: grid;
+  gap: 12px;
+  padding: ${({ isExpanded }) => (isExpanded ? '16px 18px' : '0 18px')};
+  max-height: ${({ isExpanded }) => (isExpanded ? '2000px' : '0')};
+  overflow: hidden;
+  opacity: ${({ isExpanded }) => (isExpanded ? 1 : 0)};
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 `;
 
 const MealTitle = styled.div`
@@ -291,12 +882,36 @@ const MealTitle = styled.div`
   }
 `;
 
+const MealTitleText = styled.span`
+  font-weight: 600;
+  color: ${theme.colors.textPrimary};
+  font-size: 15px;
+
+  @media (max-width: 768px) {
+    font-size: 14px;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 13px;
+  }
+`;
+
 const MealMeta = styled.div`
   display: flex;
   flex-wrap: wrap;
   gap: 10px 16px;
   font-size: 12px;
   color: ${theme.colors.textSecondary};
+
+  @media (max-width: 768px) {
+    gap: 8px 12px;
+    font-size: 11px;
+  }
+
+  @media (max-width: 480px) {
+    gap: 6px 10px;
+    font-size: 10px;
+  }
 `;
 
 const IngredientsList = styled.ul`
@@ -304,6 +919,26 @@ const IngredientsList = styled.ul`
   padding-left: 18px;
   color: ${theme.colors.textSecondary};
   font-size: 13px;
+
+  @media (max-width: 768px) {
+    padding-left: 16px;
+    font-size: 12px;
+  }
+
+  @media (max-width: 480px) {
+    padding-left: 14px;
+    font-size: 11px;
+  }
+
+  li {
+    margin-bottom: 4px;
+    line-height: 1.5;
+
+    @media (max-width: 480px) {
+      margin-bottom: 3px;
+      line-height: 1.4;
+    }
+  }
 `;
 
 const RecipeButton = styled.button`
@@ -321,6 +956,11 @@ const RecipeButton = styled.button`
   cursor: pointer;
   transition: all 0.3s ease;
   box-shadow: 0 4px 12px rgba(46, 139, 87, 0.2);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  min-height: 44px;
+  width: 100%;
+  justify-content: center;
 
   &:hover {
     transform: translateY(-2px);
@@ -334,6 +974,28 @@ const RecipeButton = styled.button`
 
   svg {
     font-size: 16px;
+  }
+
+  @media (max-width: 768px) {
+    padding: 12px 16px;
+    font-size: 13px;
+    min-height: 48px;
+    gap: 6px;
+
+    svg {
+      font-size: 15px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    padding: 10px 14px;
+    font-size: 12px;
+    min-height: 44px;
+    gap: 6px;
+
+    svg {
+      font-size: 14px;
+    }
   }
 `;
 
@@ -351,6 +1013,15 @@ const RecipeModalOverlay = styled.div<{ isOpen: boolean }>`
   justify-content: center;
   padding: 20px;
   animation: ${fadeIn} 0.3s ease-out;
+
+  @media (max-width: 768px) {
+    padding: 16px;
+  }
+
+  @media (max-width: 480px) {
+    padding: 0;
+    align-items: flex-end;
+  }
 `;
 
 const RecipeModal = styled.div`
@@ -366,6 +1037,19 @@ const RecipeModal = styled.div`
   animation: ${slideUp} 0.4s ease-out;
   display: grid;
   grid-template-rows: auto 1fr;
+
+  @media (max-width: 768px) {
+    max-width: 95vw;
+    border-radius: 20px;
+    max-height: 95vh;
+  }
+
+  @media (max-width: 480px) {
+    max-width: 100vw;
+    border-radius: 16px;
+    max-height: 100vh;
+    margin: 0;
+  }
 `;
 
 const RecipeModalHeader = styled.div`
@@ -379,12 +1063,41 @@ const RecipeModalHeader = styled.div`
     font-size: 24px;
     font-weight: 700;
     color: #ffffff;
+    line-height: 1.3;
+
+    @media (max-width: 768px) {
+      font-size: 20px;
+      margin-bottom: 6px;
+      padding-right: 40px;
+    }
+
+    @media (max-width: 480px) {
+      font-size: 18px;
+      margin-bottom: 4px;
+      padding-right: 36px;
+    }
   }
 
   p {
     margin: 0;
     opacity: 0.9;
     font-size: 15px;
+
+    @media (max-width: 768px) {
+      font-size: 14px;
+    }
+
+    @media (max-width: 480px) {
+      font-size: 13px;
+    }
+  }
+
+  @media (max-width: 768px) {
+    padding: 24px;
+  }
+
+  @media (max-width: 480px) {
+    padding: 20px;
   }
 `;
 
@@ -404,6 +1117,10 @@ const CloseButton = styled.button`
   transition: all 0.2s ease;
   width: 36px;
   height: 36px;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  min-width: 44px;
+  min-height: 44px;
 
   &:hover {
     background: rgba(255, 255, 255, 0.3);
@@ -412,10 +1129,38 @@ const CloseButton = styled.button`
 
   &:active {
     transform: scale(0.95);
+    background: rgba(255, 255, 255, 0.4);
   }
 
   svg {
     font-size: 20px;
+  }
+
+  @media (max-width: 768px) {
+    top: 20px;
+    right: 20px;
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    min-height: 40px;
+
+    svg {
+      font-size: 18px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    top: 16px;
+    right: 16px;
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    min-height: 36px;
+    padding: 8px;
+
+    svg {
+      font-size: 16px;
+    }
   }
 `;
 
@@ -426,6 +1171,12 @@ const RecipeModalContent = styled.div`
 
   @media (max-width: 768px) {
     padding: 24px;
+    max-height: calc(95vh - 180px);
+  }
+
+  @media (max-width: 480px) {
+    padding: 20px;
+    max-height: calc(100vh - 160px);
   }
 `;
 
@@ -444,6 +1195,26 @@ const InstructionsSection = styled.div`
     svg {
       color: ${theme.colors.primary};
     }
+
+    @media (max-width: 768px) {
+      font-size: 18px;
+      margin-bottom: 16px;
+      gap: 8px;
+    }
+
+    @media (max-width: 480px) {
+      font-size: 16px;
+      margin-bottom: 14px;
+      gap: 6px;
+    }
+  }
+
+  @media (max-width: 768px) {
+    margin-bottom: 24px;
+  }
+
+  @media (max-width: 480px) {
+    margin-bottom: 20px;
   }
 `;
 
@@ -461,6 +1232,21 @@ const InstructionStep = styled.div`
     background: rgba(46, 139, 87, 0.08);
     transform: translateX(4px);
   }
+
+  @media (max-width: 768px) {
+    gap: 12px;
+    padding: 16px;
+    margin-bottom: 20px;
+    border-left-width: 3px;
+  }
+
+  @media (max-width: 480px) {
+    gap: 10px;
+    padding: 14px;
+    margin-bottom: 16px;
+    border-left-width: 3px;
+    flex-direction: column;
+  }
 `;
 
 const StepNumber = styled.div`
@@ -476,6 +1262,19 @@ const StepNumber = styled.div`
   font-weight: 700;
   font-size: 16px;
   box-shadow: 0 4px 12px rgba(46, 139, 87, 0.3);
+
+  @media (max-width: 768px) {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+  }
+
+  @media (max-width: 480px) {
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
+    align-self: flex-start;
+  }
 `;
 
 const StepContent = styled.div`
@@ -486,6 +1285,16 @@ const StepContent = styled.div`
     color: ${theme.colors.textPrimary};
     line-height: 1.7;
     font-size: 15px;
+
+    @media (max-width: 768px) {
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    @media (max-width: 480px) {
+      font-size: 13px;
+      line-height: 1.5;
+    }
   }
 `;
 
@@ -504,6 +1313,26 @@ const IngredientsSection = styled.div`
     svg {
       color: ${theme.colors.primary};
     }
+
+    @media (max-width: 768px) {
+      font-size: 18px;
+      margin-bottom: 16px;
+      gap: 8px;
+    }
+
+    @media (max-width: 480px) {
+      font-size: 16px;
+      margin-bottom: 14px;
+      gap: 6px;
+    }
+  }
+
+  @media (max-width: 768px) {
+    margin-bottom: 24px;
+  }
+
+  @media (max-width: 480px) {
+    margin-bottom: 20px;
   }
 `;
 
@@ -532,6 +1361,27 @@ const IngredientItem = styled.li`
     font-weight: 700;
     font-size: 16px;
   }
+
+  @media (max-width: 768px) {
+    padding: 10px 14px;
+    gap: 10px;
+    font-size: 13px;
+
+    &::before {
+      font-size: 14px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    padding: 8px 12px;
+    gap: 8px;
+    font-size: 12px;
+    border-radius: 10px;
+
+    &::before {
+      font-size: 13px;
+    }
+  }
 `;
 
 const NoInstructions = styled.div`
@@ -554,6 +1404,132 @@ const NoPlan = styled.div`
   border: 1px dashed rgba(46, 139, 87, 0.25);
   text-align: center;
   color: ${theme.colors.textSecondary};
+
+  @media (max-width: 768px) {
+    padding: 40px 20px;
+    border-radius: 24px;
+  }
+
+  @media (max-width: 480px) {
+    padding: 30px 16px;
+    border-radius: 20px;
+  }
+`;
+
+const EmptyStateContainer = styled.div`
+  padding: 60px 20px;
+  text-align: center;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 2px dashed rgba(46, 139, 87, 0.25);
+
+  @media (max-width: 768px) {
+    padding: 40px 20px;
+    border-radius: 20px;
+  }
+
+  @media (max-width: 480px) {
+    padding: 30px 16px;
+    border-radius: 16px;
+  }
+
+  svg {
+    font-size: 48px;
+    color: ${theme.colors.primary};
+    margin-bottom: 16px;
+
+    @media (max-width: 768px) {
+      font-size: 40px;
+      margin-bottom: 14px;
+    }
+
+    @media (max-width: 480px) {
+      font-size: 36px;
+      margin-bottom: 12px;
+    }
+  }
+
+  h3 {
+    margin: 0 0 12px 0;
+    color: ${theme.colors.textPrimary};
+    font-size: 20px;
+
+    @media (max-width: 768px) {
+      font-size: 18px;
+      margin-bottom: 10px;
+    }
+
+    @media (max-width: 480px) {
+      font-size: 16px;
+      margin-bottom: 8px;
+    }
+  }
+
+  p {
+    margin: 0;
+    color: ${theme.colors.textSecondary};
+    font-size: 15px;
+    padding: 0;
+
+    @media (max-width: 768px) {
+      font-size: 14px;
+    }
+
+    @media (max-width: 480px) {
+      font-size: 13px;
+      padding: 0 12px;
+    }
+  }
+`;
+
+const CloseDayButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(46, 139, 87, 0.2);
+  background: rgba(255, 255, 255, 0.9);
+  color: ${theme.colors.primary};
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  min-height: 44px;
+
+  &:hover {
+    background: rgba(46, 139, 87, 0.1);
+    transform: translateY(-2px);
+  }
+
+  &:active {
+    transform: translateY(0);
+    background: rgba(46, 139, 87, 0.15);
+  }
+
+  @media (max-width: 768px) {
+    padding: 10px 14px;
+    font-size: 12px;
+    gap: 6px;
+    min-height: 48px;
+  }
+
+  @media (max-width: 480px) {
+    padding: 8px 12px;
+    font-size: 11px;
+    gap: 6px;
+    min-height: 44px;
+  }
+
+  svg {
+    font-size: 16px;
+
+    @media (max-width: 480px) {
+      font-size: 14px;
+    }
+  }
 `;
 
 const formatDate = (value?: string) => {
@@ -566,6 +1542,30 @@ const formatDate = (value?: string) => {
     }).format(new Date(value));
   } catch {
     return value;
+  }
+};
+
+const formatShortDate = (value?: string) => {
+  if (!value) return '';
+  try {
+    return new Intl.DateTimeFormat('es-ES', {
+      day: '2-digit',
+      month: 'short',
+    }).format(new Date(value));
+  } catch {
+    return '';
+  }
+};
+
+const getDayName = (value?: string | Date) => {
+  if (!value) return '';
+  try {
+    const date = typeof value === 'string' ? new Date(value) : value;
+    return new Intl.DateTimeFormat('es-ES', {
+      weekday: 'short',
+    }).format(date);
+  } catch {
+    return '';
   }
 };
 
@@ -635,6 +1635,9 @@ const PlanDetailPage: React.FC = () => {
   const [selectedMeal, setSelectedMeal] = useState<any | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [checkedDays, setCheckedDays] = useState<Record<string, boolean>>({});
+  const [expandedDays, setExpandedDays] = useState<Record<string, boolean>>({});
+  const [expandedMeals, setExpandedMeals] = useState<Record<string, boolean>>({});
+  const [selectedDayKey, setSelectedDayKey] = useState<string | null>(null);
 
   const mealsByDay = useMemo(() => (plan ? normalizedMeals(plan) : []), [plan]);
 
@@ -708,6 +1711,64 @@ const PlanDetailPage: React.FC = () => {
     setIsModalOpen(false);
     setSelectedMeal(null);
   };
+
+  const toggleDay = (dayKey: string) => {
+    setExpandedDays(prev => ({
+      ...prev,
+      [dayKey]: !prev[dayKey],
+    }));
+  };
+
+  const toggleMeal = (mealKey: string) => {
+    setExpandedMeals(prev => ({
+      ...prev,
+      [mealKey]: !prev[mealKey],
+    }));
+  };
+
+  const handleCalendarDayClick = (dayKey: string) => {
+    // Si se hace clic en el mismo día, cerrarlo
+    if (selectedDayKey === dayKey) {
+      setSelectedDayKey(null);
+      setExpandedDays(prev => ({
+        ...prev,
+        [dayKey]: false,
+      }));
+      return;
+    }
+    
+    // Establecer el nuevo día seleccionado (esto automáticamente cierra el anterior)
+    setSelectedDayKey(dayKey);
+    // Expandir solo el día seleccionado
+    setExpandedDays({ [dayKey]: true });
+    // Scroll suave al día seleccionado
+    setTimeout(() => {
+      const element = document.querySelector(`[data-day-key="${dayKey}"]`);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 100);
+  };
+
+  // Calcular fecha del día basándose en weekStart e índice
+  const getDayDate = React.useCallback((index: number): { dayName: string; dayNumber: string; month: string; fullDate: Date | null } => {
+    if (!plan?.weekStart) {
+      return { dayName: '', dayNumber: '', month: '', fullDate: null };
+    }
+    try {
+      const startDate = new Date(plan.weekStart);
+      const dayDate = new Date(startDate);
+      dayDate.setDate(startDate.getDate() + index);
+      
+      const dayName = getDayName(dayDate);
+      const dayNumber = dayDate.getDate().toString();
+      const month = new Intl.DateTimeFormat('es-ES', { month: 'short' }).format(dayDate);
+      
+      return { dayName, dayNumber, month, fullDate: dayDate };
+    } catch {
+      return { dayName: '', dayNumber: '', month: '', fullDate: null };
+    }
+  }, [plan?.weekStart]);
 
   const formatInstructions = (instructions: any): string[] => {
     if (!instructions) return [];
@@ -804,89 +1865,161 @@ const PlanDetailPage: React.FC = () => {
       <WeekGrid>
         <WeekHeader>
           <h2>Planning semanal</h2>
-          <p>Explora el menú de cada día. Haz clic en “Lista de Compras” para llevarte todos los ingredientes.</p>
+          <p>Selecciona un día del calendario para ver sus comidas y recetas. Cada comida tiene su propio desplegable con información detallada.</p>
         </WeekHeader>
 
-        <DayGrid>
-          {mealsByDay.map(day => (
-            <DayCard key={day.key} isChecked={checkedDays[day.key]}>
-              <CheckInButton
-                isChecked={checkedDays[day.key] || false}
-                onClick={() => handleCheckIn(day.key)}
-                title={checkedDays[day.key] ? 'Día completado' : 'Marcar día como completado'}
-              >
-                {checkedDays[day.key] ? (
-                  <>
-                    <FiCheck />
-                    Día completado
-                  </>
-                ) : (
-                  <>
-                    <FiCheckCircle />
-                    Marcar día completado
-                  </>
-                )}
-              </CheckInButton>
-              <DayHeader>
-                <h3>{day.label}</h3>
-                <span>
-                  <FiShoppingBag /> Ingredientes listos
-                </span>
-              </DayHeader>
+        <CalendarContainer>
+          <CalendarTitle>
+            <FiCalendar />
+            Calendario semanal
+          </CalendarTitle>
+          <CalendarGrid>
+            {mealsByDay.map((day, index) => {
+              const isCompleted = checkedDays[day.key] || false;
+              const isSelected = selectedDayKey === day.key;
+              const dateInfo = getDayDate(index);
+              const dayName = dateInfo.dayName || day.label.split(',')[0] || `Día ${index + 1}`;
+              
+              return (
+                <CalendarDay
+                  key={day.key}
+                  isCompleted={isCompleted}
+                  isExpanded={isSelected}
+                  onClick={() => handleCalendarDayClick(day.key)}
+                  title={isCompleted ? `${day.label} - Completado` : day.label}
+                >
+                  <CalendarDayBadge isCompleted={isCompleted}>
+                    {isCompleted ? <FiCheck /> : <FiCalendar />}
+                  </CalendarDayBadge>
+                  <CalendarDayName>{dayName}</CalendarDayName>
+                  <CalendarDayNumber>
+                    {dateInfo.dayNumber || index + 1}
+                  </CalendarDayNumber>
+                  {dateInfo.month && (
+                    <CalendarDayLabel>{dateInfo.month}</CalendarDayLabel>
+                  )}
+                </CalendarDay>
+              );
+            })}
+          </CalendarGrid>
+        </CalendarContainer>
 
-              {day.summary && <p>{day.summary}</p>}
+        {selectedDayKey && (
+          <DayGrid>
+            {mealsByDay
+              .filter(day => day.key === selectedDayKey)
+              .map(day => {
+                const isDayExpanded = true; // Siempre expandido cuando está seleccionado
+                return (
+                  <DayCard key={day.key} isChecked={checkedDays[day.key]} isExpanded={isDayExpanded} data-day-key={day.key}>
+                    <CheckInButton
+                      isChecked={checkedDays[day.key] || false}
+                      onClick={() => handleCheckIn(day.key)}
+                      title={checkedDays[day.key] ? 'Día completado' : 'Marcar día como completado'}
+                    >
+                      {checkedDays[day.key] ? (
+                        <>
+                          <FiCheck />
+                          Día completado
+                        </>
+                      ) : (
+                        <>
+                          <FiCheckCircle />
+                          Marcar día completado
+                        </>
+                      )}
+                    </CheckInButton>
 
-              <MealList>
-                {day.meals.length === 0 && (
-                  <MealItem>
-                    <MealTitle>No hay recetas registradas</MealTitle>
-                    <span>Agrega detalles desde tu panel para completar este día.</span>
-                  </MealItem>
-                )}
+                    <DayHeader>
+                      <h3>{day.label}</h3>
+                      <CloseDayButton onClick={() => setSelectedDayKey(null)}>
+                        <FiX />
+                        Cerrar
+                      </CloseDayButton>
+                    </DayHeader>
 
-                {day.meals.map(meal => (
-                  <MealItem key={meal.key}>
-                    <MealTitle>
-                      {meal.name}
-                      <span>{meal.type}</span>
-                    </MealTitle>
-                    {meal.description && (
-                      <div style={{ margin: '8px 0', padding: '12px', borderRadius: '8px', background: 'rgba(46, 139, 87, 0.05)', borderLeft: '3px solid rgba(46, 139, 87, 0.3)' }}>
-                        <p style={{ margin: 0, color: theme.colors.textPrimary, lineHeight: '1.7', fontSize: '14px', fontWeight: 500 }}>
-                          {meal.description}
+                    <DayContent isExpanded={isDayExpanded}>
+                      {day.summary && (
+                        <p style={{ margin: 0, padding: '12px 16px', borderRadius: '12px', background: 'rgba(46, 139, 87, 0.05)', color: theme.colors.textSecondary, fontSize: '14px', lineHeight: '1.6' }}>
+                          {day.summary}
                         </p>
-                      </div>
-                    )}
+                      )}
 
-                    <MealMeta>
-                      {meal.calories && <span>{meal.calories} kcal</span>}
-                      {meal.macros?.protein && <span>Proteínas: {meal.macros.protein}g</span>}
-                      {meal.macros?.carbs && <span>Carbs: {meal.macros.carbs}g</span>}
-                      {meal.macros?.fat && <span>Grasas: {meal.macros.fat}g</span>}
-                    </MealMeta>
+                      <MealList>
+                        {day.meals.length === 0 && (
+                          <MealItem isExpanded={true}>
+                            <div style={{ padding: '16px 18px' }}>
+                              <MealTitle>
+                                <span>No hay recetas registradas</span>
+                              </MealTitle>
+                              <p style={{ margin: '8px 0 0 0', color: theme.colors.textSecondary, fontSize: '13px' }}>
+                                Agrega detalles desde tu panel para completar este día.
+                              </p>
+                            </div>
+                          </MealItem>
+                        )}
 
-                    {Array.isArray(meal.ingredients) && meal.ingredients.length > 0 && (
-                      <IngredientsList>
-                        {meal.ingredients.map((ingredient: any, index: number) => {
-                          const ingredientText =
-                            typeof ingredient === 'string'
-                              ? ingredient
-                              : ingredient?.name || ingredient?.item || ingredient?.ingredient || 'Ingrediente';
-                          return <li key={`${meal.key}-ingredient-${index}`}>{ingredientText}</li>;
+                        {day.meals.map(meal => {
+                          const isMealExpanded = expandedMeals[meal.key] || false;
+                          return (
+                            <MealItem key={meal.key} isExpanded={isMealExpanded}>
+                              <MealToggleButton
+                                isExpanded={isMealExpanded}
+                                onClick={() => toggleMeal(meal.key)}
+                                aria-expanded={isMealExpanded}
+                              >
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, flexWrap: 'wrap' }}>
+                                  <MealTitleText>{meal.name}</MealTitleText>
+                                  <span style={{ fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'rgba(46, 139, 87, 0.7)', padding: '2px 8px', borderRadius: '6px', background: 'rgba(46, 139, 87, 0.1)' }}>
+                                    {meal.type}
+                                  </span>
+                                </div>
+                                {isMealExpanded ? <FiChevronUp /> : <FiChevronDown />}
+                              </MealToggleButton>
+
+                              <MealContent isExpanded={isMealExpanded}>
+                                <MealMeta>
+                                  {meal.calories && <span>{meal.calories} kcal</span>}
+                                  {meal.macros?.protein && <span>Proteínas: {meal.macros.protein}g</span>}
+                                  {meal.macros?.carbs && <span>Carbs: {meal.macros.carbs}g</span>}
+                                  {meal.macros?.fat && <span>Grasas: {meal.macros.fat}g</span>}
+                                </MealMeta>
+
+                                {Array.isArray(meal.ingredients) && meal.ingredients.length > 0 && (
+                                  <IngredientsList>
+                                    {meal.ingredients.map((ingredient: any, index: number) => {
+                                      const ingredientText =
+                                        typeof ingredient === 'string'
+                                          ? ingredient
+                                          : ingredient?.name || ingredient?.item || ingredient?.ingredient || 'Ingrediente';
+                                      return <li key={`${meal.key}-ingredient-${index}`}>{ingredientText}</li>;
+                                    })}
+                                  </IngredientsList>
+                                )}
+
+                                <RecipeButton onClick={() => handleOpenRecipe(meal)}>
+                                  <FiCoffee />
+                                  Ver preparado de receta
+                                </RecipeButton>
+                              </MealContent>
+                            </MealItem>
+                          );
                         })}
-                      </IngredientsList>
-                    )}
-
-                    <RecipeButton onClick={() => handleOpenRecipe(meal)}>
-                      <FiCoffee />
-                      Ver preparado de receta
-                    </RecipeButton>
-                  </MealItem>
-                ))}
-              </MealList>
-            </DayCard>
-          ))}
-        </DayGrid>
+                      </MealList>
+                    </DayContent>
+                  </DayCard>
+                );
+              })}
+          </DayGrid>
+        )}
+        
+        {!selectedDayKey && (
+          <EmptyStateContainer>
+            <FiCalendar />
+            <h3>Selecciona un día del calendario</h3>
+            <p>Haz clic en cualquier día del calendario arriba para ver sus comidas y recetas</p>
+          </EmptyStateContainer>
+        )}
       </WeekGrid>
 
       <RecipeModalOverlay
