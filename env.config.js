@@ -1,16 +1,17 @@
 // Función helper para obtener variables de entorno de múltiples formas
+// PRIORIDAD: NEXT_PUBLIC_* (Vercel) > VITE_* (desarrollo local) > valores por defecto
 function getEnvVar(varName) {
   // Intentar acceder desde import.meta.env (Vite)
   if (typeof import.meta !== 'undefined' && import.meta.env) {
-    // Intentar con prefijo VITE_
-    if (import.meta.env[`VITE_${varName}`]) {
-      return import.meta.env[`VITE_${varName}`];
-    }
-    // Intentar con prefijo NEXT_PUBLIC_
+    // PRIORIDAD 1: Intentar con prefijo NEXT_PUBLIC_* (lo que tienes en Vercel)
     if (import.meta.env[`NEXT_PUBLIC_${varName}`]) {
       return import.meta.env[`NEXT_PUBLIC_${varName}`];
     }
-    // Intentar sin prefijo (puede estar definido en define de vite.config)
+    // PRIORIDAD 2: Intentar con prefijo VITE_* (desarrollo local)
+    if (import.meta.env[`VITE_${varName}`]) {
+      return import.meta.env[`VITE_${varName}`];
+    }
+    // PRIORIDAD 3: Intentar sin prefijo (puede estar definido en define de vite.config)
     if (import.meta.env[varName]) {
       return import.meta.env[varName];
     }
@@ -18,9 +19,11 @@ function getEnvVar(varName) {
   
   // Intentar acceder desde window (si está disponible en runtime)
   if (typeof window !== 'undefined' && window.__ENV__) {
+    // PRIORIDAD 1: NEXT_PUBLIC_* en Vercel
     if (window.__ENV__[`NEXT_PUBLIC_${varName}`]) {
       return window.__ENV__[`NEXT_PUBLIC_${varName}`];
     }
+    // PRIORIDAD 2: VITE_* como fallback
     if (window.__ENV__[`VITE_${varName}`]) {
       return window.__ENV__[`VITE_${varName}`];
     }
@@ -43,11 +46,11 @@ export const ENV_CONFIG = {
   SUPABASE_URL: getEnvVar('SUPABASE_URL') || 
                 import.meta?.env?.NEXT_PUBLIC_SUPABASE_URL || 
                 import.meta?.env?.VITE_SUPABASE_URL || 
-                'https://edzmqggmcterckbhkekf.supabase.co',
+                'https://zftqkqnjpjnmwfwsmxdy.supabase.co',
   SUPABASE_ANON_KEY: getEnvVar('SUPABASE_ANON_KEY') || 
                      import.meta?.env?.NEXT_PUBLIC_SUPABASE_ANON_KEY || 
                      import.meta?.env?.VITE_SUPABASE_ANON_KEY || 
-                     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVkem1xZ2dtY3RlcmNrYmhrZWtmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzNzU1NDIsImV4cCI6MjA3ODk1MTU0Mn0.Xc2_wXBxYB1DO6yZPYMkXZ71_op150eUbkmCsImPPOo',
+                     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpmdHFrcW5qcGpubXdmd3NteGR5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM2Mzc1MDgsImV4cCI6MjA3OTIxMzUwOH0.508D-ThuIWMsS9---T9OF1I2q4_cvbJX2H95D7S99jE',
   
   // RevenueCat Configuration
   REVENUECAT_PUBLIC_KEY: import.meta?.env?.VITE_REVENUECAT_PUBLIC_KEY || 'appl_bFgSiUsYrPmowOiuWqFDcwskepz',

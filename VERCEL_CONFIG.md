@@ -7,11 +7,13 @@ Para que la aplicación funcione correctamente en Vercel, necesitas configurar l
 ### 1. Supabase Configuration (OBLIGATORIO)
 
 **Variables:**
-- `VITE_SUPABASE_URL` - URL de tu proyecto Supabase
-- `VITE_SUPABASE_ANON_KEY` - Clave anónima (anon key) de Supabase
+- `NEXT_PUBLIC_SUPABASE_URL` - URL de tu proyecto Supabase
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Clave anónima (anon key) de Supabase
+
+**⚠️ IMPORTANTE:** En Vercel debes usar `NEXT_PUBLIC_*` (no `VITE_*`). El código está configurado para priorizar `NEXT_PUBLIC_*` sobre `VITE_*`.
 
 **Valores por defecto (si no se configuran):**
-- URL: `https://mxpxmdpydstdbhzxnxgm.supabase.co`
+- URL: `https://zftqkqnjpjnmwfwsmxdy.supabase.co`
 - Key: (se usa la key por defecto del código)
 
 **Cómo obtener tus credenciales de Supabase:**
@@ -19,24 +21,24 @@ Para que la aplicación funcione correctamente en Vercel, necesitas configurar l
 1. Ve a tu proyecto en [Supabase Dashboard](https://app.supabase.com/)
 2. Navega a **Settings** → **API**
 3. Encuentra:
-   - **Project URL** → Copia este valor para `VITE_SUPABASE_URL`
-   - **anon public** key → Copia este valor para `VITE_SUPABASE_ANON_KEY`
+   - **Project URL** → Copia este valor para `NEXT_PUBLIC_SUPABASE_URL`
+   - **anon public** key → Copia este valor para `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 
 **Cómo configurarlas en Vercel:**
 
 1. Ve a tu proyecto en Vercel
 2. Navega a **Settings** → **Environment Variables**
 3. Agrega las variables:
-   - **Name:** `VITE_SUPABASE_URL`
+   - **Name:** `NEXT_PUBLIC_SUPABASE_URL`
      - **Value:** `https://tu-proyecto.supabase.co`
      - **Environment:** Todas (Production, Preview, Development)
-   - **Name:** `VITE_SUPABASE_ANON_KEY`
+   - **Name:** `NEXT_PUBLIC_SUPABASE_ANON_KEY`
      - **Value:** `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...` (tu anon key)
      - **Environment:** Todas (Production, Preview, Development)
 4. Guarda los cambios
 5. **IMPORTANTE:** Redespliega la aplicación
 
-**Nota:** Si no configuras estas variables, la aplicación usará los valores por defecto hardcodeados. Es recomendable configurarlas para mayor seguridad y flexibilidad.
+**Nota:** El código busca primero `NEXT_PUBLIC_*`, luego `VITE_*` como fallback, y finalmente usa valores por defecto. En Vercel siempre usa `NEXT_PUBLIC_*`.
 
 ### 2. OpenAI API Key
 

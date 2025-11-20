@@ -22,16 +22,38 @@ export class DatabaseService {
   
   static async createUserProfile(profile: UserProfileInsert): Promise<UserProfile | null> {
     try {
+      // Verificar que hay una sesión activa
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData?.session) {
+        console.error('❌ No hay sesión activa al intentar crear perfil');
+        console.error('💡 Verifica que la sesión esté establecida después de signUp');
+      } else {
+        console.log('✅ Sesión activa encontrada:', sessionData.session.user.id);
+      }
+
       const { data, error } = await supabase
         .from('user_profiles')
         .insert(profile)
         .select()
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Error de Supabase al crear perfil:', error);
+        
+        // Mensajes de error más específicos
+        if (error.code === 'PGRST116' || error.message?.includes('401') || error.message?.includes('permission denied')) {
+          console.error('💡 Error 401: Las políticas RLS pueden estar bloqueando la inserción');
+          console.error('💡 Verifica en Supabase Dashboard → Authentication → Policies que existe una política para INSERT');
+          console.error('💡 La política debe permitir: INSERT WHERE auth.uid() = id');
+        }
+        
+        throw error;
+      }
       return data;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al crear perfil de usuario:', error);
+      console.error('Código de error:', error?.code);
+      console.error('Mensaje de error:', error?.message);
       return null;
     }
   }

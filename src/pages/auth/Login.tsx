@@ -341,7 +341,26 @@ const Login: React.FC = () => {
           throw new Error(errorMessage);
         }
 
-        console.log('Usuario creado exitosamente, creando perfil...');
+        console.log('Usuario creado exitosamente, verificando sesión...');
+        
+        // Verificar que la sesión esté establecida
+        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError || !sessionData?.session) {
+          console.warn('⚠️ Sesión no establecida inmediatamente después de signUp, esperando...');
+          // Esperar un momento y verificar de nuevo
+          await new Promise(resolve => setTimeout(resolve, 500));
+          const { data: retrySession } = await supabase.auth.getSession();
+          if (!retrySession?.session) {
+            console.error('❌ No se pudo establecer la sesión después del registro');
+            // Continuar de todas formas, puede que funcione con el user ID
+          } else {
+            console.log('✅ Sesión establecida correctamente');
+          }
+        } else {
+          console.log('✅ Sesión establecida correctamente');
+        }
+
+        console.log('Creando perfil de usuario...');
         // Crear perfil básico
         const profileResult = await DatabaseService.createUserProfile({
           id: data.user.id,
@@ -357,9 +376,16 @@ const Login: React.FC = () => {
         
         if (!profileResult) {
           console.error('Error: No se pudo crear el perfil en la base de datos');
-          throw new Error('No se pudo crear el perfil de usuario');
+          // Intentar verificar si el perfil ya existe
+          const existingProfile = await DatabaseService.getUserProfile(email.toLowerCase());
+          if (existingProfile) {
+            console.log('✅ El perfil ya existe, continuando...');
+          } else {
+            throw new Error('No se pudo crear el perfil de usuario. Verifica las políticas RLS en Supabase.');
+          }
+        } else {
+          console.log('Perfil creado exitosamente:', profileResult);
         }
-        console.log('Perfil creado exitosamente:', profileResult);
 
         const userData = {
           id: data.user.id,
