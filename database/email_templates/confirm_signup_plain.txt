@@ -1,0 +1,26 @@
+¡Bienvenido a TastyPath!
+
+Hola,
+
+Estamos emocionados de tenerte como parte de la comunidad TastyPath. Para comenzar tu viaje hacia una alimentación más saludable y personalizada, necesitamos confirmar tu dirección de correo electrónico.
+
+CONFIRMA TU CORREO ELECTRÓNICO:
+{{ .ConfirmationURL }}
+
+Lo que te espera en TastyPath:
+- 🍽️ Planes de comidas personalizados diseñados por IA según tus preferencias
+- 📊 Seguimiento nutricional completo para alcanzar tus objetivos
+- 🛒 Listas de compras inteligentes generadas automáticamente
+- 🏥 Recomendaciones basadas en fuentes médicas verificadas
+
+IMPORTANTE: Si no solicitaste esta cuenta, puedes ignorar este correo de forma segura.
+
+Este correo fue enviado a {{ .Email }}
+
+TastyPath - Tu compañero para una alimentación saludable
+Soporte: tastypathhelp@gmail.com
+Visitar: {{ .SiteURL }}
+
+© 2025 TastyPath. Todos los derechos reservados.
+Este es un correo automático, por favor no respondas directamente.
+
