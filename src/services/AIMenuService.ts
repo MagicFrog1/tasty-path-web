@@ -120,262 +120,276 @@ class AIMenuService {
 
   // Función interna para intentar generación con IA
   private async attemptAIGeneration(request: AIMenuRequest): Promise<AIMenuResponse> {
+    // Verificar configuración de la API con más detalle
+    console.log('🔧 VERIFICACIÓN COMPLETA DE CONFIGURACIÓN DE IA:');
+    console.log('🔑 API Key presente:', !!this.apiKey);
+    console.log('🔑 API Key longitud:', this.apiKey?.length || 0);
+    console.log('🔑 API Key empieza con sk-:', this.apiKey?.startsWith('sk-') || false);
+    console.log('🔑 API Key NO es placeholder:', this.apiKey !== 'your-openai-api-key');
+    console.log('🌐 Base URL:', this.baseUrl);
+    console.log('🤖 Modelo:', ENV_CONFIG.OPENAI_MODEL || 'gpt-4o-mini');
+    console.log('📊 Request recibido:', {
+      totalCalories: request.totalCalories,
+      dietaryPreferences: request.dietaryPreferences,
+      allergies: request.allergies
+    });
+    
+    // Verificación más estricta de la API key
+    if (!this.apiKey) {
+      console.error('❌ API Key no está definida');
+      throw new Error('API key de OpenAI no está definida');
+    }
+    
+    if (this.apiKey === 'your-openai-api-key') {
+      console.error('❌ API Key es el placeholder por defecto');
+      throw new Error('API key de OpenAI es el placeholder por defecto');
+    }
+    
+    if (!this.apiKey.startsWith('sk-')) {
+      console.error('❌ API Key no tiene el formato correcto');
+      throw new Error('API key de OpenAI no tiene el formato correcto (debe empezar con sk-)');
+    }
+    
+    console.log('✅ Configuración de IA verificada correctamente - Procediendo con generación...');
+    
+    // Generar un seed único más robusto para esta generación
+    const timestamp = Date.now();
+    const randomComponent = Math.random() * 1000000;
+    const userHash = this.hashString(JSON.stringify(request));
+    const generationSeed = timestamp + randomComponent + userHash;
+    
+    const prompt = this.buildSimplePrompt(request);
+    
+    console.log('🤖 Generando menú con IA usando seed:', generationSeed);
+    console.log('🔢 Componentes del seed - Timestamp:', timestamp, 'Random:', randomComponent, 'Hash:', userHash);
+    
+    const seedBasedElements = this.generateSeedBasedElements(generationSeed);
+    console.log('🎨 Elementos únicos generados:', seedBasedElements);
+    
+    console.log('📤 Enviando solicitud a OpenAI...');
+    
+    // Crear AbortController para timeout extendido para dar más tiempo a la IA
+    const controller = new AbortController();
+    let timeoutId: NodeJS.Timeout | null = null;
+    
+    // Timeout de 120 segundos para dar suficiente tiempo a la IA para generar el menú completo
+    timeoutId = setTimeout(() => {
+      console.log('⏰ Timeout de 120 segundos alcanzado, cancelando solicitud...');
+      timeoutId = null; // Marcar como limpiado
+      controller.abort();
+    }, 120000); // Timeout aumentado a 120 segundos para evitar cortes prematuros
+    
     try {
-      // Verificar configuración de la API con más detalle
-      console.log('🔧 VERIFICACIÓN COMPLETA DE CONFIGURACIÓN DE IA:');
-      console.log('🔑 API Key presente:', !!this.apiKey);
-      console.log('🔑 API Key longitud:', this.apiKey?.length || 0);
-      console.log('🔑 API Key empieza con sk-:', this.apiKey?.startsWith('sk-') || false);
-      console.log('🔑 API Key NO es placeholder:', this.apiKey !== 'your-openai-api-key');
-      console.log('🌐 Base URL:', this.baseUrl);
-      console.log('🤖 Modelo:', ENV_CONFIG.OPENAI_MODEL || 'gpt-4o-mini');
-      console.log('📊 Request recibido:', {
-        totalCalories: request.totalCalories,
-        dietaryPreferences: request.dietaryPreferences,
-        allergies: request.allergies
-      });
-      
-      // Verificación más estricta de la API key
-      if (!this.apiKey) {
-        console.error('❌ API Key no está definida');
-        throw new Error('API key de OpenAI no está definida');
-      }
-      
-      if (this.apiKey === 'your-openai-api-key') {
-        console.error('❌ API Key es el placeholder por defecto');
-        throw new Error('API key de OpenAI es el placeholder por defecto');
-      }
-      
-      if (!this.apiKey.startsWith('sk-')) {
-        console.error('❌ API Key no tiene el formato correcto');
-        throw new Error('API key de OpenAI no tiene el formato correcto (debe empezar con sk-)');
-      }
-      
-      console.log('✅ Configuración de IA verificada correctamente - Procediendo con generación...');
-      
-      // Generar un seed único más robusto para esta generación
-      const timestamp = Date.now();
-      const randomComponent = Math.random() * 1000000;
-      const userHash = this.hashString(JSON.stringify(request));
-      const generationSeed = timestamp + randomComponent + userHash;
-      
-      const prompt = this.buildSimplePrompt(request);
-      
-      console.log('🤖 Generando menú con IA usando seed:', generationSeed);
-      console.log('🔢 Componentes del seed - Timestamp:', timestamp, 'Random:', randomComponent, 'Hash:', userHash);
-      
-      const seedBasedElements = this.generateSeedBasedElements(generationSeed);
-      console.log('🎨 Elementos únicos generados:', seedBasedElements);
-      
-      console.log('📤 Enviando solicitud a OpenAI...');
-      
-      // Crear AbortController para timeout extendido para dar más tiempo a la IA
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => {
-        console.log('⏰ Timeout de 60 segundos alcanzado, cancelando solicitud...');
-        controller.abort();
-      }, 60000); // Timeout aumentado a 60 segundos para evitar cortes
-      
-      const response = await fetch(this.baseUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.apiKey}`
-        },
-        body: JSON.stringify({
-          model: ENV_CONFIG.OPENAI_MODEL || 'gpt-4o-mini', // Usar modelo configurado (gpt-4o-mini es más moderno y mejor)
-          messages: [
-            {
-              role: 'system',
-              content: 'Eres un chef experto que crea menús semanales. CRÍTICO: Debes responder ÚNICAMENTE con JSON válido y completo. El JSON debe estar perfectamente formateado, sin errores de sintaxis, con todas las llaves y corchetes cerrados correctamente. NO incluyas texto adicional antes o después del JSON. El JSON debe comenzar con { y terminar con }. Verifica que todos los arrays estén cerrados con ] y todos los objetos con }.'
-            },
-            {
-              role: 'user',
-              content: prompt
-            }
-          ],
-          temperature: 0.2, // Temperatura muy baja para JSON consistente y válido
-          max_tokens: 8000 // gpt-4o-mini soporta hasta 16384 tokens de output, usando 8000 para JSON completo
-        }),
-        signal: controller.signal
-      });
-      
-      // Limpiar timeout si la respuesta llega a tiempo
-      clearTimeout(timeoutId);
-
-      console.log('📥 Respuesta recibida de OpenAI:');
-      console.log('📊 Status:', response.status, response.statusText);
-      console.log('📋 Headers:', Object.fromEntries(response.headers.entries()));
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ Error en la API:', errorText);
-        throw new Error(`Error en la API: ${response.status} - ${response.statusText} - ${errorText}`);
-      }
-
-      const data = await response.json();
-      console.log('📦 Datos de respuesta:', {
-        choices: data.choices?.length || 0,
-        usage: data.usage,
-        model: data.model
-      });
-      
-      const content = data.choices[0]?.message?.content;
-      
-      if (!content) {
-        throw new Error('No se recibió contenido de la IA');
-      }
-
-      console.log('✅ Respuesta recibida de la IA, parseando JSON...');
-      console.log('📝 Contenido original (primeros 500 chars):', content.substring(0, 500));
-      console.log('📏 Longitud total del contenido:', content.length);
-
-      // Limpiar la respuesta de posibles caracteres markdown y backticks
-      let cleanContent = content.trim();
-      
-      // Remover backticks de código markdown si existen
-      if (cleanContent.startsWith('```json')) {
-        cleanContent = cleanContent.replace(/^```json\s*/, '').replace(/\s*```$/, '');
-        console.log('🔧 Removidos backticks de JSON');
-      } else if (cleanContent.startsWith('```')) {
-        cleanContent = cleanContent.replace(/^```\s*/, '').replace(/\s*```$/, '');
-        console.log('🔧 Removidos backticks genéricos');
-      }
-      
-      // Limpiar caracteres de control problemáticos usando la función especializada
-      cleanContent = this.cleanJSONString(cleanContent);
-      console.log('🧹 JSON limpiado de caracteres problemáticos');
-      
-      // Buscar el JSON válido en la respuesta - mejorado para encontrar el JSON completo
-      const jsonStart = cleanContent.indexOf('{');
-      let jsonEnd = cleanContent.lastIndexOf('}') + 1;
-      
-      // Si el JSON parece estar cortado, intentar encontrar un punto de corte más inteligente
-      // Buscar el último objeto "nutrition" completo como indicador
-      const lastNutritionMatch = cleanContent.match(/"nutrition":\s*\{[^}]*"calories":\s*\d+\s*\}/g);
-      if (lastNutritionMatch && lastNutritionMatch.length > 0) {
-        const lastNutrition = lastNutritionMatch[lastNutritionMatch.length - 1];
-        const lastNutritionEnd = cleanContent.lastIndexOf(lastNutrition) + lastNutrition.length;
-        // Buscar el cierre del objeto del día después de la nutrición
-        const afterNutrition = cleanContent.substring(lastNutritionEnd);
-        const dayClose = afterNutrition.indexOf('}');
-        if (dayClose !== -1) {
-          const potentialEnd = lastNutritionEnd + dayClose + 1;
-          // Verificar si hay más estructura después
-          const afterDay = cleanContent.substring(potentialEnd).trim();
-          if (afterDay.startsWith(']') || afterDay.startsWith('}')) {
-            // Parece que el JSON continúa, usar el final original
-          } else {
-            // El JSON parece estar cortado aquí, intentar cerrarlo correctamente
-            jsonEnd = potentialEnd;
-          }
-        }
-      }
-      
-      console.log('🔍 Posición del JSON - Inicio:', jsonStart, 'Fin:', jsonEnd);
-      
-      if (jsonStart === -1 || jsonEnd === 0 || jsonEnd <= jsonStart) {
-        console.error('❌ No se encontró JSON válido en la respuesta');
-        console.error('📝 Contenido completo:', cleanContent);
-        throw new Error('No se encontró JSON válido en la respuesta');
-      }
-      
-      let jsonString = cleanContent.substring(jsonStart, jsonEnd);
-      
-      // Limpiar el JSON extraído una vez más para asegurar que esté limpio
-      jsonString = this.cleanJSONString(jsonString);
-      
-      console.log('🔧 JSON extraído y limpiado (primeros 300 chars):', jsonString.substring(0, 300));
-      console.log('📏 Longitud del JSON extraído:', jsonString.length);
-      console.log('🔚 Últimos 100 chars del JSON:', jsonString.substring(Math.max(0, jsonString.length - 100)));
-      
-      // Verificar que el JSON esté completo
-      if (!this.isValidJSON(jsonString)) {
-        console.error('❌ JSON inválido detectado después de limpieza');
-        console.error('🔍 Intentando parsear para ver el error específico...');
-        try {
-          JSON.parse(jsonString);
-        } catch (parseError) {
-          const error = parseError as Error;
-          console.error('💥 Error de parsing JSON:', error.message);
-          console.error('📍 Posición del error aproximada:', error.message.includes('position') ? error.message : 'No disponible');
+        const response = await fetch(this.baseUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${this.apiKey}`
+          },
+          body: JSON.stringify({
+            model: ENV_CONFIG.OPENAI_MODEL || 'gpt-4o-mini', // Usar modelo configurado (gpt-4o-mini es más moderno y mejor)
+            messages: [
+              {
+                role: 'system',
+                content: 'Eres un chef experto que crea menús semanales. CRÍTICO: Debes responder ÚNICAMENTE con JSON válido y completo. El JSON debe estar perfectamente formateado, sin errores de sintaxis, con todas las llaves y corchetes cerrados correctamente. NO incluyas texto adicional antes o después del JSON. El JSON debe comenzar con { y terminar con }. Verifica que todos los arrays estén cerrados con ] y todos los objetos con }.'
+              },
+              {
+                role: 'user',
+                content: prompt
+              }
+            ],
+            temperature: 0.2, // Temperatura muy baja para JSON consistente y válido
+            max_tokens: 8000 // gpt-4o-mini soporta hasta 16384 tokens de output, usando 8000 para JSON completo
+          }),
+          signal: controller.signal
+        });
+        
+        // Limpiar timeout si la respuesta llega a tiempo
+        if (timeoutId !== null) {
+          clearTimeout(timeoutId);
+          timeoutId = null;
         }
         
-        // Intentar reparar el JSON incompleto
-        console.log('🔧 Intentando reparar JSON incompleto...');
-        const repairedJSON = this.attemptJSONRepair(jsonString);
-        if (repairedJSON && this.isValidJSON(repairedJSON)) {
-          console.log('✅ JSON reparado exitosamente');
-          jsonString = repairedJSON;
-        } else {
-          console.error('❌ No se pudo reparar el JSON');
-          throw new Error('JSON incompleto o inválido recibido de la IA');
-        }
-      }
-      
-      // Parsear la respuesta JSON de la IA
-      const weeklyMenu = JSON.parse(jsonString);
-      
-      // Validar que el menú contenga exactamente 7 días
-      const menuArray = weeklyMenu.weeklyMenu || weeklyMenu;
-      if (!Array.isArray(menuArray) || menuArray.length !== 7) {
-        console.warn('⚠️ La IA no generó exactamente 7 días, usando fallback local');
-        return this.generateFallbackMenu(request);
-      }
-      
-      // Validar que cada día tenga la estructura correcta
-      const validDays = menuArray.filter(day => 
-        day && 
-        day.dayName && 
-        day.meals && 
-        (day.meals.breakfast || day.meals.lunch || day.meals.dinner)
-      );
-      
-      // Agregar citaciones médicas a cada día del menú
-      const menuWithCitations = validDays.map(day => ({
-        ...day,
-        medicalRecommendations: this.generateDailyMedicalRecommendations(day, request)
-      }));
-      
-      if (menuWithCitations.length !== 7) {
-        console.warn('⚠️ Algunos días no tienen la estructura correcta, usando fallback local');
-        return this.generateFallbackMenu(request);
-      }
-      
-      console.log('✅ Menú generado exitosamente por IA con 7 días completos y citaciones médicas');
-      console.log('📅 Días generados:', menuWithCitations.map(day => day.dayName).join(', '));
-      
-      return {
-        success: true,
-        weeklyMenu: menuWithCitations,
-        message: 'Menú generado por IA'
-      };
+        console.log('📥 Respuesta recibida de OpenAI:');
+        console.log('📊 Status:', response.status, response.statusText);
+        console.log('📋 Headers:', Object.fromEntries(response.headers.entries()));
 
-    } catch (error) {
-      console.error('❌ Error generando menú con IA:', error);
-      
-      // Determinar el tipo de error para mejor diagnóstico
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      console.error('📋 Tipo de error:', errorMessage);
-      
-      // Manejar diferentes tipos de errores
-      let fallbackMessage = 'IA no disponible';
-      
-      // Log del tipo de error para diagnóstico
-      if (error instanceof Error && error.name === 'AbortError') {
-        console.log('🛑 AbortError detectado - será manejado por sistema de reintentos');
-      } else if (errorMessage.includes('aborted') || errorMessage.includes('timeout')) {
-        console.log('⏰ Timeout detectado - será manejado por sistema de reintentos');
-      } else if (errorMessage.includes('JSON')) {
-        console.log('📄 Error de JSON detectado - será manejado por sistema de reintentos');
-      } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
-        console.log('🌐 Error de red detectado - será manejado por sistema de reintentos');
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('❌ Error en la API:', errorText);
+          throw new Error(`Error en la API: ${response.status} - ${response.statusText} - ${errorText}`);
+        }
+
+        const data = await response.json();
+          console.log('📦 Datos de respuesta:', {
+          choices: data.choices?.length || 0,
+          usage: data.usage,
+          model: data.model
+        });
+        
+        const content = data.choices[0]?.message?.content;
+        
+        if (!content) {
+          throw new Error('No se recibió contenido de la IA');
+        }
+
+        console.log('✅ Respuesta recibida de la IA, parseando JSON...');
+        console.log('📝 Contenido original (primeros 500 chars):', content.substring(0, 500));
+        console.log('📏 Longitud total del contenido:', content.length);
+
+        // Limpiar la respuesta de posibles caracteres markdown y backticks
+        let cleanContent = content.trim();
+        
+        // Remover backticks de código markdown si existen
+        if (cleanContent.startsWith('```json')) {
+          cleanContent = cleanContent.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+          console.log('🔧 Removidos backticks de JSON');
+        } else if (cleanContent.startsWith('```')) {
+          cleanContent = cleanContent.replace(/^```\s*/, '').replace(/\s*```$/, '');
+          console.log('🔧 Removidos backticks genéricos');
+        }
+        
+        // Limpiar caracteres de control problemáticos usando la función especializada
+        cleanContent = this.cleanJSONString(cleanContent);
+        console.log('🧹 JSON limpiado de caracteres problemáticos');
+        
+        // Buscar el JSON válido en la respuesta - mejorado para encontrar el JSON completo
+        const jsonStart = cleanContent.indexOf('{');
+        let jsonEnd = cleanContent.lastIndexOf('}') + 1;
+        
+        // Si el JSON parece estar cortado, intentar encontrar un punto de corte más inteligente
+        // Buscar el último objeto "nutrition" completo como indicador
+        const lastNutritionMatch = cleanContent.match(/"nutrition":\s*\{[^}]*"calories":\s*\d+\s*\}/g);
+        if (lastNutritionMatch && lastNutritionMatch.length > 0) {
+          const lastNutrition = lastNutritionMatch[lastNutritionMatch.length - 1];
+          const lastNutritionEnd = cleanContent.lastIndexOf(lastNutrition) + lastNutrition.length;
+          // Buscar el cierre del objeto del día después de la nutrición
+          const afterNutrition = cleanContent.substring(lastNutritionEnd);
+          const dayClose = afterNutrition.indexOf('}');
+          if (dayClose !== -1) {
+            const potentialEnd = lastNutritionEnd + dayClose + 1;
+            // Verificar si hay más estructura después
+            const afterDay = cleanContent.substring(potentialEnd).trim();
+            if (afterDay.startsWith(']') || afterDay.startsWith('}')) {
+              // Parece que el JSON continúa, usar el final original
+            } else {
+              // El JSON parece estar cortado aquí, intentar cerrarlo correctamente
+              jsonEnd = potentialEnd;
+            }
+          }
+        }
+        
+        console.log('🔍 Posición del JSON - Inicio:', jsonStart, 'Fin:', jsonEnd);
+        
+        if (jsonStart === -1 || jsonEnd === 0 || jsonEnd <= jsonStart) {
+          console.error('❌ No se encontró JSON válido en la respuesta');
+          console.error('📝 Contenido completo:', cleanContent);
+          throw new Error('No se encontró JSON válido en la respuesta');
+        }
+        
+        let jsonString = cleanContent.substring(jsonStart, jsonEnd);
+        
+        // Limpiar el JSON extraído una vez más para asegurar que esté limpio
+        jsonString = this.cleanJSONString(jsonString);
+        
+        console.log('🔧 JSON extraído y limpiado (primeros 300 chars):', jsonString.substring(0, 300));
+        console.log('📏 Longitud del JSON extraído:', jsonString.length);
+        console.log('🔚 Últimos 100 chars del JSON:', jsonString.substring(Math.max(0, jsonString.length - 100)));
+        
+        // Verificar que el JSON esté completo
+        if (!this.isValidJSON(jsonString)) {
+          console.error('❌ JSON inválido detectado después de limpieza');
+          console.error('🔍 Intentando parsear para ver el error específico...');
+          try {
+            JSON.parse(jsonString);
+          } catch (parseError) {
+            const error = parseError as Error;
+            console.error('💥 Error de parsing JSON:', error.message);
+            console.error('📍 Posición del error aproximada:', error.message.includes('position') ? error.message : 'No disponible');
+          }
+          
+          // Intentar reparar el JSON incompleto
+          console.log('🔧 Intentando reparar JSON incompleto...');
+          const repairedJSON = this.attemptJSONRepair(jsonString);
+          if (repairedJSON && this.isValidJSON(repairedJSON)) {
+            console.log('✅ JSON reparado exitosamente');
+            jsonString = repairedJSON;
+          } else {
+            console.error('❌ No se pudo reparar el JSON');
+            throw new Error('JSON incompleto o inválido recibido de la IA');
+          }
+        }
+        
+        // Parsear la respuesta JSON de la IA
+        const weeklyMenu = JSON.parse(jsonString);
+        
+        // Validar que el menú contenga exactamente 7 días
+        const menuArray = weeklyMenu.weeklyMenu || weeklyMenu;
+        if (!Array.isArray(menuArray) || menuArray.length !== 7) {
+          console.warn('⚠️ La IA no generó exactamente 7 días, usando fallback local');
+          return this.generateFallbackMenu(request);
+        }
+        
+        // Validar que cada día tenga la estructura correcta
+        const validDays = menuArray.filter(day => 
+          day && 
+          day.dayName && 
+          day.meals && 
+          (day.meals.breakfast || day.meals.lunch || day.meals.dinner)
+        );
+        
+        // Agregar citaciones médicas a cada día del menú
+        const menuWithCitations = validDays.map(day => ({
+          ...day,
+          medicalRecommendations: this.generateDailyMedicalRecommendations(day, request)
+        }));
+        
+        if (menuWithCitations.length !== 7) {
+          console.warn('⚠️ Algunos días no tienen la estructura correcta, usando fallback local');
+          return this.generateFallbackMenu(request);
+        }
+        
+        console.log('✅ Menú generado exitosamente por IA con 7 días completos y citaciones médicas');
+        console.log('📅 Días generados:', menuWithCitations.map(day => day.dayName).join(', '));
+        
+        return {
+          success: true,
+          weeklyMenu: menuWithCitations,
+          message: 'Menú generado por IA'
+        };
+
+      } catch (error) {
+        // Limpiar timeout si aún está activo
+        if (timeoutId !== null) {
+          clearTimeout(timeoutId);
+          timeoutId = null;
+        }
+        
+        console.error('❌ Error generando menú con IA:', error);
+        
+        // Determinar el tipo de error para mejor diagnóstico
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        console.error('📋 Tipo de error:', errorMessage);
+        
+        // Manejar diferentes tipos de errores
+        let fallbackMessage = 'IA no disponible';
+        
+        // Log del tipo de error para diagnóstico
+        if (error instanceof Error && error.name === 'AbortError') {
+          console.log('🛑 AbortError detectado - será manejado por sistema de reintentos');
+          console.log('💡 Esto puede deberse a un timeout. Se intentará de nuevo con más tiempo.');
+        } else if (errorMessage.includes('aborted') || errorMessage.includes('timeout')) {
+          console.log('⏰ Timeout detectado - será manejado por sistema de reintentos');
+        } else if (errorMessage.includes('JSON')) {
+          console.log('📄 Error de JSON detectado - será manejado por sistema de reintentos');
+        } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
+          console.log('🌐 Error de red detectado - será manejado por sistema de reintentos');
+        }
+        
+        // Lanzar el error para que el sistema de reintentos lo maneje
+        console.log('🔄 Lanzando error para sistema de reintentos...');
+        throw error;
       }
-      
-      // Lanzar el error para que el sistema de reintentos lo maneje
-      console.log('🔄 Lanzando error para sistema de reintentos...');
-      throw error;
-    }
   }
 
   // Método para reintentar generación con IA si falla - Optimizado para velocidad
