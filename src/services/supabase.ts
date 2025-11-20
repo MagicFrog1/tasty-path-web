@@ -56,49 +56,16 @@ if (!supabaseUrl || supabaseUrl === '' || !supabaseKey || supabaseKey === '') {
   throw new Error(errorMsg);
 }
 
-// Crear cliente de Supabase con opciones de reintento
+// Crear cliente de Supabase
+// NOTA: No modificar el fetch - Supabase maneja automáticamente:
+// - La API key anónima en el header 'apikey'
+// - El token de sesión en 'Authorization: Bearer {access_token}' cuando hay sesión activa
 export const supabase = createClient(supabaseUrl, supabaseKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,
-  },
-  global: {
-    headers: {
-      'apikey': supabaseKey,
-      'Authorization': `Bearer ${supabaseKey}`,
-    },
-    fetch: (url, options = {}) => {
-      // Asegurar que siempre incluimos los headers necesarios
-      const headers = new Headers(options?.headers);
-      headers.set('apikey', supabaseKey);
-      headers.set('Authorization', `Bearer ${supabaseKey}`);
-      
-      return fetch(url, {
-        ...options,
-        headers: headers,
-      }).catch((error) => {
-        console.error('❌ Error de conexión a Supabase:', error);
-        console.error('📍 URL intentada:', url);
-        console.error('🔑 Key usada:', supabaseKey ? `${supabaseKey.substring(0, 20)}...` : 'NO CONFIGURADA');
-        
-        // Si es un error de DNS, proporcionar ayuda
-        if (error.message?.includes('Failed to fetch') || error.message?.includes('ERR_NAME_NOT_RESOLVED')) {
-          console.error('💡 Posibles soluciones:');
-          console.error('   1. Verifica que el proyecto de Supabase esté activo (no pausado)');
-          console.error('   2. Verifica que la URL de Supabase sea correcta en Vercel');
-          console.error('   3. Verifica que las variables NEXT_PUBLIC_SUPABASE_URL y NEXT_PUBLIC_SUPABASE_ANON_KEY estén configuradas en Vercel');
-          console.error('   4. Revisa el dashboard de Supabase: https://app.supabase.com/');
-        } else if (error.message?.includes('401') || error.message?.includes('Unauthorized')) {
-          console.error('💡 Error 401 - Posibles soluciones:');
-          console.error('   1. Verifica que NEXT_PUBLIC_SUPABASE_ANON_KEY esté configurada correctamente en Vercel');
-          console.error('   2. Verifica que la clave anónima sea correcta (debe empezar con eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9)');
-          console.error('   3. Redespliega la aplicación después de agregar/modificar variables de entorno');
-        }
-        
-        throw error;
-      });
-    },
+    flowType: 'pkce',
   },
 });
 
