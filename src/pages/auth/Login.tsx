@@ -361,9 +361,16 @@ const Login: React.FC = () => {
         }
 
         console.log('Creando perfil de usuario...');
+        console.log('📝 ID del usuario:', data.user.id);
+        console.log('📝 Email del usuario:', email.toLowerCase());
+        
+        // Asegurar que el ID es string y coincide exactamente
+        const userId = String(data.user.id).trim();
+        console.log('📝 ID procesado para perfil:', userId);
+        
         // Crear perfil básico
         const profileResult = await DatabaseService.createUserProfile({
-          id: data.user.id,
+          id: userId,
           email: email.toLowerCase(),
           name: name.trim() || data.user.email?.split('@')[0] || 'Usuario',
           avatar: '',
