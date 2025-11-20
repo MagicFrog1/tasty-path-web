@@ -22,24 +22,27 @@ DROP POLICY IF EXISTS "users_insert_own" ON public.user_profiles;
 ALTER TABLE IF EXISTS public.user_profiles ENABLE ROW LEVEL SECURITY;
 
 -- PASO 3: Crear política para SELECT (usuarios ven su propio perfil)
+-- Comparar directamente UUID = UUID (sin conversión a texto)
 CREATE POLICY "users_select_own"
     ON public.user_profiles
     FOR SELECT
-    USING (auth.uid()::text = id::text);
+    USING (auth.uid() = id);
 
 -- PASO 4: Crear política para INSERT (usuarios pueden crear su perfil)
 -- IMPORTANTE: Permite INSERT cuando el id coincide con auth.uid()
+-- Comparar directamente UUID = UUID (sin conversión a texto)
 CREATE POLICY "users_insert_own"
     ON public.user_profiles
     FOR INSERT
-    WITH CHECK (auth.uid()::text = id::text);
+    WITH CHECK (auth.uid() = id);
 
 -- PASO 5: Crear política para UPDATE (usuarios pueden actualizar su perfil)
+-- Comparar directamente UUID = UUID (sin conversión a texto)
 CREATE POLICY "users_update_own"
     ON public.user_profiles
     FOR UPDATE
-    USING (auth.uid()::text = id::text)
-    WITH CHECK (auth.uid()::text = id::text);
+    USING (auth.uid() = id)
+    WITH CHECK (auth.uid() = id);
 
 -- PASO 6: Verificar las políticas creadas
 SELECT 
