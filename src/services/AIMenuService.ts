@@ -166,7 +166,7 @@ class AIMenuService {
     const seedBasedElements = this.generateSeedBasedElements(generationSeed);
     console.log('🎨 Elementos únicos generados:', seedBasedElements);
     
-      console.log('📤 Enviando solicitud a OpenAI...');
+      console.log('📤 Enviando solicitud a OpenAI (sin timeout)...');
       
       try {
         const response = await fetch(this.baseUrl, {
