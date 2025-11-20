@@ -166,20 +166,9 @@ class AIMenuService {
     const seedBasedElements = this.generateSeedBasedElements(generationSeed);
     console.log('🎨 Elementos únicos generados:', seedBasedElements);
     
-    console.log('📤 Enviando solicitud a OpenAI...');
-    
-    // Crear AbortController para timeout extendido para dar más tiempo a la IA
-    const controller = new AbortController();
-    let timeoutId: NodeJS.Timeout | null = null;
-    
-    // Timeout de 120 segundos para dar suficiente tiempo a la IA para generar el menú completo
-    timeoutId = setTimeout(() => {
-      console.log('⏰ Timeout de 120 segundos alcanzado, cancelando solicitud...');
-      timeoutId = null; // Marcar como limpiado
-      controller.abort();
-    }, 120000); // Timeout aumentado a 120 segundos para evitar cortes prematuros
-    
-    try {
+      console.log('📤 Enviando solicitud a OpenAI...');
+      
+      try {
         const response = await fetch(this.baseUrl, {
           method: 'POST',
           headers: {
@@ -200,15 +189,8 @@ class AIMenuService {
             ],
             temperature: 0.2, // Temperatura muy baja para JSON consistente y válido
             max_tokens: 8000 // gpt-4o-mini soporta hasta 16384 tokens de output, usando 8000 para JSON completo
-          }),
-          signal: controller.signal
+          })
         });
-        
-        // Limpiar timeout si la respuesta llega a tiempo
-        if (timeoutId !== null) {
-          clearTimeout(timeoutId);
-          timeoutId = null;
-        }
         
         console.log('📥 Respuesta recibida de OpenAI:');
         console.log('📊 Status:', response.status, response.statusText);
@@ -359,12 +341,6 @@ class AIMenuService {
         };
 
       } catch (error) {
-        // Limpiar timeout si aún está activo
-        if (timeoutId !== null) {
-          clearTimeout(timeoutId);
-          timeoutId = null;
-        }
-        
         console.error('❌ Error generando menú con IA:', error);
         
         // Determinar el tipo de error para mejor diagnóstico
@@ -377,9 +353,8 @@ class AIMenuService {
         // Log del tipo de error para diagnóstico
         if (error instanceof Error && error.name === 'AbortError') {
           console.log('🛑 AbortError detectado - será manejado por sistema de reintentos');
-          console.log('💡 Esto puede deberse a un timeout. Se intentará de nuevo con más tiempo.');
         } else if (errorMessage.includes('aborted') || errorMessage.includes('timeout')) {
-          console.log('⏰ Timeout detectado - será manejado por sistema de reintentos');
+          console.log('⏰ Error de conexión detectado - será manejado por sistema de reintentos');
         } else if (errorMessage.includes('JSON')) {
           console.log('📄 Error de JSON detectado - será manejado por sistema de reintentos');
         } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
