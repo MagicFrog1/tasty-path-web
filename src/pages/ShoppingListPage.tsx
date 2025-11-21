@@ -20,8 +20,12 @@ const Header = styled.div`
 
   h1 {
     margin: 0;
-    font-size: clamp(2.2rem, 4vw, 2.6rem);
-    color: ${theme.colors.textPrimary};
+    font-size: clamp(2.5rem, 5vw, 3.5rem);
+    font-weight: 800;
+    color: #0a0e13;
+    font-family: ${theme.fonts.heading};
+    letter-spacing: -0.03em;
+    line-height: 1.2;
   }
 
   p {

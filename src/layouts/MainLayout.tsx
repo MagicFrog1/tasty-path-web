@@ -11,6 +11,7 @@ const LayoutWrapper = styled.div`
   display: flex;
   min-height: 100vh;
   background: #ffffff;
+  overflow-x: hidden;
 
   @media (max-width: 1024px) {
     flex-direction: column;
@@ -27,12 +28,13 @@ const Sidebar = styled.aside<{ isOpen?: boolean }>`
   overflow-x: hidden;
   background: linear-gradient(200deg, rgba(34, 139, 34, 0.95) 0%, rgba(73, 150, 102, 0.85) 100%);
   color: ${theme.colors.white};
-  padding: 32px 24px;
+  padding: 16px 14px 16px 14px;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 10px;
   box-shadow: 12px 0 32px rgba(27, 77, 62, 0.2);
   z-index: 100;
+  box-sizing: border-box;
 
   @media (max-width: 1024px) {
     position: fixed;
@@ -176,12 +178,15 @@ const CloseButton = styled.button`
 const Brand = styled.div`
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 10px;
+  flex-shrink: 0;
+  width: 100%;
+  box-sizing: border-box;
 
   img {
-    width: 42px;
-    height: 42px;
-    border-radius: 12px;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
     object-fit: contain;
     background: transparent;
     box-shadow: none;
@@ -189,17 +194,25 @@ const Brand = styled.div`
   }
 
   h1 {
-    font-size: 20px;
+    font-size: 16px;
     font-weight: 700;
-    letter-spacing: 0.12em;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
     margin: 0;
+    line-height: 1.2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   span {
-    font-size: 12px;
+    font-size: 10px;
     opacity: 0.8;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.05em;
+    line-height: 1.2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   @media (max-width: 1024px) {
@@ -231,62 +244,76 @@ const DesktopBrand = styled(Brand)`
 const Menu = styled.nav`
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
   flex: 1;
   overflow-y: hidden;
+  overflow-x: hidden;
+  min-height: 0;
+  width: 100%;
+  box-sizing: border-box;
+  justify-content: flex-start;
 
   @media (max-width: 1024px) {
     width: 100%;
-    gap: 8px;
+    gap: 6px;
   }
 `;
 
 const MenuItem = styled(NavLink)`
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
-  border-radius: 16px;
+  gap: 10px;
+  padding: 12px 12px;
+  border-radius: 10px;
   color: ${theme.colors.white};
   font-weight: 500;
-  letter-spacing: 0.02em;
+  font-size: 13px;
+  letter-spacing: 0.01em;
   transition: all 0.3s ease;
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid transparent;
   text-decoration: none;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  margin: 0;
 
   svg {
-    font-size: 18px;
+    font-size: 15px;
     transition: transform .2s ease, opacity .2s ease;
     flex-shrink: 0;
   }
 
   @media (max-width: 1024px) {
-    padding: 16px;
-    border-radius: 14px;
-    font-size: 15px;
+    padding: 14px 12px;
+    border-radius: 12px;
+    font-size: 14px;
   }
 
   @media (max-width: 480px) {
-    padding: 14px;
-    font-size: 14px;
+    padding: 12px 10px;
+    font-size: 13px;
   }
 
   &.active,
   &:hover {
     background: rgba(255, 255, 255, 0.18);
     border-color: rgba(255, 255, 255, 0.25);
-    box-shadow: 0 12px 20px rgba(27, 77, 62, 0.35);
-    transform: translateX(6px);
-    svg { transform: translateX(2px); opacity: .95; }
+    box-shadow: 0 8px 16px rgba(27, 77, 62, 0.3);
+    transform: none;
+    svg { transform: none; opacity: .95; }
   }
 
   @media (max-width: 1024px) {
     &.active,
     &:hover {
-      transform: translateX(4px);
+      transform: none;
     }
   }
 
@@ -296,24 +323,29 @@ const MenuItem = styled(NavLink)`
 `;
 
 const PremiumBadge = styled.div`
-  margin-top: 4px;
+  margin-top: auto;
   background: linear-gradient(135deg, rgba(99, 102, 241, 0.25), rgba(236, 72, 153, 0.35));
-  border-radius: 18px;
-  padding: 18px;
+  border-radius: 12px;
+  padding: 12px;
   border: 1px solid rgba(255, 255, 255, 0.18);
   color: ${theme.colors.white};
-  box-shadow: 0 18px 36px rgba(27, 77, 62, 0.25);
+  box-shadow: 0 12px 24px rgba(27, 77, 62, 0.2);
+  flex-shrink: 0;
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 0;
 
   h3 {
-    margin: 0 0 8px;
-    font-size: 16px;
+    margin: 0 0 5px;
+    font-size: 13px;
     font-weight: 600;
+    line-height: 1.3;
   }
 
   p {
     margin: 0;
-    font-size: 13px;
-    line-height: 1.5;
+    font-size: 11px;
+    line-height: 1.35;
     opacity: 0.8;
   }
 
@@ -329,20 +361,25 @@ const ContentWrapper = styled.main`
   position: relative;
   background: #ffffff;
   width: calc(100% - 280px);
-  padding-left: 48px;
+  padding: 64px 64px 48px 48px;
+  overflow-x: hidden;
 
   @media (max-width: 1280px) {
-    padding-left: 40px;
+    padding: 56px 56px 40px 40px;
   }
 
   @media (max-width: 1024px) {
     margin-left: 0;
     width: 100%;
-    padding-left: 0;
+    padding: 48px 32px 32px 32px;
   }
 
   @media (max-width: 768px) {
-    padding-left: 0;
+    padding: 40px 24px 24px 24px;
+  }
+
+  @media (max-width: 480px) {
+    padding: 32px 16px 16px 16px;
   }
 `;
 
@@ -471,16 +508,6 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ title, subtitle }) => {
 
       <ContentWrapper>
         <ContentCard>
-          {breadcrumb.length > 1 && (
-            <Breadcrumb>
-              {breadcrumb.map((crumb, index) => (
-                <span key={crumb.path}>
-                  {index > 0 && '•'}
-                  {crumb.label}
-                </span>
-              ))}
-            </Breadcrumb>
-          )}
           <Outlet />
         </ContentCard>
       </ContentWrapper>
