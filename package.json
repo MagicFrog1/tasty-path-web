@@ -11,6 +11,7 @@
   "dependencies": {
     "@stripe/stripe-js": "^8.5.2",
     "@supabase/supabase-js": "^2.56.0",
+    "@vercel/node": "^3.0.0",
     "axios": "^1.7.7",
     "date-fns": "^3.6.0",
     "jspdf": "^2.5.2",
@@ -19,6 +20,7 @@
     "react-hook-form": "^7.52.1",
     "react-icons": "^5.2.1",
     "react-router-dom": "^6.27.0",
+    "stripe": "^20.0.0",
     "styled-components": "^6.1.8"
   },
   "devDependencies": {
