@@ -136,6 +136,39 @@ const StepDescription = styled.p`
   line-height: 1.6;
 `;
 
+const ExerciseNotice = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px 20px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(46, 139, 87, 0.08) 0%, rgba(34, 197, 94, 0.05) 100%);
+  border: 1px solid rgba(46, 139, 87, 0.2);
+  box-shadow: 0 4px 12px rgba(46, 139, 87, 0.1);
+  margin-top: 8px;
+  margin-bottom: 8px;
+
+  &::before {
+    content: '🏃';
+    font-size: 1.5rem;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: ${theme.colors.primaryDark};
+    line-height: 1.6;
+    font-weight: 500;
+
+    strong {
+      color: ${theme.colors.primary};
+      font-weight: 700;
+    }
+  }
+`;
+
 const SidebarCard = styled.aside`
   display: grid;
   gap: 20px;
@@ -183,6 +216,7 @@ const SidebarList = styled.ul`
   display: grid;
   gap: 14px;
   min-height: 200px;
+  position: relative;
 
   li {
     position: relative;
@@ -194,14 +228,17 @@ const SidebarList = styled.ul`
     border-radius: 12px;
     border-left: 3px solid ${theme.colors.primary};
     box-shadow: 0 2px 8px rgba(46, 139, 87, 0.08);
-    transition: all 0.3s ease;
-    animation: slideIn 0.4s ease-out;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: tipEnter 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
   }
 
   li:hover {
-    background: rgba(255, 255, 255, 0.8);
-    box-shadow: 0 4px 12px rgba(46, 139, 87, 0.12);
-    transform: translateX(2px);
+    background: rgba(255, 255, 255, 0.9);
+    box-shadow: 0 6px 20px rgba(46, 139, 87, 0.15);
+    transform: translateX(4px) translateY(-2px) scale(1.02);
+    border-left-width: 4px;
   }
 
   li:before {
@@ -219,16 +256,36 @@ const SidebarList = styled.ul`
     height: 20px;
     background: rgba(46, 139, 87, 0.1);
     border-radius: 50%;
+    animation: iconPulse 0.6s ease-out 0.2s forwards;
+    opacity: 0;
+    transform: scale(0);
   }
 
-  @keyframes slideIn {
-    from {
+  @keyframes tipEnter {
+    0% {
       opacity: 0;
-      transform: translateX(-10px);
+      transform: translateY(20px) scale(0.95) rotateX(-10deg);
     }
-    to {
+    50% {
+      transform: translateY(-5px) scale(1.02) rotateX(2deg);
+    }
+    100% {
       opacity: 1;
-      transform: translateX(0);
+      transform: translateY(0) scale(1) rotateX(0deg);
+    }
+  }
+
+  @keyframes iconPulse {
+    0% {
+      opacity: 0;
+      transform: scale(0) rotate(-180deg);
+    }
+    60% {
+      transform: scale(1.2) rotate(10deg);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1) rotate(0deg);
     }
   }
 `;
@@ -1250,6 +1307,12 @@ const PlanGeneratorPage: React.FC = () => {
                 <StepDescription>
                   Elige tu objetivo principal y comparte tus medidas actuales para que ajustemos calorías y macros.
                 </StepDescription>
+                <ExerciseNotice>
+                  <p>
+                    <strong>Importante:</strong> Cualquier objetivo físico se debe acompañar siempre con algún tipo de ejercicio físico. 
+                    La combinación de una alimentación adecuada y actividad física regular es fundamental para alcanzar tus metas de manera saludable y sostenible.
+                  </p>
+                </ExerciseNotice>
                 <Field>
                   <Label>Objetivo principal</Label>
                   <CheckboxRow>
