@@ -64,8 +64,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!priceId.startsWith('price_')) {
       console.error('❌ Price ID tiene formato incorrecto:', priceId);
       console.error('⚠️ Los Price IDs deben empezar con "price_". El valor recibido parece ser un Product ID.');
+      console.error('📋 Valor recibido:', priceId);
+      console.error('💡 Solución: Ve a Stripe Dashboard > Products > Selecciona el producto > En la sección "Pricing" copia el Price ID (empieza con "price_")');
       return res.status(400).json({ 
-        error: `Price ID inválido para el plan ${planId}. Los Price IDs deben empezar con "price_". Verifica la configuración en Vercel.` 
+        error: `Price ID inválido para el plan ${planId}. El valor "${priceId}" es un Product ID, no un Price ID. Los Price IDs deben empezar con "price_". Ve a Stripe Dashboard > Products > Selecciona el producto > En "Pricing" copia el Price ID correcto.` 
       });
     }
 
