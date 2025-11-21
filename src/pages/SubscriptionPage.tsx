@@ -7,6 +7,7 @@ import { theme } from '../styles/theme';
 import { redirectToCheckout, isStripeConfigured } from '../services/stripeService';
 import { useAuth } from '../context/AuthContext';
 import { useLocation } from 'react-router-dom';
+import { ENV_CONFIG } from '../../env.config';
 
 const fadeInUp = keyframes`
   from {
@@ -474,11 +475,22 @@ const SubscriptionPage: React.FC = () => {
     
     if (!stripeAvailable) {
       console.warn('⚠️ Stripe no está configurado, usando modo simulado');
-      console.warn('🔍 Verificando configuración:', {
-        publishableKey: !!import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY,
-        weeklyPrice: !!import.meta.env.VITE_STRIPE_PRICE_WEEKLY,
-        monthlyPrice: !!import.meta.env.VITE_STRIPE_PRICE_MONTHLY,
-        annualPrice: !!import.meta.env.VITE_STRIPE_PRICE_ANNUAL,
+      const env = (import.meta as any)?.env || {};
+      console.warn('🔍 Verificando configuración desde ENV_CONFIG:', {
+        STRIPE_PUBLISHABLE_KEY: ENV_CONFIG.STRIPE_PUBLISHABLE_KEY ? `${ENV_CONFIG.STRIPE_PUBLISHABLE_KEY.substring(0, 20)}...` : 'NO CONFIGURADO',
+        STRIPE_PRICE_WEEKLY: ENV_CONFIG.STRIPE_PRICE_WEEKLY || 'NO CONFIGURADO',
+        STRIPE_PRICE_MONTHLY: ENV_CONFIG.STRIPE_PRICE_MONTHLY || 'NO CONFIGURADO',
+        STRIPE_PRICE_ANNUAL: ENV_CONFIG.STRIPE_PRICE_ANNUAL || 'NO CONFIGURADO',
+      });
+      console.warn('🔍 Verificando variables de entorno directas:', {
+        NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: !!env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
+        VITE_STRIPE_PUBLISHABLE_KEY: !!env.VITE_STRIPE_PUBLISHABLE_KEY,
+        STRIPE_PUBLISHABLE_KEY: !!env.STRIPE_PUBLISHABLE_KEY,
+        STRIPE_PRICE_WEEKLY: !!env.STRIPE_PRICE_WEEKLY,
+        NEXT_PUBLIC_STRIPE_PRICE_WEEKLY: !!env.NEXT_PUBLIC_STRIPE_PRICE_WEEKLY,
+        VITE_STRIPE_PRICE_WEEKLY: !!env.VITE_STRIPE_PRICE_WEEKLY,
+        STRIPE_PRICE_MONTHLY: !!env.STRIPE_PRICE_MONTHLY,
+        STRIPE_PRICE_ANNUAL: !!env.STRIPE_PRICE_ANNUAL,
       });
       // Fallback al modo simulado si Stripe no está configurado
       await selectPlan(planId);
