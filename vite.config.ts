@@ -41,12 +41,14 @@ export default defineConfig(({ mode }) => {
   
   // ===== STRIPE CONFIGURATION =====
   // En Vercel las variables están como: NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY, STRIPE_PRICE_WEEKLY, etc.
-  // Acceder a process.env directamente para variables sin prefijo (STRIPE_PRICE_*)
-  const stripePublishableKey = env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || 
-                                env.VITE_STRIPE_PUBLISHABLE_KEY || 
-                                process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || 
-                                process.env.VITE_STRIPE_PUBLISHABLE_KEY || '';
+  // En Vercel, process.env tiene acceso a todas las variables durante el build
+  // Priorizar: process.env (Vercel durante build) > env (loadEnv con prefijos) > valores por defecto
+  const stripePublishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || 
+                                env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ||
+                                process.env.VITE_STRIPE_PUBLISHABLE_KEY || 
+                                env.VITE_STRIPE_PUBLISHABLE_KEY || '';
   
+  // Variables sin prefijo: usar process.env directamente (disponible en Vercel durante build)
   const stripePriceWeekly = process.env.STRIPE_PRICE_WEEKLY || 
                             env.NEXT_PUBLIC_STRIPE_PRICE_WEEKLY || 
                             env.VITE_STRIPE_PRICE_WEEKLY || '';
@@ -73,48 +75,27 @@ export default defineConfig(({ mode }) => {
   }
   
   // Exponer STRIPE_PRICE_WEEKLY (sin prefijo, como está en Vercel)
-  if (process.env.STRIPE_PRICE_WEEKLY) {
-    defineVars['import.meta.env.STRIPE_PRICE_WEEKLY'] = JSON.stringify(process.env.STRIPE_PRICE_WEEKLY);
+  if (stripePriceWeekly) {
+    defineVars['import.meta.env.STRIPE_PRICE_WEEKLY'] = JSON.stringify(stripePriceWeekly);
     // También exponer como VITE_* y NEXT_PUBLIC_* para compatibilidad
-    defineVars['import.meta.env.VITE_STRIPE_PRICE_WEEKLY'] = JSON.stringify(process.env.STRIPE_PRICE_WEEKLY);
-    defineVars['import.meta.env.NEXT_PUBLIC_STRIPE_PRICE_WEEKLY'] = JSON.stringify(process.env.STRIPE_PRICE_WEEKLY);
-  } else if (env.NEXT_PUBLIC_STRIPE_PRICE_WEEKLY) {
-    defineVars['import.meta.env.NEXT_PUBLIC_STRIPE_PRICE_WEEKLY'] = JSON.stringify(env.NEXT_PUBLIC_STRIPE_PRICE_WEEKLY);
-    defineVars['import.meta.env.VITE_STRIPE_PRICE_WEEKLY'] = JSON.stringify(env.NEXT_PUBLIC_STRIPE_PRICE_WEEKLY);
-    defineVars['import.meta.env.STRIPE_PRICE_WEEKLY'] = JSON.stringify(env.NEXT_PUBLIC_STRIPE_PRICE_WEEKLY);
-  } else if (env.VITE_STRIPE_PRICE_WEEKLY) {
-    defineVars['import.meta.env.VITE_STRIPE_PRICE_WEEKLY'] = JSON.stringify(env.VITE_STRIPE_PRICE_WEEKLY);
-    defineVars['import.meta.env.STRIPE_PRICE_WEEKLY'] = JSON.stringify(env.VITE_STRIPE_PRICE_WEEKLY);
+    defineVars['import.meta.env.VITE_STRIPE_PRICE_WEEKLY'] = JSON.stringify(stripePriceWeekly);
+    defineVars['import.meta.env.NEXT_PUBLIC_STRIPE_PRICE_WEEKLY'] = JSON.stringify(stripePriceWeekly);
   }
   
   // Exponer STRIPE_PRICE_MONTHLY (sin prefijo, como está en Vercel)
-  if (process.env.STRIPE_PRICE_MONTHLY) {
-    defineVars['import.meta.env.STRIPE_PRICE_MONTHLY'] = JSON.stringify(process.env.STRIPE_PRICE_MONTHLY);
+  if (stripePriceMonthly) {
+    defineVars['import.meta.env.STRIPE_PRICE_MONTHLY'] = JSON.stringify(stripePriceMonthly);
     // También exponer como VITE_* y NEXT_PUBLIC_* para compatibilidad
-    defineVars['import.meta.env.VITE_STRIPE_PRICE_MONTHLY'] = JSON.stringify(process.env.STRIPE_PRICE_MONTHLY);
-    defineVars['import.meta.env.NEXT_PUBLIC_STRIPE_PRICE_MONTHLY'] = JSON.stringify(process.env.STRIPE_PRICE_MONTHLY);
-  } else if (env.NEXT_PUBLIC_STRIPE_PRICE_MONTHLY) {
-    defineVars['import.meta.env.NEXT_PUBLIC_STRIPE_PRICE_MONTHLY'] = JSON.stringify(env.NEXT_PUBLIC_STRIPE_PRICE_MONTHLY);
-    defineVars['import.meta.env.VITE_STRIPE_PRICE_MONTHLY'] = JSON.stringify(env.NEXT_PUBLIC_STRIPE_PRICE_MONTHLY);
-    defineVars['import.meta.env.STRIPE_PRICE_MONTHLY'] = JSON.stringify(env.NEXT_PUBLIC_STRIPE_PRICE_MONTHLY);
-  } else if (env.VITE_STRIPE_PRICE_MONTHLY) {
-    defineVars['import.meta.env.VITE_STRIPE_PRICE_MONTHLY'] = JSON.stringify(env.VITE_STRIPE_PRICE_MONTHLY);
-    defineVars['import.meta.env.STRIPE_PRICE_MONTHLY'] = JSON.stringify(env.VITE_STRIPE_PRICE_MONTHLY);
+    defineVars['import.meta.env.VITE_STRIPE_PRICE_MONTHLY'] = JSON.stringify(stripePriceMonthly);
+    defineVars['import.meta.env.NEXT_PUBLIC_STRIPE_PRICE_MONTHLY'] = JSON.stringify(stripePriceMonthly);
   }
   
   // Exponer STRIPE_PRICE_ANNUAL (sin prefijo, como está en Vercel)
-  if (process.env.STRIPE_PRICE_ANNUAL) {
-    defineVars['import.meta.env.STRIPE_PRICE_ANNUAL'] = JSON.stringify(process.env.STRIPE_PRICE_ANNUAL);
+  if (stripePriceAnnual) {
+    defineVars['import.meta.env.STRIPE_PRICE_ANNUAL'] = JSON.stringify(stripePriceAnnual);
     // También exponer como VITE_* y NEXT_PUBLIC_* para compatibilidad
-    defineVars['import.meta.env.VITE_STRIPE_PRICE_ANNUAL'] = JSON.stringify(process.env.STRIPE_PRICE_ANNUAL);
-    defineVars['import.meta.env.NEXT_PUBLIC_STRIPE_PRICE_ANNUAL'] = JSON.stringify(process.env.STRIPE_PRICE_ANNUAL);
-  } else if (env.NEXT_PUBLIC_STRIPE_PRICE_ANNUAL) {
-    defineVars['import.meta.env.NEXT_PUBLIC_STRIPE_PRICE_ANNUAL'] = JSON.stringify(env.NEXT_PUBLIC_STRIPE_PRICE_ANNUAL);
-    defineVars['import.meta.env.VITE_STRIPE_PRICE_ANNUAL'] = JSON.stringify(env.NEXT_PUBLIC_STRIPE_PRICE_ANNUAL);
-    defineVars['import.meta.env.STRIPE_PRICE_ANNUAL'] = JSON.stringify(env.NEXT_PUBLIC_STRIPE_PRICE_ANNUAL);
-  } else if (env.VITE_STRIPE_PRICE_ANNUAL) {
-    defineVars['import.meta.env.VITE_STRIPE_PRICE_ANNUAL'] = JSON.stringify(env.VITE_STRIPE_PRICE_ANNUAL);
-    defineVars['import.meta.env.STRIPE_PRICE_ANNUAL'] = JSON.stringify(env.VITE_STRIPE_PRICE_ANNUAL);
+    defineVars['import.meta.env.VITE_STRIPE_PRICE_ANNUAL'] = JSON.stringify(stripePriceAnnual);
+    defineVars['import.meta.env.NEXT_PUBLIC_STRIPE_PRICE_ANNUAL'] = JSON.stringify(stripePriceAnnual);
   }
   
   // Log durante build (solo en desarrollo)
@@ -125,10 +106,13 @@ export default defineConfig(({ mode }) => {
     console.log('  - VITE_SUPABASE_URL:', env.VITE_SUPABASE_URL ? '✓' : '✗');
     console.log('  - VITE_SUPABASE_ANON_KEY:', env.VITE_SUPABASE_ANON_KEY ? '✓' : '✗');
     console.log('🔧 Stripe Configuration:');
-    console.log('  - NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:', (env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) ? '✓' : '✗');
-    console.log('  - STRIPE_PRICE_WEEKLY:', (process.env.STRIPE_PRICE_WEEKLY || env.NEXT_PUBLIC_STRIPE_PRICE_WEEKLY) ? '✓' : '✗');
-    console.log('  - STRIPE_PRICE_MONTHLY:', (process.env.STRIPE_PRICE_MONTHLY || env.NEXT_PUBLIC_STRIPE_PRICE_MONTHLY) ? '✓' : '✗');
-    console.log('  - STRIPE_PRICE_ANNUAL:', (process.env.STRIPE_PRICE_ANNUAL || env.NEXT_PUBLIC_STRIPE_PRICE_ANNUAL) ? '✓' : '✗');
+    console.log('  - NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:', stripePublishableKey ? '✓' : '✗');
+    console.log('  - STRIPE_PRICE_WEEKLY:', stripePriceWeekly ? '✓' : '✗');
+    console.log('  - STRIPE_PRICE_MONTHLY:', stripePriceMonthly ? '✓' : '✗');
+    console.log('  - STRIPE_PRICE_ANNUAL:', stripePriceAnnual ? '✓' : '✗');
+    console.log('  - process.env.STRIPE_PRICE_WEEKLY:', process.env.STRIPE_PRICE_WEEKLY ? '✓' : '✗');
+    console.log('  - process.env.STRIPE_PRICE_MONTHLY:', process.env.STRIPE_PRICE_MONTHLY ? '✓' : '✗');
+    console.log('  - process.env.STRIPE_PRICE_ANNUAL:', process.env.STRIPE_PRICE_ANNUAL ? '✓' : '✗');
   }
   
   return {
