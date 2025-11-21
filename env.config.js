@@ -45,6 +45,19 @@ function getEnvVar(varName, spanishName = null) {
 }
 
 // Configuración de variables de entorno para TastyPath
+// Log de depuración al cargar (solo en desarrollo o cuando faltan variables)
+if (typeof window !== 'undefined' && typeof import.meta !== 'undefined' && import.meta.env) {
+  const env = import.meta.env;
+  console.log('🔧 ENV_CONFIG - Variables de Stripe disponibles en import.meta.env:', {
+    NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: !!env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
+    VITE_STRIPE_PUBLISHABLE_KEY: !!env.VITE_STRIPE_PUBLISHABLE_KEY,
+    STRIPE_PUBLISHABLE_KEY: !!env.STRIPE_PUBLISHABLE_KEY,
+    STRIPE_PRICE_WEEKLY: !!env.STRIPE_PRICE_WEEKLY,
+    STRIPE_PRICE_MONTHLY: !!env.STRIPE_PRICE_MONTHLY,
+    STRIPE_PRICE_ANNUAL: !!env.STRIPE_PRICE_ANNUAL,
+  });
+}
+
 export const ENV_CONFIG = {
   // OpenAI API Configuration
   OPENAI_API_KEY: getEnvVar('OPENAI_API_KEY') || import.meta?.env?.VITE_OPENAI_API_KEY || '',
@@ -69,25 +82,45 @@ export const ENV_CONFIG = {
   
   // Stripe Configuration
   // Buscar en múltiples formatos: Vercel (PRECIO_*_DE_STRIPE), Vite (VITE_*), y sin prefijo
-  STRIPE_PUBLISHABLE_KEY: getEnvVar('STRIPE_PUBLISHABLE_KEY') || 
-                          import.meta?.env?.VITE_STRIPE_PUBLISHABLE_KEY || 
-                          import.meta?.env?.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || 
-                          import.meta?.env?.PRECIO_PUBLICO_DE_STRIPE || '',
-  STRIPE_PRICE_WEEKLY: getEnvVar('STRIPE_PRICE_WEEKLY', 'PRECIO_SEMANAL_DE_STRIPE') || 
-                       import.meta?.env?.VITE_STRIPE_PRICE_WEEKLY || 
-                       import.meta?.env?.STRIPE_PRICE_WEEKLY || 
-                       import.meta?.env?.PRECIO_SEMANAL_DE_STRIPE || 
-                       import.meta?.env?.NEXT_PUBLIC_STRIPE_PRICE_WEEKLY || '',
-  STRIPE_PRICE_MONTHLY: getEnvVar('STRIPE_PRICE_MONTHLY', 'PRECIO_MENSUAL_DE_STRIPE') || 
-                        import.meta?.env?.VITE_STRIPE_PRICE_MONTHLY || 
-                        import.meta?.env?.STRIPE_PRICE_MONTHLY || 
-                        import.meta?.env?.PRECIO_MENSUAL_DE_STRIPE || 
-                        import.meta?.env?.NEXT_PUBLIC_STRIPE_PRICE_MONTHLY || '',
-  STRIPE_PRICE_ANNUAL: getEnvVar('STRIPE_PRICE_ANNUAL', 'PRECIO_ANUAL_DE_STRIPE') || 
-                       import.meta?.env?.VITE_STRIPE_PRICE_ANNUAL || 
-                       import.meta?.env?.STRIPE_PRICE_ANNUAL || 
-                       import.meta?.env?.PRECIO_ANUAL_DE_STRIPE || 
-                       import.meta?.env?.NEXT_PUBLIC_STRIPE_PRICE_ANNUAL || '',
+  STRIPE_PUBLISHABLE_KEY: (() => {
+    const value = getEnvVar('STRIPE_PUBLISHABLE_KEY') || 
+                  import.meta?.env?.VITE_STRIPE_PUBLISHABLE_KEY || 
+                  import.meta?.env?.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || 
+                  import.meta?.env?.PRECIO_PUBLICO_DE_STRIPE || '';
+    if (typeof window !== 'undefined' && !value) {
+      console.warn('🔍 STRIPE_PUBLISHABLE_KEY no encontrada. Valores disponibles:', {
+        getEnvVar: getEnvVar('STRIPE_PUBLISHABLE_KEY'),
+        VITE_STRIPE_PUBLISHABLE_KEY: !!import.meta?.env?.VITE_STRIPE_PUBLISHABLE_KEY,
+        NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: !!import.meta?.env?.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
+        STRIPE_PUBLISHABLE_KEY: !!import.meta?.env?.STRIPE_PUBLISHABLE_KEY,
+      });
+    }
+    return value;
+  })(),
+  STRIPE_PRICE_WEEKLY: (() => {
+    const value = getEnvVar('STRIPE_PRICE_WEEKLY', 'PRECIO_SEMANAL_DE_STRIPE') || 
+                  import.meta?.env?.VITE_STRIPE_PRICE_WEEKLY || 
+                  import.meta?.env?.STRIPE_PRICE_WEEKLY || 
+                  import.meta?.env?.PRECIO_SEMANAL_DE_STRIPE || 
+                  import.meta?.env?.NEXT_PUBLIC_STRIPE_PRICE_WEEKLY || '';
+    return value;
+  })(),
+  STRIPE_PRICE_MONTHLY: (() => {
+    const value = getEnvVar('STRIPE_PRICE_MONTHLY', 'PRECIO_MENSUAL_DE_STRIPE') || 
+                  import.meta?.env?.VITE_STRIPE_PRICE_MONTHLY || 
+                  import.meta?.env?.STRIPE_PRICE_MONTHLY || 
+                  import.meta?.env?.PRECIO_MENSUAL_DE_STRIPE || 
+                  import.meta?.env?.NEXT_PUBLIC_STRIPE_PRICE_MONTHLY || '';
+    return value;
+  })(),
+  STRIPE_PRICE_ANNUAL: (() => {
+    const value = getEnvVar('STRIPE_PRICE_ANNUAL', 'PRECIO_ANUAL_DE_STRIPE') || 
+                  import.meta?.env?.VITE_STRIPE_PRICE_ANNUAL || 
+                  import.meta?.env?.STRIPE_PRICE_ANNUAL || 
+                  import.meta?.env?.PRECIO_ANUAL_DE_STRIPE || 
+                  import.meta?.env?.NEXT_PUBLIC_STRIPE_PRICE_ANNUAL || '';
+    return value;
+  })(),
   
   // App Configuration
   APP_NAME: 'TastyPath',
