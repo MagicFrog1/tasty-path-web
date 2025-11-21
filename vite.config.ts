@@ -40,77 +40,72 @@ export default defineConfig(({ mode }) => {
   }
   
   // ===== STRIPE CONFIGURATION =====
-  // En Vercel las variables están como: NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY, STRIPE_PRICE_WEEKLY, etc.
+  // PRIORIDAD: VITE_* (Vite expone automáticamente) > NEXT_PUBLIC_* (fallback) > sin prefijo (legacy)
   // En Vercel, process.env tiene acceso a todas las variables durante el build
-  // Priorizar: process.env (Vercel durante build) > env (loadEnv con prefijos) > valores por defecto
-  const stripePublishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || 
-                                env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ||
-                                process.env.VITE_STRIPE_PUBLISHABLE_KEY || 
-                                env.VITE_STRIPE_PUBLISHABLE_KEY || '';
+  const stripePublishableKey = process.env.VITE_STRIPE_PUBLISHABLE_KEY || 
+                                env.VITE_STRIPE_PUBLISHABLE_KEY ||
+                                process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || 
+                                env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '';
   
-  // Variables con prefijo NEXT_PUBLIC_ (como están ahora en Vercel)
-  // Priorizar NEXT_PUBLIC_* (Vercel) > sin prefijo (legacy) > VITE_* (desarrollo local)
-  const stripePriceWeekly = process.env.NEXT_PUBLIC_STRIPE_PRICE_WEEKLY || 
+  // Variables de precio: Priorizar VITE_* (Vite expone automáticamente)
+  const stripePriceWeekly = process.env.VITE_STRIPE_PRICE_WEEKLY || 
+                            env.VITE_STRIPE_PRICE_WEEKLY ||
+                            process.env.NEXT_PUBLIC_STRIPE_PRICE_WEEKLY || 
                             env.NEXT_PUBLIC_STRIPE_PRICE_WEEKLY ||
-                            process.env.STRIPE_PRICE_WEEKLY || 
-                            env.VITE_STRIPE_PRICE_WEEKLY || '';
+                            process.env.STRIPE_PRICE_WEEKLY || '';
   
-  const stripePriceMonthly = process.env.NEXT_PUBLIC_STRIPE_PRICE_MONTHLY || 
+  const stripePriceMonthly = process.env.VITE_STRIPE_PRICE_MONTHLY || 
+                              env.VITE_STRIPE_PRICE_MONTHLY ||
+                              process.env.NEXT_PUBLIC_STRIPE_PRICE_MONTHLY || 
                               env.NEXT_PUBLIC_STRIPE_PRICE_MONTHLY ||
-                              process.env.STRIPE_PRICE_MONTHLY || 
-                              env.VITE_STRIPE_PRICE_MONTHLY || '';
+                              process.env.STRIPE_PRICE_MONTHLY || '';
   
-  const stripePriceAnnual = process.env.NEXT_PUBLIC_STRIPE_PRICE_ANNUAL || 
+  const stripePriceAnnual = process.env.VITE_STRIPE_PRICE_ANNUAL || 
+                            env.VITE_STRIPE_PRICE_ANNUAL ||
+                            process.env.NEXT_PUBLIC_STRIPE_PRICE_ANNUAL || 
                             env.NEXT_PUBLIC_STRIPE_PRICE_ANNUAL ||
-                            process.env.STRIPE_PRICE_ANNUAL || 
-                            env.VITE_STRIPE_PRICE_ANNUAL || '';
+                            process.env.STRIPE_PRICE_ANNUAL || '';
   
-  // Exponer NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+  // Exponer variables de Stripe
+  // PRIORIDAD: VITE_* (Vite expone automáticamente) > NEXT_PUBLIC_* (fallback) > sin prefijo (legacy)
   // SIEMPRE exponer, incluso si está vacío (para debugging)
-  defineVars['import.meta.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY'] = JSON.stringify(stripePublishableKey || '');
   defineVars['import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY'] = JSON.stringify(stripePublishableKey || '');
+  defineVars['import.meta.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY'] = JSON.stringify(stripePublishableKey || '');
   defineVars['import.meta.env.STRIPE_PUBLISHABLE_KEY'] = JSON.stringify(stripePublishableKey || '');
   
-  if (!stripePublishableKey) {
-    // Log de advertencia si no se encuentra
-    console.warn('⚠️ STRIPE_PUBLISHABLE_KEY no encontrada durante el build');
-    console.warn('  - env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:', env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ? '✓' : '✗');
-    console.warn('  - process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:', process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ? '✓' : '✗');
-    console.warn('  - Todas las variables process.env disponibles:', Object.keys(process.env).filter(k => k.includes('STRIPE')).join(', ') || 'NINGUNA');
-  }
-  
-  // Exponer STRIPE_PRICE_WEEKLY (ahora con prefijo NEXT_PUBLIC_ en Vercel)
-  // SIEMPRE exponer, incluso si está vacío
+  defineVars['import.meta.env.VITE_STRIPE_PRICE_WEEKLY'] = JSON.stringify(stripePriceWeekly || '');
   defineVars['import.meta.env.NEXT_PUBLIC_STRIPE_PRICE_WEEKLY'] = JSON.stringify(stripePriceWeekly || '');
   defineVars['import.meta.env.STRIPE_PRICE_WEEKLY'] = JSON.stringify(stripePriceWeekly || ''); // Legacy
-  defineVars['import.meta.env.VITE_STRIPE_PRICE_WEEKLY'] = JSON.stringify(stripePriceWeekly || '');
   
-  // Exponer STRIPE_PRICE_MONTHLY (ahora con prefijo NEXT_PUBLIC_ en Vercel)
-  // SIEMPRE exponer, incluso si está vacío
+  defineVars['import.meta.env.VITE_STRIPE_PRICE_MONTHLY'] = JSON.stringify(stripePriceMonthly || '');
   defineVars['import.meta.env.NEXT_PUBLIC_STRIPE_PRICE_MONTHLY'] = JSON.stringify(stripePriceMonthly || '');
   defineVars['import.meta.env.STRIPE_PRICE_MONTHLY'] = JSON.stringify(stripePriceMonthly || ''); // Legacy
-  defineVars['import.meta.env.VITE_STRIPE_PRICE_MONTHLY'] = JSON.stringify(stripePriceMonthly || '');
   
-  // Exponer STRIPE_PRICE_ANNUAL (ahora con prefijo NEXT_PUBLIC_ en Vercel)
-  // SIEMPRE exponer, incluso si está vacío
+  defineVars['import.meta.env.VITE_STRIPE_PRICE_ANNUAL'] = JSON.stringify(stripePriceAnnual || '');
   defineVars['import.meta.env.NEXT_PUBLIC_STRIPE_PRICE_ANNUAL'] = JSON.stringify(stripePriceAnnual || '');
   defineVars['import.meta.env.STRIPE_PRICE_ANNUAL'] = JSON.stringify(stripePriceAnnual || ''); // Legacy
-  defineVars['import.meta.env.VITE_STRIPE_PRICE_ANNUAL'] = JSON.stringify(stripePriceAnnual || '');
+  
+  if (!stripePublishableKey || !stripePriceWeekly || !stripePriceMonthly || !stripePriceAnnual) {
+    // Log de advertencia si no se encuentran
+    console.warn('⚠️ Variables de Stripe no encontradas durante el build');
+    console.warn('  - VITE_STRIPE_PUBLISHABLE_KEY:', process.env.VITE_STRIPE_PUBLISHABLE_KEY ? '✓' : '✗');
+    console.warn('  - VITE_STRIPE_PRICE_WEEKLY:', process.env.VITE_STRIPE_PRICE_WEEKLY ? '✓' : '✗');
+    console.warn('  - VITE_STRIPE_PRICE_MONTHLY:', process.env.VITE_STRIPE_PRICE_MONTHLY ? '✓' : '✗');
+    console.warn('  - VITE_STRIPE_PRICE_ANNUAL:', process.env.VITE_STRIPE_PRICE_ANNUAL ? '✓' : '✗');
+    console.warn('  - Todas las variables process.env disponibles:', Object.keys(process.env).filter(k => k.includes('STRIPE')).join(', ') || 'NINGUNA');
+  }
   
   // Log durante build (tanto en desarrollo como en producción para debugging)
   console.log('🔧 Vite Config - Variables de entorno cargadas:');
   console.log('  - NEXT_PUBLIC_SUPABASE_URL:', env.NEXT_PUBLIC_SUPABASE_URL ? '✓' : '✗');
   console.log('  - NEXT_PUBLIC_SUPABASE_ANON_KEY:', env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? '✓' : '✗');
   console.log('🔧 Stripe Configuration durante BUILD:');
-  console.log('  - process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:', process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ? `${String(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY).substring(0, 20)}...` : 'NO ENCONTRADO');
-  console.log('  - env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:', env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ? `${String(env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY).substring(0, 20)}...` : 'NO ENCONTRADO');
+  console.log('  - process.env.VITE_STRIPE_PUBLISHABLE_KEY:', process.env.VITE_STRIPE_PUBLISHABLE_KEY ? `${String(process.env.VITE_STRIPE_PUBLISHABLE_KEY).substring(0, 20)}...` : 'NO ENCONTRADO');
+  console.log('  - env.VITE_STRIPE_PUBLISHABLE_KEY:', env.VITE_STRIPE_PUBLISHABLE_KEY ? `${String(env.VITE_STRIPE_PUBLISHABLE_KEY).substring(0, 20)}...` : 'NO ENCONTRADO');
   console.log('  - stripePublishableKey (resultado final):', stripePublishableKey ? `${String(stripePublishableKey).substring(0, 20)}...` : 'NO ENCONTRADO');
-  console.log('  - process.env.NEXT_PUBLIC_STRIPE_PRICE_WEEKLY:', process.env.NEXT_PUBLIC_STRIPE_PRICE_WEEKLY || 'NO ENCONTRADO');
-  console.log('  - process.env.NEXT_PUBLIC_STRIPE_PRICE_MONTHLY:', process.env.NEXT_PUBLIC_STRIPE_PRICE_MONTHLY || 'NO ENCONTRADO');
-  console.log('  - process.env.NEXT_PUBLIC_STRIPE_PRICE_ANNUAL:', process.env.NEXT_PUBLIC_STRIPE_PRICE_ANNUAL || 'NO ENCONTRADO');
-  console.log('  - process.env.STRIPE_PRICE_WEEKLY (legacy):', process.env.STRIPE_PRICE_WEEKLY || 'NO ENCONTRADO');
-  console.log('  - process.env.STRIPE_PRICE_MONTHLY (legacy):', process.env.STRIPE_PRICE_MONTHLY || 'NO ENCONTRADO');
-  console.log('  - process.env.STRIPE_PRICE_ANNUAL (legacy):', process.env.STRIPE_PRICE_ANNUAL || 'NO ENCONTRADO');
+  console.log('  - process.env.VITE_STRIPE_PRICE_WEEKLY:', process.env.VITE_STRIPE_PRICE_WEEKLY || 'NO ENCONTRADO');
+  console.log('  - process.env.VITE_STRIPE_PRICE_MONTHLY:', process.env.VITE_STRIPE_PRICE_MONTHLY || 'NO ENCONTRADO');
+  console.log('  - process.env.VITE_STRIPE_PRICE_ANNUAL:', process.env.VITE_STRIPE_PRICE_ANNUAL || 'NO ENCONTRADO');
   console.log('  - stripePriceWeekly (resultado final):', stripePriceWeekly || 'NO ENCONTRADO');
   console.log('  - stripePriceMonthly (resultado final):', stripePriceMonthly || 'NO ENCONTRADO');
   console.log('  - stripePriceAnnual (resultado final):', stripePriceAnnual || 'NO ENCONTRADO');

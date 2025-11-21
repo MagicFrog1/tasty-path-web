@@ -49,13 +49,13 @@ function getEnvVar(varName, spanishName = null) {
 if (typeof window !== 'undefined' && typeof import.meta !== 'undefined' && import.meta.env) {
   const env = import.meta.env;
   // Usar JSON.stringify para asegurar que se muestren valores reales
+  // PRIORIDAD: VITE_* (Vite expone automáticamente)
   const logData = {
-    NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ? `${String(env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY).substring(0, 20)}...` : 'NO ENCONTRADO',
     VITE_STRIPE_PUBLISHABLE_KEY: env.VITE_STRIPE_PUBLISHABLE_KEY ? `${String(env.VITE_STRIPE_PUBLISHABLE_KEY).substring(0, 20)}...` : 'NO ENCONTRADO',
-    STRIPE_PUBLISHABLE_KEY: env.STRIPE_PUBLISHABLE_KEY ? `${String(env.STRIPE_PUBLISHABLE_KEY).substring(0, 20)}...` : 'NO ENCONTRADO',
-    STRIPE_PRICE_WEEKLY: env.STRIPE_PRICE_WEEKLY || 'NO ENCONTRADO',
-    STRIPE_PRICE_MONTHLY: env.STRIPE_PRICE_MONTHLY || 'NO ENCONTRADO',
-    STRIPE_PRICE_ANNUAL: env.STRIPE_PRICE_ANNUAL || 'NO ENCONTRADO',
+    NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ? `${String(env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY).substring(0, 20)}...` : 'NO ENCONTRADO',
+    VITE_STRIPE_PRICE_WEEKLY: env.VITE_STRIPE_PRICE_WEEKLY || 'NO ENCONTRADO',
+    VITE_STRIPE_PRICE_MONTHLY: env.VITE_STRIPE_PRICE_MONTHLY || 'NO ENCONTRADO',
+    VITE_STRIPE_PRICE_ANNUAL: env.VITE_STRIPE_PRICE_ANNUAL || 'NO ENCONTRADO',
   };
   console.log('🔧 ENV_CONFIG - Variables de Stripe disponibles en import.meta.env:', JSON.stringify(logData, null, 2));
 }
@@ -98,24 +98,23 @@ export const ENV_CONFIG = {
     }
     return value;
   })(),
-  // En Vercel las variables ahora tienen prefijo NEXT_PUBLIC_ (NEXT_PUBLIC_STRIPE_PRICE_*)
-  // Priorizar NEXT_PUBLIC_* (como están ahora en Vercel), luego sin prefijo (legacy), luego VITE_* para desarrollo local
+  // PRIORIDAD: VITE_* (Vite expone automáticamente) > NEXT_PUBLIC_* (fallback) > sin prefijo (legacy)
   STRIPE_PRICE_WEEKLY: (() => {
-    const value = import.meta?.env?.NEXT_PUBLIC_STRIPE_PRICE_WEEKLY || 
-                  import.meta?.env?.STRIPE_PRICE_WEEKLY || 
-                  import.meta?.env?.VITE_STRIPE_PRICE_WEEKLY || '';
+    const value = import.meta?.env?.VITE_STRIPE_PRICE_WEEKLY || 
+                  import.meta?.env?.NEXT_PUBLIC_STRIPE_PRICE_WEEKLY || 
+                  import.meta?.env?.STRIPE_PRICE_WEEKLY || '';
     return value;
   })(),
   STRIPE_PRICE_MONTHLY: (() => {
-    const value = import.meta?.env?.NEXT_PUBLIC_STRIPE_PRICE_MONTHLY || 
-                  import.meta?.env?.STRIPE_PRICE_MONTHLY || 
-                  import.meta?.env?.VITE_STRIPE_PRICE_MONTHLY || '';
+    const value = import.meta?.env?.VITE_STRIPE_PRICE_MONTHLY || 
+                  import.meta?.env?.NEXT_PUBLIC_STRIPE_PRICE_MONTHLY || 
+                  import.meta?.env?.STRIPE_PRICE_MONTHLY || '';
     return value;
   })(),
   STRIPE_PRICE_ANNUAL: (() => {
-    const value = import.meta?.env?.NEXT_PUBLIC_STRIPE_PRICE_ANNUAL || 
-                  import.meta?.env?.STRIPE_PRICE_ANNUAL || 
-                  import.meta?.env?.VITE_STRIPE_PRICE_ANNUAL || '';
+    const value = import.meta?.env?.VITE_STRIPE_PRICE_ANNUAL || 
+                  import.meta?.env?.NEXT_PUBLIC_STRIPE_PRICE_ANNUAL || 
+                  import.meta?.env?.STRIPE_PRICE_ANNUAL || '';
     return value;
   })(),
   
