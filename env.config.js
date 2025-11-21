@@ -81,17 +81,20 @@ export const ENV_CONFIG = {
   REVENUECAT_PUBLIC_KEY: import.meta?.env?.VITE_REVENUECAT_PUBLIC_KEY || 'appl_bFgSiUsYrPmowOiuWqFDcwskepz',
   
   // Stripe Configuration
-  // Buscar en múltiples formatos: Vercel (PRECIO_*_DE_STRIPE), Vite (VITE_*), y sin prefijo
+  // Priorizar NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY (como está en Vercel)
+  // Buscar en múltiples formatos: Vercel (NEXT_PUBLIC_*), Vite (VITE_*), y sin prefijo
   STRIPE_PUBLISHABLE_KEY: (() => {
-    const value = getEnvVar('STRIPE_PUBLISHABLE_KEY') || 
+    // PRIORIDAD 1: NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY (como está en Vercel)
+    const value = import.meta?.env?.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || 
                   import.meta?.env?.VITE_STRIPE_PUBLISHABLE_KEY || 
-                  import.meta?.env?.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || 
+                  getEnvVar('STRIPE_PUBLISHABLE_KEY') || 
+                  import.meta?.env?.STRIPE_PUBLISHABLE_KEY ||
                   import.meta?.env?.PRECIO_PUBLICO_DE_STRIPE || '';
     if (typeof window !== 'undefined' && !value) {
       console.warn('🔍 STRIPE_PUBLISHABLE_KEY no encontrada. Valores disponibles:', {
-        getEnvVar: getEnvVar('STRIPE_PUBLISHABLE_KEY'),
-        VITE_STRIPE_PUBLISHABLE_KEY: !!import.meta?.env?.VITE_STRIPE_PUBLISHABLE_KEY,
         NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: !!import.meta?.env?.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
+        VITE_STRIPE_PUBLISHABLE_KEY: !!import.meta?.env?.VITE_STRIPE_PUBLISHABLE_KEY,
+        getEnvVar: getEnvVar('STRIPE_PUBLISHABLE_KEY'),
         STRIPE_PUBLISHABLE_KEY: !!import.meta?.env?.STRIPE_PUBLISHABLE_KEY,
       });
     }

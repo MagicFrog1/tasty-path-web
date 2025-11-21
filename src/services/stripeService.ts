@@ -8,10 +8,19 @@ let stripePromise: Promise<Stripe | null> | null = null;
  */
 export const getStripe = (): Promise<Stripe | null> => {
   if (!stripePromise) {
-    const publishableKey = ENV_CONFIG.STRIPE_PUBLISHABLE_KEY;
+    // Priorizar NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY (como está en Vercel)
+    // Luego ENV_CONFIG como fallback
+    const publishableKey = (import.meta.env as any)?.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || 
+                           (import.meta.env as any)?.VITE_STRIPE_PUBLISHABLE_KEY ||
+                           ENV_CONFIG.STRIPE_PUBLISHABLE_KEY;
     
     if (!publishableKey) {
       console.warn('⚠️ Stripe Publishable Key no configurada');
+      console.warn('🔍 Verificando variables disponibles:', {
+        NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: !!(import.meta.env as any)?.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
+        VITE_STRIPE_PUBLISHABLE_KEY: !!(import.meta.env as any)?.VITE_STRIPE_PUBLISHABLE_KEY,
+        ENV_CONFIG_STRIPE_PUBLISHABLE_KEY: !!ENV_CONFIG.STRIPE_PUBLISHABLE_KEY,
+      });
       return Promise.resolve(null);
     }
 
