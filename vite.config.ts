@@ -62,16 +62,17 @@ export default defineConfig(({ mode }) => {
                             env.VITE_STRIPE_PRICE_ANNUAL || '';
   
   // Exponer NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
-  if (env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) {
-    const key = env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
-    defineVars['import.meta.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY'] = JSON.stringify(key);
+  // En Vercel, process.env tiene todas las variables durante el build
+  if (stripePublishableKey) {
+    defineVars['import.meta.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY'] = JSON.stringify(stripePublishableKey);
     // También exponer como VITE_* y sin prefijo para compatibilidad
-    defineVars['import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY'] = JSON.stringify(key);
-    defineVars['import.meta.env.STRIPE_PUBLISHABLE_KEY'] = JSON.stringify(key);
-  } else if (env.VITE_STRIPE_PUBLISHABLE_KEY || process.env.VITE_STRIPE_PUBLISHABLE_KEY) {
-    const key = env.VITE_STRIPE_PUBLISHABLE_KEY || process.env.VITE_STRIPE_PUBLISHABLE_KEY;
-    defineVars['import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY'] = JSON.stringify(key);
-    defineVars['import.meta.env.STRIPE_PUBLISHABLE_KEY'] = JSON.stringify(key);
+    defineVars['import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY'] = JSON.stringify(stripePublishableKey);
+    defineVars['import.meta.env.STRIPE_PUBLISHABLE_KEY'] = JSON.stringify(stripePublishableKey);
+  } else {
+    // Log de advertencia si no se encuentra
+    console.warn('⚠️ STRIPE_PUBLISHABLE_KEY no encontrada durante el build');
+    console.warn('  - env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:', env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ? '✓' : '✗');
+    console.warn('  - process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:', process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ? '✓' : '✗');
   }
   
   // Exponer STRIPE_PRICE_WEEKLY (sin prefijo, como está en Vercel)

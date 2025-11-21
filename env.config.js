@@ -49,12 +49,12 @@ function getEnvVar(varName, spanishName = null) {
 if (typeof window !== 'undefined' && typeof import.meta !== 'undefined' && import.meta.env) {
   const env = import.meta.env;
   console.log('🔧 ENV_CONFIG - Variables de Stripe disponibles en import.meta.env:', {
-    NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: !!env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
-    VITE_STRIPE_PUBLISHABLE_KEY: !!env.VITE_STRIPE_PUBLISHABLE_KEY,
-    STRIPE_PUBLISHABLE_KEY: !!env.STRIPE_PUBLISHABLE_KEY,
-    STRIPE_PRICE_WEEKLY: !!env.STRIPE_PRICE_WEEKLY,
-    STRIPE_PRICE_MONTHLY: !!env.STRIPE_PRICE_MONTHLY,
-    STRIPE_PRICE_ANNUAL: !!env.STRIPE_PRICE_ANNUAL,
+    NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ? `${String(env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY).substring(0, 20)}...` : 'NO ENCONTRADO',
+    VITE_STRIPE_PUBLISHABLE_KEY: env.VITE_STRIPE_PUBLISHABLE_KEY ? `${String(env.VITE_STRIPE_PUBLISHABLE_KEY).substring(0, 20)}...` : 'NO ENCONTRADO',
+    STRIPE_PUBLISHABLE_KEY: env.STRIPE_PUBLISHABLE_KEY ? `${String(env.STRIPE_PUBLISHABLE_KEY).substring(0, 20)}...` : 'NO ENCONTRADO',
+    STRIPE_PRICE_WEEKLY: env.STRIPE_PRICE_WEEKLY || 'NO ENCONTRADO',
+    STRIPE_PRICE_MONTHLY: env.STRIPE_PRICE_MONTHLY || 'NO ENCONTRADO',
+    STRIPE_PRICE_ANNUAL: env.STRIPE_PRICE_ANNUAL || 'NO ENCONTRADO',
   });
 }
 
@@ -91,11 +91,12 @@ export const ENV_CONFIG = {
                   import.meta?.env?.STRIPE_PUBLISHABLE_KEY ||
                   import.meta?.env?.PRECIO_PUBLICO_DE_STRIPE || '';
     if (typeof window !== 'undefined' && !value) {
+      const env = import.meta?.env || {};
       console.warn('🔍 STRIPE_PUBLISHABLE_KEY no encontrada. Valores disponibles:', {
-        NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: !!import.meta?.env?.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
-        VITE_STRIPE_PUBLISHABLE_KEY: !!import.meta?.env?.VITE_STRIPE_PUBLISHABLE_KEY,
-        getEnvVar: getEnvVar('STRIPE_PUBLISHABLE_KEY'),
-        STRIPE_PUBLISHABLE_KEY: !!import.meta?.env?.STRIPE_PUBLISHABLE_KEY,
+        NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ? `${String(env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY).substring(0, 20)}...` : 'NO ENCONTRADO',
+        VITE_STRIPE_PUBLISHABLE_KEY: env.VITE_STRIPE_PUBLISHABLE_KEY ? `${String(env.VITE_STRIPE_PUBLISHABLE_KEY).substring(0, 20)}...` : 'NO ENCONTRADO',
+        getEnvVar: getEnvVar('STRIPE_PUBLISHABLE_KEY') || 'NO ENCONTRADO',
+        STRIPE_PUBLISHABLE_KEY: env.STRIPE_PUBLISHABLE_KEY ? `${String(env.STRIPE_PUBLISHABLE_KEY).substring(0, 20)}...` : 'NO ENCONTRADO',
       });
     }
     return value;
