@@ -1,34 +1,7 @@
-import { loadStripe, Stripe } from '@stripe/stripe-js';
 import { ENV_CONFIG } from '../../env.config';
 
-let stripePromise: Promise<Stripe | null> | null = null;
-
-/**
- * Inicializa Stripe con la clave pública
- */
-export const getStripe = (): Promise<Stripe | null> => {
-  if (!stripePromise) {
-    // Priorizar NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY (como está en Vercel)
-    // Luego ENV_CONFIG como fallback
-    const publishableKey = (import.meta.env as any)?.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || 
-                           (import.meta.env as any)?.VITE_STRIPE_PUBLISHABLE_KEY ||
-                           ENV_CONFIG.STRIPE_PUBLISHABLE_KEY;
-    
-    if (!publishableKey) {
-      console.warn('⚠️ Stripe Publishable Key no configurada');
-      console.warn('🔍 Verificando variables disponibles:', {
-        NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: !!(import.meta.env as any)?.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
-        VITE_STRIPE_PUBLISHABLE_KEY: !!(import.meta.env as any)?.VITE_STRIPE_PUBLISHABLE_KEY,
-        ENV_CONFIG_STRIPE_PUBLISHABLE_KEY: !!ENV_CONFIG.STRIPE_PUBLISHABLE_KEY,
-      });
-      return Promise.resolve(null);
-    }
-
-    stripePromise = loadStripe(publishableKey);
-  }
-  
-  return stripePromise;
-};
+// Nota: Ya no necesitamos loadStripe porque usamos el nuevo método de Stripe
+// que crea la sesión en el backend y redirige directamente a la URL
 
 /**
  * Obtiene el Price ID de Stripe según el plan
@@ -52,6 +25,7 @@ export const getStripePriceId = (planId: 'weekly' | 'monthly' | 'annual'): strin
 
 /**
  * Redirige al usuario a Stripe Checkout para completar el pago
+ * Usa el nuevo flujo de Stripe: crea una sesión en el backend y redirige a la URL
  */
 export const redirectToCheckout = async (
   planId: 'weekly' | 'monthly' | 'annual',
@@ -61,19 +35,8 @@ export const redirectToCheckout = async (
     console.log('🔄 Iniciando redirección a Stripe Checkout...');
     console.log('📋 Plan seleccionado:', planId);
     
-    const stripe = await getStripe();
-    
-    if (!stripe) {
-      console.error('❌ Stripe no está inicializado');
-      return {
-        success: false,
-        error: 'Stripe no está configurado correctamente. Por favor, contacta con soporte.',
-      };
-    }
-
+    // Verificar que tenemos el Price ID configurado
     const priceId = getStripePriceId(planId);
-    
-    console.log('💰 Price ID obtenido:', priceId ? `${priceId.substring(0, 20)}...` : 'NO ENCONTRADO');
     
     if (!priceId) {
       console.error('❌ Price ID no encontrado para el plan:', planId);
@@ -88,42 +51,45 @@ export const redirectToCheckout = async (
       };
     }
 
-    const successUrl = `${window.location.origin}/suscripcion?success=true&plan=${planId}`;
-    const cancelUrl = `${window.location.origin}/suscripcion?canceled=true`;
-    
-    console.log('🔗 URLs de redirección:', { successUrl, cancelUrl });
+    console.log('💰 Price ID obtenido:', priceId ? `${priceId.substring(0, 20)}...` : 'NO ENCONTRADO');
     console.log('📧 Email del cliente:', customerEmail || 'No proporcionado');
     
-    // Redirigir directamente al checkout de Stripe usando lineItems
-    // Esto funciona cuando Stripe está correctamente configurado
-    const { error } = await stripe.redirectToCheckout({
-      lineItems: [
-        {
-          price: priceId,
-          quantity: 1,
-        },
-      ],
-      mode: 'subscription',
-      successUrl: successUrl,
-      cancelUrl: cancelUrl,
-      customerEmail: customerEmail,
-      billingAddressCollection: 'auto',
+    // Llamar a la API del backend para crear la sesión de checkout
+    const response = await fetch('/api/create-checkout-session', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        planId,
+        customerEmail,
+      }),
     });
 
-    if (error) {
-      console.error('❌ Error redirigiendo a Stripe Checkout:', error);
-      console.error('📋 Detalles del error:', {
-        type: error.type,
-        message: error.message,
-        code: error.code,
-      });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: 'Error desconocido' }));
+      console.error('❌ Error creando sesión de checkout:', errorData);
       return {
         success: false,
-        error: error.message || 'Error al procesar el pago. Por favor, intenta de nuevo.',
+        error: errorData.error || 'Error al crear la sesión de checkout. Por favor, intenta de nuevo.',
       };
     }
 
-    console.log('✅ Redirección a Stripe Checkout iniciada correctamente');
+    const { url } = await response.json();
+
+    if (!url) {
+      console.error('❌ No se recibió URL de checkout');
+      return {
+        success: false,
+        error: 'No se recibió la URL de checkout. Por favor, intenta de nuevo.',
+      };
+    }
+
+    console.log('✅ Sesión de checkout creada, redirigiendo...');
+    
+    // Redirigir al usuario a la URL de checkout
+    window.location.href = url;
+    
     return { success: true };
   } catch (error) {
     console.error('❌ Error en redirectToCheckout:', error);
