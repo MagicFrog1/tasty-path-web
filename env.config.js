@@ -1,17 +1,21 @@
 // Función helper para obtener variables de entorno de múltiples formas
 // PRIORIDAD: NEXT_PUBLIC_* (Vercel) > VITE_* (desarrollo local) > valores por defecto
-function getEnvVar(varName) {
+function getEnvVar(varName, spanishName = null) {
   // Intentar acceder desde import.meta.env (Vite)
   if (typeof import.meta !== 'undefined' && import.meta.env) {
     // PRIORIDAD 1: Intentar con prefijo NEXT_PUBLIC_* (lo que tienes en Vercel)
     if (import.meta.env[`NEXT_PUBLIC_${varName}`]) {
       return import.meta.env[`NEXT_PUBLIC_${varName}`];
     }
-    // PRIORIDAD 2: Intentar con prefijo VITE_* (desarrollo local)
+    // PRIORIDAD 2: Intentar con nombre en español (Vercel)
+    if (spanishName && import.meta.env[spanishName]) {
+      return import.meta.env[spanishName];
+    }
+    // PRIORIDAD 3: Intentar con prefijo VITE_* (desarrollo local)
     if (import.meta.env[`VITE_${varName}`]) {
       return import.meta.env[`VITE_${varName}`];
     }
-    // PRIORIDAD 3: Intentar sin prefijo (puede estar definido en define de vite.config)
+    // PRIORIDAD 4: Intentar sin prefijo (puede estar definido en define de vite.config)
     if (import.meta.env[varName]) {
       return import.meta.env[varName];
     }
@@ -23,9 +27,17 @@ function getEnvVar(varName) {
     if (window.__ENV__[`NEXT_PUBLIC_${varName}`]) {
       return window.__ENV__[`NEXT_PUBLIC_${varName}`];
     }
-    // PRIORIDAD 2: VITE_* como fallback
+    // PRIORIDAD 2: Nombre en español (Vercel)
+    if (spanishName && window.__ENV__[spanishName]) {
+      return window.__ENV__[spanishName];
+    }
+    // PRIORIDAD 3: VITE_* como fallback
     if (window.__ENV__[`VITE_${varName}`]) {
       return window.__ENV__[`VITE_${varName}`];
+    }
+    // PRIORIDAD 4: Sin prefijo
+    if (window.__ENV__[varName]) {
+      return window.__ENV__[varName];
     }
   }
   
@@ -56,10 +68,26 @@ export const ENV_CONFIG = {
   REVENUECAT_PUBLIC_KEY: import.meta?.env?.VITE_REVENUECAT_PUBLIC_KEY || 'appl_bFgSiUsYrPmowOiuWqFDcwskepz',
   
   // Stripe Configuration
-  STRIPE_PUBLISHABLE_KEY: import.meta?.env?.VITE_STRIPE_PUBLISHABLE_KEY || import.meta?.env?.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '',
-  STRIPE_PRICE_WEEKLY: import.meta?.env?.VITE_STRIPE_PRICE_WEEKLY || import.meta?.env?.STRIPE_PRICE_WEEKLY || '',
-  STRIPE_PRICE_MONTHLY: import.meta?.env?.VITE_STRIPE_PRICE_MONTHLY || import.meta?.env?.STRIPE_PRICE_MONTHLY || '',
-  STRIPE_PRICE_ANNUAL: import.meta?.env?.VITE_STRIPE_PRICE_ANNUAL || import.meta?.env?.STRIPE_PRICE_ANNUAL || '',
+  // Buscar en múltiples formatos: Vercel (PRECIO_*_DE_STRIPE), Vite (VITE_*), y sin prefijo
+  STRIPE_PUBLISHABLE_KEY: getEnvVar('STRIPE_PUBLISHABLE_KEY') || 
+                          import.meta?.env?.VITE_STRIPE_PUBLISHABLE_KEY || 
+                          import.meta?.env?.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || 
+                          import.meta?.env?.PRECIO_PUBLICO_DE_STRIPE || '',
+  STRIPE_PRICE_WEEKLY: getEnvVar('STRIPE_PRICE_WEEKLY', 'PRECIO_SEMANAL_DE_STRIPE') || 
+                       import.meta?.env?.VITE_STRIPE_PRICE_WEEKLY || 
+                       import.meta?.env?.STRIPE_PRICE_WEEKLY || 
+                       import.meta?.env?.PRECIO_SEMANAL_DE_STRIPE || 
+                       import.meta?.env?.NEXT_PUBLIC_STRIPE_PRICE_WEEKLY || '',
+  STRIPE_PRICE_MONTHLY: getEnvVar('STRIPE_PRICE_MONTHLY', 'PRECIO_MENSUAL_DE_STRIPE') || 
+                        import.meta?.env?.VITE_STRIPE_PRICE_MONTHLY || 
+                        import.meta?.env?.STRIPE_PRICE_MONTHLY || 
+                        import.meta?.env?.PRECIO_MENSUAL_DE_STRIPE || 
+                        import.meta?.env?.NEXT_PUBLIC_STRIPE_PRICE_MONTHLY || '',
+  STRIPE_PRICE_ANNUAL: getEnvVar('STRIPE_PRICE_ANNUAL', 'PRECIO_ANUAL_DE_STRIPE') || 
+                       import.meta?.env?.VITE_STRIPE_PRICE_ANNUAL || 
+                       import.meta?.env?.STRIPE_PRICE_ANNUAL || 
+                       import.meta?.env?.PRECIO_ANUAL_DE_STRIPE || 
+                       import.meta?.env?.NEXT_PUBLIC_STRIPE_PRICE_ANNUAL || '',
   
   // App Configuration
   APP_NAME: 'TastyPath',

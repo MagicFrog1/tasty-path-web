@@ -49,9 +49,13 @@ export const redirectToCheckout = async (
   customerEmail?: string
 ): Promise<{ success: boolean; error?: string }> => {
   try {
+    console.log('🔄 Iniciando redirección a Stripe Checkout...');
+    console.log('📋 Plan seleccionado:', planId);
+    
     const stripe = await getStripe();
     
     if (!stripe) {
+      console.error('❌ Stripe no está inicializado');
       return {
         success: false,
         error: 'Stripe no está configurado correctamente. Por favor, contacta con soporte.',
@@ -60,17 +64,29 @@ export const redirectToCheckout = async (
 
     const priceId = getStripePriceId(planId);
     
+    console.log('💰 Price ID obtenido:', priceId ? `${priceId.substring(0, 20)}...` : 'NO ENCONTRADO');
+    
     if (!priceId) {
+      console.error('❌ Price ID no encontrado para el plan:', planId);
+      console.error('🔍 Configuración actual:', {
+        weekly: ENV_CONFIG.STRIPE_PRICE_WEEKLY ? 'Configurado' : 'NO CONFIGURADO',
+        monthly: ENV_CONFIG.STRIPE_PRICE_MONTHLY ? 'Configurado' : 'NO CONFIGURADO',
+        annual: ENV_CONFIG.STRIPE_PRICE_ANNUAL ? 'Configurado' : 'NO CONFIGURADO',
+      });
       return {
         success: false,
-        error: `No se encontró el precio para el plan ${planId}. Por favor, contacta con soporte.`,
+        error: `No se encontró el precio para el plan ${planId}. Por favor, verifica la configuración.`,
       };
     }
 
-    // Crear sesión de checkout en el backend
-    // Por ahora, redirigimos directamente al checkout de Stripe
-    // En producción, deberías crear una sesión de checkout en tu backend
+    const successUrl = `${window.location.origin}/suscripcion?success=true&plan=${planId}`;
+    const cancelUrl = `${window.location.origin}/suscripcion?canceled=true`;
     
+    console.log('🔗 URLs de redirección:', { successUrl, cancelUrl });
+    console.log('📧 Email del cliente:', customerEmail || 'No proporcionado');
+    
+    // Redirigir directamente al checkout de Stripe usando lineItems
+    // Esto funciona cuando Stripe está correctamente configurado
     const { error } = await stripe.redirectToCheckout({
       lineItems: [
         {
@@ -79,25 +95,32 @@ export const redirectToCheckout = async (
         },
       ],
       mode: 'subscription',
-      successUrl: `${window.location.origin}/suscripcion?success=true&plan=${planId}`,
-      cancelUrl: `${window.location.origin}/suscripcion?canceled=true`,
+      successUrl: successUrl,
+      cancelUrl: cancelUrl,
       customerEmail: customerEmail,
+      billingAddressCollection: 'auto',
     });
 
     if (error) {
       console.error('❌ Error redirigiendo a Stripe Checkout:', error);
+      console.error('📋 Detalles del error:', {
+        type: error.type,
+        message: error.message,
+        code: error.code,
+      });
       return {
         success: false,
-        error: error.message || 'Error al procesar el pago',
+        error: error.message || 'Error al procesar el pago. Por favor, intenta de nuevo.',
       };
     }
 
+    console.log('✅ Redirección a Stripe Checkout iniciada correctamente');
     return { success: true };
   } catch (error) {
     console.error('❌ Error en redirectToCheckout:', error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Error desconocido',
+      error: error instanceof Error ? error.message : 'Error desconocido al procesar el pago',
     };
   }
 };

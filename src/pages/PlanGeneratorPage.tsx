@@ -623,6 +623,90 @@ const LoadingStep = styled.div<{ active: boolean; completed: boolean }>`
   }
 `;
 
+const TimeEstimator = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 20px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(46, 139, 87, 0.08) 0%, rgba(34, 197, 94, 0.05) 100%);
+  border: 1px solid rgba(46, 139, 87, 0.2);
+  box-shadow: 0 4px 16px rgba(46, 139, 87, 0.1);
+  min-width: 280px;
+  margin-top: 8px;
+`;
+
+const TimeLabel = styled.div`
+  font-size: 13px;
+  font-weight: 600;
+  color: ${theme.colors.textSecondary};
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+`;
+
+const TimeDisplay = styled.div`
+  font-size: 2rem;
+  font-weight: 800;
+  color: ${theme.colors.primary};
+  font-family: ${theme.fonts.heading};
+  letter-spacing: -0.02em;
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  animation: pulse 2s ease-in-out infinite;
+
+  @keyframes pulse {
+    0%, 100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+    50% {
+      transform: scale(1.05);
+      opacity: 0.9;
+    }
+  }
+
+  span {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: ${theme.colors.textSecondary};
+  }
+`;
+
+const TimeOscillator = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+`;
+
+const OscillatorDot = styled.div<{ delay: number }>`
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: ${theme.colors.primary};
+  animation: oscillate 1.5s ease-in-out infinite;
+  animation-delay: ${({ delay }) => delay}s;
+
+  @keyframes oscillate {
+    0%, 100% {
+      transform: translateY(0) scale(1);
+      opacity: 0.6;
+    }
+    50% {
+      transform: translateY(-8px) scale(1.2);
+      opacity: 1;
+    }
+  }
+`;
+
+const TimeRange = styled.div`
+  font-size: 12px;
+  color: ${theme.colors.textSecondary};
+  margin-top: 4px;
+`;
+
 const PlanGeneratorPage: React.FC = () => {
   const { profile } = useUserProfile();
   const { addWeeklyPlan, weeklyPlans } = useWeeklyPlan();
@@ -640,6 +724,8 @@ const PlanGeneratorPage: React.FC = () => {
   const [useCustomCalories, setUseCustomCalories] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
+  const [elapsedTime, setElapsedTime] = useState(0);
+  const [estimatedTime, setEstimatedTime] = useState(240); // 4 minutos en segundos (rango 3-5 min)
   const [currentTipIndex, setCurrentTipIndex] = useState(0);
   const [status, setStatus] = useState<string>('');
   const [statusType, setStatusType] = useState<'info' | 'success' | 'error'>('info');
@@ -725,6 +811,9 @@ const PlanGeneratorPage: React.FC = () => {
 
     setIsLoading(true);
     setLoadingStep(1);
+    setElapsedTime(0);
+    // Estimar tiempo entre 3-5 minutos (180-300 segundos)
+    setEstimatedTime(Math.floor(Math.random() * 120) + 180);
     setStatus('Calculando parámetros nutricionales...');
     setStatusType('info');
 
@@ -1250,6 +1339,31 @@ const PlanGeneratorPage: React.FC = () => {
     { id: 6, label: 'Finalizando...' },
   ];
 
+  // Actualizar tiempo transcurrido cada segundo cuando está cargando
+  React.useEffect(() => {
+    if (!isLoading) {
+      setElapsedTime(0);
+      return;
+    }
+
+    const interval = setInterval(() => {
+      setElapsedTime((prev) => prev + 1);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [isLoading]);
+
+  // Calcular tiempo restante estimado
+  const remainingTime = Math.max(0, estimatedTime - elapsedTime);
+  const minutes = Math.floor(remainingTime / 60);
+  const seconds = remainingTime % 60;
+
+  const formatTime = (mins: number, secs: number) => {
+    if (mins === 0 && secs === 0) return 'Casi listo...';
+    if (mins === 0) return `${secs}s`;
+    return `${mins}m ${secs}s`;
+  };
+
   return (
     <PageWrapper>
       <LoadingOverlay show={isLoading}>
@@ -1259,6 +1373,18 @@ const PlanGeneratorPage: React.FC = () => {
           <LoadingMessage>
             Estamos creando un plan personalizado para ti. Esto puede tardar unos momentos...
           </LoadingMessage>
+          <TimeEstimator>
+            <TimeLabel>Tiempo estimado restante</TimeLabel>
+            <TimeDisplay>
+              {formatTime(minutes, seconds)}
+            </TimeDisplay>
+            <TimeOscillator>
+              <OscillatorDot delay={0} />
+              <OscillatorDot delay={0.2} />
+              <OscillatorDot delay={0.4} />
+            </TimeOscillator>
+            <TimeRange>Estimado: 3-5 minutos</TimeRange>
+          </TimeEstimator>
           <LoadingSteps>
             {loadingSteps.map((step) => (
               <LoadingStep

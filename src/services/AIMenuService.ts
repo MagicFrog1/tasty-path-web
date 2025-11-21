@@ -167,6 +167,7 @@ class AIMenuService {
     console.log('🎨 Elementos únicos generados:', seedBasedElements);
     
       console.log('📤 Enviando solicitud a OpenAI sin timeout...');
+      console.log('🔗 URL:', this.baseUrl);
       
       try {
         const response = await fetch(this.baseUrl, {

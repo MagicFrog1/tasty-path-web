@@ -470,8 +470,16 @@ const SubscriptionPage: React.FC = () => {
       return;
     }
 
+    console.log('🔘 Botón de suscripción clickeado:', planId);
+    
     if (!stripeAvailable) {
       console.warn('⚠️ Stripe no está configurado, usando modo simulado');
+      console.warn('🔍 Verificando configuración:', {
+        publishableKey: !!import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY,
+        weeklyPrice: !!import.meta.env.VITE_STRIPE_PRICE_WEEKLY,
+        monthlyPrice: !!import.meta.env.VITE_STRIPE_PRICE_MONTHLY,
+        annualPrice: !!import.meta.env.VITE_STRIPE_PRICE_ANNUAL,
+      });
       // Fallback al modo simulado si Stripe no está configurado
       await selectPlan(planId);
       return;
@@ -479,20 +487,25 @@ const SubscriptionPage: React.FC = () => {
 
     setIsProcessing(true);
     try {
+      console.log('🚀 Redirigiendo a Stripe Checkout para plan:', planId);
       const result = await redirectToCheckout(
         planId as 'weekly' | 'monthly' | 'annual',
         user?.email
       );
 
       if (!result.success) {
-        alert(result.error || 'Error al procesar el pago');
+        console.error('❌ Error en redirectToCheckout:', result.error);
+        alert(result.error || 'Error al procesar el pago. Por favor, verifica la configuración de Stripe.');
+        setIsProcessing(false);
+      } else {
+        console.log('✅ Redirección a Stripe iniciada, el usuario será redirigido...');
+        // No establecer isProcessing a false aquí porque el usuario será redirigido
+        // Si hay un error, se manejará en el catch
       }
-      // Si es exitoso, redirectToCheckout redirigirá al usuario a Stripe
     } catch (error) {
-      console.error('Error seleccionando plan:', error);
-      alert('Error al procesar el pago. Por favor, intenta de nuevo.');
-    } finally {
+      console.error('❌ Error seleccionando plan:', error);
       setIsProcessing(false);
+      alert('Error al procesar el pago. Por favor, intenta de nuevo. Si el problema persiste, contacta con soporte.');
     }
   };
 
