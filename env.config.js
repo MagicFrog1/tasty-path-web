@@ -45,17 +45,19 @@ function getEnvVar(varName, spanishName = null) {
 }
 
 // Configuración de variables de entorno para TastyPath
-// Log de depuración al cargar (solo en desarrollo o cuando faltan variables)
+// Log de depuración al cargar (siempre, para debugging)
 if (typeof window !== 'undefined' && typeof import.meta !== 'undefined' && import.meta.env) {
   const env = import.meta.env;
-  console.log('🔧 ENV_CONFIG - Variables de Stripe disponibles en import.meta.env:', {
+  // Usar JSON.stringify para asegurar que se muestren valores reales
+  const logData = {
     NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ? `${String(env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY).substring(0, 20)}...` : 'NO ENCONTRADO',
     VITE_STRIPE_PUBLISHABLE_KEY: env.VITE_STRIPE_PUBLISHABLE_KEY ? `${String(env.VITE_STRIPE_PUBLISHABLE_KEY).substring(0, 20)}...` : 'NO ENCONTRADO',
     STRIPE_PUBLISHABLE_KEY: env.STRIPE_PUBLISHABLE_KEY ? `${String(env.STRIPE_PUBLISHABLE_KEY).substring(0, 20)}...` : 'NO ENCONTRADO',
     STRIPE_PRICE_WEEKLY: env.STRIPE_PRICE_WEEKLY || 'NO ENCONTRADO',
     STRIPE_PRICE_MONTHLY: env.STRIPE_PRICE_MONTHLY || 'NO ENCONTRADO',
     STRIPE_PRICE_ANNUAL: env.STRIPE_PRICE_ANNUAL || 'NO ENCONTRADO',
-  });
+  };
+  console.log('🔧 ENV_CONFIG - Variables de Stripe disponibles en import.meta.env:', JSON.stringify(logData, null, 2));
 }
 
 export const ENV_CONFIG = {

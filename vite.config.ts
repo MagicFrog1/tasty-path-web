@@ -99,22 +99,25 @@ export default defineConfig(({ mode }) => {
     defineVars['import.meta.env.NEXT_PUBLIC_STRIPE_PRICE_ANNUAL'] = JSON.stringify(stripePriceAnnual);
   }
   
-  // Log durante build (solo en desarrollo)
-  if (mode === 'development') {
-    console.log('🔧 Vite Config - Variables de entorno cargadas:');
-    console.log('  - NEXT_PUBLIC_SUPABASE_URL:', env.NEXT_PUBLIC_SUPABASE_URL ? '✓' : '✗');
-    console.log('  - NEXT_PUBLIC_SUPABASE_ANON_KEY:', env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? '✓' : '✗');
-    console.log('  - VITE_SUPABASE_URL:', env.VITE_SUPABASE_URL ? '✓' : '✗');
-    console.log('  - VITE_SUPABASE_ANON_KEY:', env.VITE_SUPABASE_ANON_KEY ? '✓' : '✗');
-    console.log('🔧 Stripe Configuration:');
-    console.log('  - NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:', stripePublishableKey ? '✓' : '✗');
-    console.log('  - STRIPE_PRICE_WEEKLY:', stripePriceWeekly ? '✓' : '✗');
-    console.log('  - STRIPE_PRICE_MONTHLY:', stripePriceMonthly ? '✓' : '✗');
-    console.log('  - STRIPE_PRICE_ANNUAL:', stripePriceAnnual ? '✓' : '✗');
-    console.log('  - process.env.STRIPE_PRICE_WEEKLY:', process.env.STRIPE_PRICE_WEEKLY ? '✓' : '✗');
-    console.log('  - process.env.STRIPE_PRICE_MONTHLY:', process.env.STRIPE_PRICE_MONTHLY ? '✓' : '✗');
-    console.log('  - process.env.STRIPE_PRICE_ANNUAL:', process.env.STRIPE_PRICE_ANNUAL ? '✓' : '✗');
-  }
+  // Log durante build (tanto en desarrollo como en producción para debugging)
+  console.log('🔧 Vite Config - Variables de entorno cargadas:');
+  console.log('  - NEXT_PUBLIC_SUPABASE_URL:', env.NEXT_PUBLIC_SUPABASE_URL ? '✓' : '✗');
+  console.log('  - NEXT_PUBLIC_SUPABASE_ANON_KEY:', env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? '✓' : '✗');
+  console.log('🔧 Stripe Configuration durante BUILD:');
+  console.log('  - process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:', process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ? `${String(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY).substring(0, 20)}...` : 'NO ENCONTRADO');
+  console.log('  - env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:', env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ? `${String(env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY).substring(0, 20)}...` : 'NO ENCONTRADO');
+  console.log('  - stripePublishableKey (resultado final):', stripePublishableKey ? `${String(stripePublishableKey).substring(0, 20)}...` : 'NO ENCONTRADO');
+  console.log('  - process.env.STRIPE_PRICE_WEEKLY:', process.env.STRIPE_PRICE_WEEKLY || 'NO ENCONTRADO');
+  console.log('  - process.env.STRIPE_PRICE_MONTHLY:', process.env.STRIPE_PRICE_MONTHLY || 'NO ENCONTRADO');
+  console.log('  - process.env.STRIPE_PRICE_ANNUAL:', process.env.STRIPE_PRICE_ANNUAL || 'NO ENCONTRADO');
+  console.log('  - stripePriceWeekly (resultado final):', stripePriceWeekly || 'NO ENCONTRADO');
+  console.log('  - stripePriceMonthly (resultado final):', stripePriceMonthly || 'NO ENCONTRADO');
+  console.log('  - stripePriceAnnual (resultado final):', stripePriceAnnual || 'NO ENCONTRADO');
+  console.log('🔧 Variables que se expondrán en defineVars:');
+  console.log('  - NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:', !!defineVars['import.meta.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY'] ? '✓' : '✗');
+  console.log('  - STRIPE_PRICE_WEEKLY:', !!defineVars['import.meta.env.STRIPE_PRICE_WEEKLY'] ? '✓' : '✗');
+  console.log('  - STRIPE_PRICE_MONTHLY:', !!defineVars['import.meta.env.STRIPE_PRICE_MONTHLY'] ? '✓' : '✗');
+  console.log('  - STRIPE_PRICE_ANNUAL:', !!defineVars['import.meta.env.STRIPE_PRICE_ANNUAL'] ? '✓' : '✗');
   
   return {
     plugins: [react()],
