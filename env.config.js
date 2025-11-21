@@ -98,24 +98,24 @@ export const ENV_CONFIG = {
     }
     return value;
   })(),
-  // En Vercel las variables se llaman STRIPE_PRICE_WEEKLY, STRIPE_PRICE_MONTHLY, STRIPE_PRICE_ANNUAL (sin prefijo)
-  // Priorizar variables sin prefijo (como están en Vercel), luego VITE_* para desarrollo local
+  // En Vercel las variables ahora tienen prefijo NEXT_PUBLIC_ (NEXT_PUBLIC_STRIPE_PRICE_*)
+  // Priorizar NEXT_PUBLIC_* (como están ahora en Vercel), luego sin prefijo (legacy), luego VITE_* para desarrollo local
   STRIPE_PRICE_WEEKLY: (() => {
-    const value = import.meta?.env?.STRIPE_PRICE_WEEKLY || 
-                  import.meta?.env?.VITE_STRIPE_PRICE_WEEKLY || 
-                  import.meta?.env?.NEXT_PUBLIC_STRIPE_PRICE_WEEKLY || '';
+    const value = import.meta?.env?.NEXT_PUBLIC_STRIPE_PRICE_WEEKLY || 
+                  import.meta?.env?.STRIPE_PRICE_WEEKLY || 
+                  import.meta?.env?.VITE_STRIPE_PRICE_WEEKLY || '';
     return value;
   })(),
   STRIPE_PRICE_MONTHLY: (() => {
-    const value = import.meta?.env?.STRIPE_PRICE_MONTHLY || 
-                  import.meta?.env?.VITE_STRIPE_PRICE_MONTHLY || 
-                  import.meta?.env?.NEXT_PUBLIC_STRIPE_PRICE_MONTHLY || '';
+    const value = import.meta?.env?.NEXT_PUBLIC_STRIPE_PRICE_MONTHLY || 
+                  import.meta?.env?.STRIPE_PRICE_MONTHLY || 
+                  import.meta?.env?.VITE_STRIPE_PRICE_MONTHLY || '';
     return value;
   })(),
   STRIPE_PRICE_ANNUAL: (() => {
-    const value = import.meta?.env?.STRIPE_PRICE_ANNUAL || 
-                  import.meta?.env?.VITE_STRIPE_PRICE_ANNUAL || 
-                  import.meta?.env?.NEXT_PUBLIC_STRIPE_PRICE_ANNUAL || '';
+    const value = import.meta?.env?.NEXT_PUBLIC_STRIPE_PRICE_ANNUAL || 
+                  import.meta?.env?.STRIPE_PRICE_ANNUAL || 
+                  import.meta?.env?.VITE_STRIPE_PRICE_ANNUAL || '';
     return value;
   })(),
   
