@@ -67,17 +67,28 @@ export const redirectToCheckout = async (
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: 'Error desconocido' }));
+      let errorData;
+      try {
+        errorData = await response.json();
+      } catch (e) {
+        errorData = { error: `Error del servidor (${response.status}): ${response.statusText}` };
+      }
+      
       console.error('❌ Error creando sesión de checkout:', errorData);
       console.error('📋 Status:', response.status);
-      console.error('📋 Response completa:', errorData);
+      console.error('📋 Response completa:', JSON.stringify(errorData, null, 2));
       
       // Mostrar mensaje de error más detallado
-      let errorMessage = errorData.error || 'Error al crear la sesión de checkout. Por favor, intenta de nuevo.';
+      let errorMessage = errorData.error || errorData.message || `Error al crear la sesión de checkout (${response.status}). Por favor, intenta de nuevo.`;
       
       // Si el error menciona Price ID, dar más contexto
-      if (errorMessage.includes('Price ID') || errorMessage.includes('price_')) {
-        errorMessage += ' Verifica que las variables VITE_STRIPE_PRICE_* en Vercel contengan Price IDs válidos (deben empezar con "price_").';
+      if (errorMessage.includes('Price ID') || errorMessage.includes('price_') || errorMessage.includes('Product ID')) {
+        errorMessage += '\n\n💡 Solución: Ve a Stripe Dashboard > Products > Selecciona el producto > En la sección "Pricing" copia el Price ID (debe empezar con "price_", no "prod_").';
+      }
+      
+      // Si el error menciona STRIPE_SECRET_KEY
+      if (errorMessage.includes('STRIPE_SECRET_KEY')) {
+        errorMessage += '\n\n💡 Solución: Verifica que STRIPE_SECRET_KEY esté configurada en Vercel (Settings > Environment Variables).';
       }
       
       return {
