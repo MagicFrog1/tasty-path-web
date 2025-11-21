@@ -21,17 +21,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // Obtener la clave secreta de Stripe desde las variables de entorno
+    // En Vercel, las variables están disponibles directamente en process.env
     const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+
+    console.log('🔍 Verificando variables de entorno en el servidor:', {
+      STRIPE_SECRET_KEY: stripeSecretKey ? `${stripeSecretKey.substring(0, 10)}...` : 'NO ENCONTRADO',
+      VITE_STRIPE_PRICE_WEEKLY: process.env.VITE_STRIPE_PRICE_WEEKLY || 'NO ENCONTRADO',
+      VITE_STRIPE_PRICE_MONTHLY: process.env.VITE_STRIPE_PRICE_MONTHLY || 'NO ENCONTRADO',
+      VITE_STRIPE_PRICE_ANNUAL: process.env.VITE_STRIPE_PRICE_ANNUAL || 'NO ENCONTRADO',
+    });
 
     if (!stripeSecretKey) {
       console.error('❌ STRIPE_SECRET_KEY no configurada');
-      console.error('🔍 Variables disponibles:', {
-        STRIPE_SECRET_KEY: !!process.env.STRIPE_SECRET_KEY,
-        VITE_STRIPE_PRICE_WEEKLY: process.env.VITE_STRIPE_PRICE_WEEKLY || 'NO ENCONTRADO',
-        VITE_STRIPE_PRICE_MONTHLY: process.env.VITE_STRIPE_PRICE_MONTHLY || 'NO ENCONTRADO',
-        VITE_STRIPE_PRICE_ANNUAL: process.env.VITE_STRIPE_PRICE_ANNUAL || 'NO ENCONTRADO',
+      return res.status(500).json({ 
+        error: 'Stripe no está configurado correctamente en el servidor. STRIPE_SECRET_KEY no encontrada. Verifica que esté configurada en Vercel (Settings > Environment Variables).' 
       });
-      return res.status(500).json({ error: 'Stripe no está configurado correctamente en el servidor. STRIPE_SECRET_KEY no encontrada.' });
     }
 
     // Inicializar Stripe con la clave secreta
