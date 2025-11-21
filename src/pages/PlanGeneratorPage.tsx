@@ -645,7 +645,7 @@ const PlanGeneratorPage: React.FC = () => {
     return (
       <PageWrapper>
         <Header>
-          <h1>Generador de Plan (Web)</h1>
+          <h1>Generador de Plan</h1>
           <p>Cargando tu perfil...</p>
         </Header>
       </PageWrapper>
@@ -663,7 +663,7 @@ const PlanGeneratorPage: React.FC = () => {
       </SuccessNotification>
       
       <Header>
-        <h1>Generador de Plan (Web)</h1>
+        <h1>Generador de Plan</h1>
         <p>Cuestionario paso a paso. Al finalizar, generaremos tu menú semanal con IA y crearemos la lista de compras.</p>
       </Header>
 

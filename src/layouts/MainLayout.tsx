@@ -23,7 +23,7 @@ const Sidebar = styled.aside<{ isOpen?: boolean }>`
   left: 0;
   height: 100vh;
   width: 280px;
-  overflow-y: auto;
+  overflow-y: hidden;
   overflow-x: hidden;
   background: linear-gradient(200deg, rgba(34, 139, 34, 0.95) 0%, rgba(73, 150, 102, 0.85) 100%);
   color: ${theme.colors.white};
@@ -42,7 +42,7 @@ const Sidebar = styled.aside<{ isOpen?: boolean }>`
     width: 280px;
     max-width: 85vw;
     transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    overflow-y: auto;
+    overflow-y: hidden;
     flex-direction: column;
     align-items: flex-start;
     justify-content: flex-start;
@@ -233,7 +233,7 @@ const Menu = styled.nav`
   flex-direction: column;
   gap: 12px;
   flex: 1;
-  overflow-y: auto;
+  overflow-y: hidden;
 
   @media (max-width: 1024px) {
     width: 100%;
