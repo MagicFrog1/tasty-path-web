@@ -81,47 +81,38 @@ export const ENV_CONFIG = {
   REVENUECAT_PUBLIC_KEY: import.meta?.env?.VITE_REVENUECAT_PUBLIC_KEY || 'appl_bFgSiUsYrPmowOiuWqFDcwskepz',
   
   // Stripe Configuration
-  // Priorizar NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY (como está en Vercel)
-  // Buscar en múltiples formatos: Vercel (NEXT_PUBLIC_*), Vite (VITE_*), y sin prefijo
+  // En Vercel la variable se llama NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+  // Priorizar NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY directamente (como está en Vercel)
   STRIPE_PUBLISHABLE_KEY: (() => {
     // PRIORIDAD 1: NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY (como está en Vercel)
     const value = import.meta?.env?.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || 
-                  import.meta?.env?.VITE_STRIPE_PUBLISHABLE_KEY || 
-                  getEnvVar('STRIPE_PUBLISHABLE_KEY') || 
-                  import.meta?.env?.STRIPE_PUBLISHABLE_KEY ||
-                  import.meta?.env?.PRECIO_PUBLICO_DE_STRIPE || '';
+                  import.meta?.env?.VITE_STRIPE_PUBLISHABLE_KEY || '';
     if (typeof window !== 'undefined' && !value) {
       const env = import.meta?.env || {};
       console.warn('🔍 STRIPE_PUBLISHABLE_KEY no encontrada. Valores disponibles:', {
         NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ? `${String(env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY).substring(0, 20)}...` : 'NO ENCONTRADO',
         VITE_STRIPE_PUBLISHABLE_KEY: env.VITE_STRIPE_PUBLISHABLE_KEY ? `${String(env.VITE_STRIPE_PUBLISHABLE_KEY).substring(0, 20)}...` : 'NO ENCONTRADO',
-        getEnvVar: getEnvVar('STRIPE_PUBLISHABLE_KEY') || 'NO ENCONTRADO',
-        STRIPE_PUBLISHABLE_KEY: env.STRIPE_PUBLISHABLE_KEY ? `${String(env.STRIPE_PUBLISHABLE_KEY).substring(0, 20)}...` : 'NO ENCONTRADO',
       });
     }
     return value;
   })(),
+  // En Vercel las variables se llaman STRIPE_PRICE_WEEKLY, STRIPE_PRICE_MONTHLY, STRIPE_PRICE_ANNUAL (sin prefijo)
+  // Priorizar variables sin prefijo (como están en Vercel), luego VITE_* para desarrollo local
   STRIPE_PRICE_WEEKLY: (() => {
-    const value = getEnvVar('STRIPE_PRICE_WEEKLY', 'PRECIO_SEMANAL_DE_STRIPE') || 
+    const value = import.meta?.env?.STRIPE_PRICE_WEEKLY || 
                   import.meta?.env?.VITE_STRIPE_PRICE_WEEKLY || 
-                  import.meta?.env?.STRIPE_PRICE_WEEKLY || 
-                  import.meta?.env?.PRECIO_SEMANAL_DE_STRIPE || 
                   import.meta?.env?.NEXT_PUBLIC_STRIPE_PRICE_WEEKLY || '';
     return value;
   })(),
   STRIPE_PRICE_MONTHLY: (() => {
-    const value = getEnvVar('STRIPE_PRICE_MONTHLY', 'PRECIO_MENSUAL_DE_STRIPE') || 
+    const value = import.meta?.env?.STRIPE_PRICE_MONTHLY || 
                   import.meta?.env?.VITE_STRIPE_PRICE_MONTHLY || 
-                  import.meta?.env?.STRIPE_PRICE_MONTHLY || 
-                  import.meta?.env?.PRECIO_MENSUAL_DE_STRIPE || 
                   import.meta?.env?.NEXT_PUBLIC_STRIPE_PRICE_MONTHLY || '';
     return value;
   })(),
   STRIPE_PRICE_ANNUAL: (() => {
-    const value = getEnvVar('STRIPE_PRICE_ANNUAL', 'PRECIO_ANUAL_DE_STRIPE') || 
+    const value = import.meta?.env?.STRIPE_PRICE_ANNUAL || 
                   import.meta?.env?.VITE_STRIPE_PRICE_ANNUAL || 
-                  import.meta?.env?.STRIPE_PRICE_ANNUAL || 
-                  import.meta?.env?.PRECIO_ANUAL_DE_STRIPE || 
                   import.meta?.env?.NEXT_PUBLIC_STRIPE_PRICE_ANNUAL || '';
     return value;
   })(),
