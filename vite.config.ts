@@ -62,42 +62,36 @@ export default defineConfig(({ mode }) => {
                             env.VITE_STRIPE_PRICE_ANNUAL || '';
   
   // Exponer NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
-  // En Vercel, process.env tiene todas las variables durante el build
-  if (stripePublishableKey) {
-    defineVars['import.meta.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY'] = JSON.stringify(stripePublishableKey);
-    // También exponer como VITE_* y sin prefijo para compatibilidad
-    defineVars['import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY'] = JSON.stringify(stripePublishableKey);
-    defineVars['import.meta.env.STRIPE_PUBLISHABLE_KEY'] = JSON.stringify(stripePublishableKey);
-  } else {
+  // SIEMPRE exponer, incluso si está vacío (para debugging)
+  defineVars['import.meta.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY'] = JSON.stringify(stripePublishableKey || '');
+  defineVars['import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY'] = JSON.stringify(stripePublishableKey || '');
+  defineVars['import.meta.env.STRIPE_PUBLISHABLE_KEY'] = JSON.stringify(stripePublishableKey || '');
+  
+  if (!stripePublishableKey) {
     // Log de advertencia si no se encuentra
     console.warn('⚠️ STRIPE_PUBLISHABLE_KEY no encontrada durante el build');
     console.warn('  - env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:', env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ? '✓' : '✗');
     console.warn('  - process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:', process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ? '✓' : '✗');
+    console.warn('  - Todas las variables process.env disponibles:', Object.keys(process.env).filter(k => k.includes('STRIPE')).join(', ') || 'NINGUNA');
   }
   
   // Exponer STRIPE_PRICE_WEEKLY (sin prefijo, como está en Vercel)
-  if (stripePriceWeekly) {
-    defineVars['import.meta.env.STRIPE_PRICE_WEEKLY'] = JSON.stringify(stripePriceWeekly);
-    // También exponer como VITE_* y NEXT_PUBLIC_* para compatibilidad
-    defineVars['import.meta.env.VITE_STRIPE_PRICE_WEEKLY'] = JSON.stringify(stripePriceWeekly);
-    defineVars['import.meta.env.NEXT_PUBLIC_STRIPE_PRICE_WEEKLY'] = JSON.stringify(stripePriceWeekly);
-  }
+  // SIEMPRE exponer, incluso si está vacío
+  defineVars['import.meta.env.STRIPE_PRICE_WEEKLY'] = JSON.stringify(stripePriceWeekly || '');
+  defineVars['import.meta.env.VITE_STRIPE_PRICE_WEEKLY'] = JSON.stringify(stripePriceWeekly || '');
+  defineVars['import.meta.env.NEXT_PUBLIC_STRIPE_PRICE_WEEKLY'] = JSON.stringify(stripePriceWeekly || '');
   
   // Exponer STRIPE_PRICE_MONTHLY (sin prefijo, como está en Vercel)
-  if (stripePriceMonthly) {
-    defineVars['import.meta.env.STRIPE_PRICE_MONTHLY'] = JSON.stringify(stripePriceMonthly);
-    // También exponer como VITE_* y NEXT_PUBLIC_* para compatibilidad
-    defineVars['import.meta.env.VITE_STRIPE_PRICE_MONTHLY'] = JSON.stringify(stripePriceMonthly);
-    defineVars['import.meta.env.NEXT_PUBLIC_STRIPE_PRICE_MONTHLY'] = JSON.stringify(stripePriceMonthly);
-  }
+  // SIEMPRE exponer, incluso si está vacío
+  defineVars['import.meta.env.STRIPE_PRICE_MONTHLY'] = JSON.stringify(stripePriceMonthly || '');
+  defineVars['import.meta.env.VITE_STRIPE_PRICE_MONTHLY'] = JSON.stringify(stripePriceMonthly || '');
+  defineVars['import.meta.env.NEXT_PUBLIC_STRIPE_PRICE_MONTHLY'] = JSON.stringify(stripePriceMonthly || '');
   
   // Exponer STRIPE_PRICE_ANNUAL (sin prefijo, como está en Vercel)
-  if (stripePriceAnnual) {
-    defineVars['import.meta.env.STRIPE_PRICE_ANNUAL'] = JSON.stringify(stripePriceAnnual);
-    // También exponer como VITE_* y NEXT_PUBLIC_* para compatibilidad
-    defineVars['import.meta.env.VITE_STRIPE_PRICE_ANNUAL'] = JSON.stringify(stripePriceAnnual);
-    defineVars['import.meta.env.NEXT_PUBLIC_STRIPE_PRICE_ANNUAL'] = JSON.stringify(stripePriceAnnual);
-  }
+  // SIEMPRE exponer, incluso si está vacío
+  defineVars['import.meta.env.STRIPE_PRICE_ANNUAL'] = JSON.stringify(stripePriceAnnual || '');
+  defineVars['import.meta.env.VITE_STRIPE_PRICE_ANNUAL'] = JSON.stringify(stripePriceAnnual || '');
+  defineVars['import.meta.env.NEXT_PUBLIC_STRIPE_PRICE_ANNUAL'] = JSON.stringify(stripePriceAnnual || '');
   
   // Log durante build (tanto en desarrollo como en producción para debugging)
   console.log('🔧 Vite Config - Variables de entorno cargadas:');
