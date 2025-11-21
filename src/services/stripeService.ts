@@ -69,9 +69,20 @@ export const redirectToCheckout = async (
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ error: 'Error desconocido' }));
       console.error('❌ Error creando sesión de checkout:', errorData);
+      console.error('📋 Status:', response.status);
+      console.error('📋 Response completa:', errorData);
+      
+      // Mostrar mensaje de error más detallado
+      let errorMessage = errorData.error || 'Error al crear la sesión de checkout. Por favor, intenta de nuevo.';
+      
+      // Si el error menciona Price ID, dar más contexto
+      if (errorMessage.includes('Price ID') || errorMessage.includes('price_')) {
+        errorMessage += ' Verifica que las variables VITE_STRIPE_PRICE_* en Vercel contengan Price IDs válidos (deben empezar con "price_").';
+      }
+      
       return {
         success: false,
-        error: errorData.error || 'Error al crear la sesión de checkout. Por favor, intenta de nuevo.',
+        error: errorMessage,
       };
     }
 
