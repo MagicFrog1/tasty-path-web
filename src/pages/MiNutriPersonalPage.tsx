@@ -160,8 +160,6 @@ const MiNutriPersonalPage: React.FC = () => {
   const [isLoadingContent, setIsLoadingContent] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(1);
   const [dayCompletions, setDayCompletions] = useState<{ [dayNumber: number]: { breakfast: boolean; lunch: boolean; dinner: boolean; exercise: boolean } }>({});
-  const [currentMonth, setCurrentMonth] = useState(1);
-  const [dayCompletions, setDayCompletions] = useState<{ [dayNumber: number]: { breakfast: boolean; lunch: boolean; dinner: boolean; exercise: boolean } }>({});
 
   // Verificar si el usuario es premium
   const isPremium = currentPlan && currentPlan.plan !== 'free' && currentPlan.isActive;
