@@ -443,29 +443,29 @@ const MiNutriPersonalPage: React.FC = () => {
                   )}
                 </Card>
               )}
+
+              {!isOnboarding && (
+                <Card>
+                  <div style={{ marginBottom: '20px' }}>
+                    <h2 style={{ margin: '0 0 8px 0', fontSize: '22px', fontWeight: 700, color: theme.colors.primaryDark, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <FiMessageCircle />
+                      NutriChat
+                    </h2>
+                    <p style={{ margin: '0', color: theme.colors.textSecondary, lineHeight: '1.6', fontSize: '14px' }}>
+                      Tu asistente virtual especializado en alimentación y nutrición
+                    </p>
+                  </div>
+                  <NutriChat
+                    adherence={adherence}
+                    currentDay={currentDay}
+                    totalDays={30}
+                  />
+                </Card>
+              )}
             </>
           )}
         </MainContent>
 
-        <Sidebar>
-          <Card style={{ padding: '0', overflow: 'hidden' }}>
-            <div style={{ padding: '24px 24px 0 24px' }}>
-              <h3 style={{ margin: '0 0 12px 0', fontSize: '20px', fontWeight: 700, color: theme.colors.primaryDark, display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <FiMessageCircle />
-                NutriChat IA
-              </h3>
-              <p style={{ margin: '0 0 0 0', color: theme.colors.textSecondary, lineHeight: '1.6', fontSize: '14px' }}>
-                Tu asistente virtual de nutrición
-              </p>
-            </div>
-            {!isOnboarding && (
-              <NutriChat
-                adherence={adherence}
-                currentDay={currentDay}
-                totalDays={30}
-              />
-            )}
-          </Card>
 
           <Card>
             <h3 style={{ margin: '0 0 20px 0', fontSize: '20px', fontWeight: 700, color: theme.colors.primaryDark, display: 'flex', alignItems: 'center', gap: '10px' }}>

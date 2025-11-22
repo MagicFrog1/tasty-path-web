@@ -2,6 +2,9 @@ import React, { useState, useRef, useEffect } from 'react';
 import styled from 'styled-components';
 import { FiSend, FiMessageCircle, FiTrendingUp, FiAlertCircle } from 'react-icons/fi';
 import { theme } from '../../styles/theme';
+import { AI_CONFIG, isAIConfigured } from '../../config/ai';
+import { medicalKnowledgeService } from '../../services/MedicalKnowledgeService';
+import { ENV_CONFIG } from '../../../env.config';
 
 const ChatContainer = styled.div`
   display: grid;
@@ -148,7 +151,7 @@ interface NutriChatProps {
 const NutriChat: React.FC<NutriChatProps> = ({ adherence, currentDay, totalDays }) => {
   const [messages, setMessages] = useState<Array<{ text: string; isUser: boolean }>>([
     {
-      text: '¡Hola! Soy NutriChat, tu asistente virtual de nutrición. Puedo ayudarte con dudas sobre tu roadmap, plan de ejercicios, ingredientes o cualquier pregunta relacionada con tu objetivo. ¿En qué puedo ayudarte?',
+      text: '¡Hola! Soy NutriChat, tu asistente virtual especializado en alimentación y nutrición. Puedo ayudarte con dudas sobre tu plan alimenticio, ingredientes, recetas, valores nutricionales y cualquier pregunta relacionada con nutrición. ¿En qué puedo ayudarte?',
       isUser: false
     }
   ]);
@@ -184,25 +187,120 @@ const NutriChat: React.FC<NutriChatProps> = ({ adherence, currentDay, totalDays 
     setMessages(prev => [...prev, { text: userMessage, isUser: true }]);
     setIsTyping(true);
 
-    // Simular respuesta de IA (en producción sería una llamada a la API)
-    setTimeout(() => {
+    try {
+      // Verificar si la pregunta es sobre nutrición/alimentación
+      const nutritionKeywords = [
+        'nutrición', 'alimentación', 'comida', 'alimento', 'dieta', 'calorías', 'proteína', 'carbohidrato',
+        'grasa', 'vitamina', 'mineral', 'fibra', 'receta', 'ingrediente', 'cocinar', 'preparar',
+        'macronutriente', 'micronutriente', 'metabolismo', 'digestión', 'absorción', 'nutriente',
+        'saludable', 'nutritivo', 'balanceado', 'plan alimenticio', 'menú', 'desayuno', 'almuerzo', 'cena'
+      ];
+      
+      const isNutritionQuestion = nutritionKeywords.some(keyword => 
+        userMessage.toLowerCase().includes(keyword)
+      );
+
+      if (!isNutritionQuestion) {
+        setMessages(prev => [...prev, { 
+          text: 'Lo siento, pero solo puedo ayudarte con preguntas relacionadas con alimentación y nutrición. Soy NutriChat, tu asistente especializado en nutrición. ¿Tienes alguna pregunta sobre tu plan alimenticio, ingredientes, recetas o nutrición en general?', 
+          isUser: false 
+        }]);
+        setIsTyping(false);
+        return;
+      }
+
+      // Obtener conocimiento médico relevante
+      const medicalKnowledge = medicalKnowledgeService.generateComprehensiveMedicalPrompt({
+        allergies: [],
+        dietaryPreferences: [],
+        medicalConditions: [],
+        weight: 70,
+        height: 170,
+        age: 30,
+        gender: 'male',
+        activityLevel: 'moderate',
+      });
+
+      // Generar respuesta con IA real
+      if (isAIConfigured()) {
+        const prompt = `Eres NutriChat, un asistente virtual especializado exclusivamente en alimentación y nutrición. Tu conocimiento está basado en fuentes médicas y científicas confiables.
+
+${medicalKnowledge}
+
+CONTEXTO DEL USUARIO:
+- Día actual del módulo: ${currentDay} de ${totalDays}
+- Adherencia al plan: ${adherence}%
+
+INSTRUCCIONES CRÍTICAS:
+1. SOLO responde preguntas relacionadas con alimentación, nutrición, dietas, ingredientes, recetas y temas relacionados.
+2. Si la pregunta NO es sobre nutrición/alimentación, responde amablemente: "Lo siento, pero solo puedo ayudarte con preguntas relacionadas con alimentación y nutrición. Soy NutriChat, tu asistente especializado en nutrición. ¿Tienes alguna pregunta sobre tu plan alimenticio, ingredientes, recetas o nutrición en general?"
+3. Usa el conocimiento médico proporcionado para dar respuestas precisas y basadas en evidencia.
+4. Sé amable, profesional y claro en tus respuestas.
+5. Si no estás seguro de algo, admítelo amablemente y sugiere consultar con un profesional de la salud.
+6. Mantén las respuestas concisas pero informativas.
+
+PREGUNTA DEL USUARIO: ${userMessage}
+
+Responde SOLO con la respuesta a la pregunta, sin explicaciones adicionales ni formato markdown.`;
+
+        const response = await fetch(AI_CONFIG.OPENAI_BASE_URL + '/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${AI_CONFIG.OPENAI_API_KEY}`,
+          },
+          body: JSON.stringify({
+            model: AI_CONFIG.OPENAI_MODEL,
+            messages: [
+              {
+                role: 'system',
+                content: 'Eres NutriChat, un asistente virtual especializado exclusivamente en alimentación y nutrición. Responde de forma amable, profesional y basada en evidencia científica.',
+              },
+              {
+                role: 'user',
+                content: prompt,
+              },
+            ],
+            temperature: 0.7,
+            max_tokens: 500,
+          }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const aiResponse = data.choices[0]?.message?.content?.trim();
+          
+          if (aiResponse) {
+            setMessages(prev => [...prev, { text: aiResponse, isUser: false }]);
+            setIsTyping(false);
+            return;
+          }
+        }
+      }
+
+      // Fallback: Respuesta básica si la IA no está disponible
       let response = '';
       
-      if (userMessage.toLowerCase().includes('roadmap') || userMessage.toLowerCase().includes('módulo')) {
-        response = 'Tu roadmap está diseñado con módulos de 30 días. Cada módulo tiene objetivos específicos y hitos que debes alcanzar. El módulo actual es el día ' + currentDay + ' de ' + totalDays + '. ¿Te gustaría saber más sobre algún aspecto específico del roadmap?';
-      } else if (userMessage.toLowerCase().includes('ejercicio') || userMessage.toLowerCase().includes('entrenamiento')) {
-        response = 'Tu plan de ejercicio está optimizado para tu objetivo. Te recomiendo seguir el programa semanal que se generó específicamente para este módulo. ¿Tienes alguna pregunta sobre ejercicios específicos o sobre cómo adaptar el plan?';
-      } else if (userMessage.toLowerCase().includes('comida') || userMessage.toLowerCase().includes('alimento') || userMessage.toLowerCase().includes('ingrediente')) {
-        response = 'Tu plan nutricional está vinculado a tu objetivo del módulo. Cada comida está diseñada para ayudarte a alcanzar tus metas. ¿Quieres saber más sobre algún ingrediente específico o sobre cómo preparar alguna receta?';
+      if (userMessage.toLowerCase().includes('comida') || userMessage.toLowerCase().includes('alimento') || userMessage.toLowerCase().includes('ingrediente') || userMessage.toLowerCase().includes('receta')) {
+        response = 'Tu plan nutricional está diseñado específicamente para ayudarte a alcanzar tus objetivos. Cada comida está balanceada con los macronutrientes necesarios. ¿Quieres saber más sobre algún ingrediente específico o sobre cómo preparar alguna receta?';
+      } else if (userMessage.toLowerCase().includes('nutrición') || userMessage.toLowerCase().includes('dieta') || userMessage.toLowerCase().includes('calorías')) {
+        response = 'La nutrición es fundamental para alcanzar tus objetivos. Tu plan está diseñado con las calorías y macronutrientes adecuados para tu meta. ¿Hay algún aspecto específico de la nutrición que te gustaría conocer mejor?';
       } else if (userMessage.toLowerCase().includes('adherencia') || userMessage.toLowerCase().includes('progreso')) {
-        response = 'Tu adherencia actual es del ' + adherence + '%. Para mejorar, te sugiero: 1) Planificar tus comidas con anticipación, 2) Establecer recordatorios, 3) Mantener un registro diario. ¿Quieres que te ayude a mejorar algún aspecto específico?';
+        response = 'Tu adherencia actual es del ' + adherence + '%. Para mejorar, te sugiero: 1) Planificar tus comidas con anticipación, 2) Preparar ingredientes con antelación, 3) Seguir las recetas del plan. ¿Quieres que te ayude a mejorar algún aspecto específico de tu alimentación?';
       } else {
-        response = 'Entiendo tu pregunta. Basándome en tu progreso actual (adherencia del ' + adherence + '%), te recomiendo mantener la consistencia en tus comidas y ejercicios. ¿Hay algo específico sobre tu plan que te gustaría aclarar?';
+        response = 'Entiendo tu pregunta sobre nutrición. Basándome en tu progreso actual (adherencia del ' + adherence + '%), te recomiendo mantener la consistencia en tus comidas. ¿Hay algo específico sobre tu plan alimenticio que te gustaría aclarar?';
       }
 
       setMessages(prev => [...prev, { text: response, isUser: false }]);
       setIsTyping(false);
-    }, 1000);
+    } catch (error) {
+      console.error('Error en NutriChat:', error);
+      setMessages(prev => [...prev, { 
+        text: 'Lo siento, hubo un error al procesar tu pregunta. Por favor, intenta de nuevo o reformula tu pregunta sobre nutrición.', 
+        isUser: false 
+      }]);
+      setIsTyping(false);
+    }
   };
 
   const proactiveTip = adherence < 70 ? (
@@ -223,7 +321,7 @@ const NutriChat: React.FC<NutriChatProps> = ({ adherence, currentDay, totalDays 
     <ChatContainer>
       <ChatHeader>
         <FiMessageCircle />
-        <h4>NutriChat IA</h4>
+        <h4>NutriChat</h4>
       </ChatHeader>
       
       <MessagesContainer>
