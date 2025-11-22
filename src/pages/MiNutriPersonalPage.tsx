@@ -497,7 +497,7 @@ const MiNutriPersonalPage: React.FC = () => {
               onComplete={(data) => {
                 // Guardar datos del roadmap
                 const roadmapData = {
-                  finalGoal: data.finalGoal,
+                  finalGoal: data.finalGoal as 'weight_loss' | 'weight_gain' | 'muscle_gain' | 'maintenance',
                   targetValue: data.targetValue,
                   currentValue: data.currentValue,
                   timeframe: data.timeframe,
