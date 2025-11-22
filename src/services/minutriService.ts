@@ -183,7 +183,7 @@ export const minutriService = {
 
   // Completar módulo actual
   completeModule: (moduleId: number, finalAdherence: number): void => {
-    const modules = this.getModules();
+    const modules = minutriService.getModules();
     if (!modules) return;
     
     const module = modules.find(m => m.id === moduleId);
@@ -195,8 +195,33 @@ export const minutriService = {
     module.progress = 100;
     
     // Verificar y desbloquear siguiente módulo
-    const updated = this.checkAndUnlockModules(modules);
-    this.saveModules(updated);
+    const updated = minutriService.checkAndUnlockModules(modules);
+    minutriService.saveModules(updated);
+  },
+
+  // Cancelar/resetear roadmap completo
+  clearRoadmap: (): void => {
+    // Primero obtener módulos antes de eliminarlos (usar la función getModules directamente)
+    const modulesData = localStorage.getItem(MODULES_KEY);
+    const modules = modulesData ? JSON.parse(modulesData) : null;
+    
+    // Eliminar todos los tracking de módulos
+    if (modules && Array.isArray(modules)) {
+      modules.forEach((module: Module) => {
+        const key = `${TRACKING_KEY}_${module.id}`;
+        localStorage.removeItem(key);
+        // Eliminar contenido generado de módulos
+        localStorage.removeItem(`minutri_content_${module.id}`);
+      });
+    }
+    
+    // Eliminar roadmap
+    localStorage.removeItem(STORAGE_KEY);
+    
+    // Eliminar módulos
+    localStorage.removeItem(MODULES_KEY);
+    
+    console.log('✅ Roadmap de MiNutri Personal cancelado y eliminado');
   },
 };
 

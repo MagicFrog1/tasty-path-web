@@ -1793,7 +1793,7 @@ const PlanDetailPage: React.FC = () => {
         <h3>No se encontró el plan</h3>
         <p>
           Parece que este plan ya no está disponible. Vuelve a{' '}
-          <Link to="/planes">Mis Planes</Link> para revisar tus opciones actuales.
+          <Link to="/planes">Mis Planes Semanales</Link> para revisar tus opciones actuales.
         </p>
       </NoPlan>
     );
@@ -1803,7 +1803,7 @@ const PlanDetailPage: React.FC = () => {
     <PageWrapper>
       <BackLink to="/planes">
         <FiArrowLeft />
-        Volver a mis planes
+        Volver a mis planes semanales
       </BackLink>
 
       <Header>

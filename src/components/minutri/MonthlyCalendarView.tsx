@@ -6,32 +6,30 @@ import { DailyContent } from '../../services/minutriContentService';
 
 const CalendarContainer = styled.div`
   display: grid;
-  gap: 8px;
-  width: 100%;
+  gap: 24px;
 `;
 
 const CalendarHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
-  padding: 10px 12px;
-  border-radius: 10px;
+  margin-bottom: 24px;
+  padding: 20px;
+  border-radius: 16px;
   background: linear-gradient(135deg, rgba(46, 139, 87, 0.08) 0%, rgba(34, 197, 94, 0.05) 100%);
   border: 1.5px solid rgba(46, 139, 87, 0.2);
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 16px;
   
   @media (max-width: 768px) {
-    padding: 8px 10px;
+    padding: 16px;
     flex-direction: column;
     align-items: flex-start;
-    margin-bottom: 8px;
   }
   
   @media (max-width: 480px) {
-    padding: 6px 8px;
-    margin-bottom: 6px;
+    padding: 12px;
+    margin-bottom: 16px;
   }
 `;
 
@@ -115,55 +113,54 @@ const ViewButton = styled.button<{ active: boolean }>`
 
 const CalendarGrid = styled.div<{ isWeekView?: boolean }>`
   display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: ${props => props.isWeekView ? '4px' : '6px'};
+  grid-template-columns: repeat(7, 1fr);
+  gap: ${props => props.isWeekView ? '8px' : '12px'};
   background: ${theme.colors.white};
-  border-radius: 12px;
-  padding: ${props => props.isWeekView ? '10px' : '10px'};
+  border-radius: 20px;
+  padding: ${props => props.isWeekView ? '16px' : '20px'};
   box-shadow: ${theme.shadows.md};
   border: 1px solid rgba(46, 139, 87, 0.1);
   width: 100%;
-  box-sizing: border-box;
-  min-width: 0;
+  overflow-x: auto;
   
   @media (max-width: 768px) {
-    gap: ${props => props.isWeekView ? '3px' : '4px'};
-    padding: ${props => props.isWeekView ? '8px' : '8px'};
-    border-radius: 10px;
+    gap: ${props => props.isWeekView ? '6px' : '8px'};
+    padding: ${props => props.isWeekView ? '12px' : '16px'};
+    border-radius: 16px;
   }
   
   @media (max-width: 480px) {
-    gap: ${props => props.isWeekView ? '2px' : '3px'};
-    padding: ${props => props.isWeekView ? '6px' : '6px'};
-    border-radius: 8px;
+    gap: ${props => props.isWeekView ? '4px' : '6px'};
+    padding: ${props => props.isWeekView ? '10px' : '12px'};
+    border-radius: 12px;
   }
 `;
 
 const DayHeader = styled.div<{ isWeekView?: boolean }>`
   text-align: center;
-  padding: ${props => props.isWeekView ? '6px 4px' : '8px 4px'};
+  padding: ${props => props.isWeekView ? '8px 4px' : '12px 8px'};
   font-weight: 700;
-  font-size: ${props => props.isWeekView ? '11px' : '13px'};
+  font-size: ${props => props.isWeekView ? '12px' : '14px'};
   color: ${theme.colors.primaryDark};
   border-bottom: 2px solid rgba(46, 139, 87, 0.2);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   
   @media (max-width: 768px) {
-    font-size: ${props => props.isWeekView ? '10px' : '11px'};
-    padding: ${props => props.isWeekView ? '5px 2px' : '6px 3px'};
+    font-size: ${props => props.isWeekView ? '10px' : '12px'};
+    padding: ${props => props.isWeekView ? '6px 2px' : '10px 6px'};
   }
   
   @media (max-width: 480px) {
-    font-size: ${props => props.isWeekView ? '9px' : '10px'};
-    padding: ${props => props.isWeekView ? '4px 1px' : '5px 2px'};
+    font-size: ${props => props.isWeekView ? '9px' : '11px'};
+    padding: ${props => props.isWeekView ? '4px 1px' : '8px 4px'};
   }
 `;
 
 const DayCell = styled.div<{ isToday: boolean; isEmpty: boolean; isWeekView?: boolean }>`
-  min-height: ${props => props.isWeekView ? '200px' : '140px'};
-  padding: ${props => props.isWeekView ? '10px 8px' : '10px 8px'};
-  border-radius: ${props => props.isWeekView ? '10px' : '10px'};
+  min-height: ${props => props.isWeekView ? '180px' : '120px'};
+  padding: ${props => props.isWeekView ? '10px 8px' : '12px'};
+  border-radius: ${props => props.isWeekView ? '10px' : '12px'};
   border: 1.5px solid ${props => props.isToday 
     ? theme.colors.primary 
     : 'rgba(46, 139, 87, 0.1)'};
@@ -175,17 +172,15 @@ const DayCell = styled.div<{ isToday: boolean; isEmpty: boolean; isWeekView?: bo
   cursor: ${props => props.isEmpty ? 'default' : 'pointer'};
   transition: all 0.3s ease;
   position: relative;
-  min-width: 0;
-  overflow: hidden;
   
   @media (max-width: 768px) {
-    min-height: ${props => props.isWeekView ? '160px' : '120px'};
-    padding: ${props => props.isWeekView ? '8px 6px' : '8px 6px'};
+    min-height: ${props => props.isWeekView ? '150px' : '100px'};
+    padding: ${props => props.isWeekView ? '8px 6px' : '10px'};
   }
   
   @media (max-width: 480px) {
-    min-height: ${props => props.isWeekView ? '140px' : '100px'};
-    padding: ${props => props.isWeekView ? '6px 4px' : '6px 4px'};
+    min-height: ${props => props.isWeekView ? '130px' : '90px'};
+    padding: ${props => props.isWeekView ? '6px 4px' : '8px'};
   }
   
   &:hover {

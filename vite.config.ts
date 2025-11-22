@@ -39,6 +39,31 @@ export default defineConfig(({ mode }) => {
     defineVars['import.meta.env.SUPABASE_ANON_KEY'] = JSON.stringify(supabaseAnonKey);
   }
   
+  // ===== NUTRICHAT API KEY CONFIGURATION =====
+  // Priorizar NEXT_PUBLIC_* (Vercel) sobre VITE_* (desarrollo local)
+  const nutriChatApiKey = process.env.NEXT_PUBLIC_NUTRICHAT_API_KEY || 
+                          env.NEXT_PUBLIC_NUTRICHAT_API_KEY ||
+                          process.env.VITE_NUTRICHAT_API_KEY || 
+                          env.VITE_NUTRICHAT_API_KEY || '';
+  
+  // Exponer variables de NutriChat
+  if (nutriChatApiKey) {
+    defineVars['import.meta.env.NEXT_PUBLIC_NUTRICHAT_API_KEY'] = JSON.stringify(nutriChatApiKey);
+    defineVars['import.meta.env.VITE_NUTRICHAT_API_KEY'] = JSON.stringify(nutriChatApiKey);
+    defineVars['import.meta.env.NUTRICHAT_API_KEY'] = JSON.stringify(nutriChatApiKey);
+  } else {
+    // Exponer como vacío para debugging
+    defineVars['import.meta.env.NEXT_PUBLIC_NUTRICHAT_API_KEY'] = JSON.stringify('');
+    defineVars['import.meta.env.VITE_NUTRICHAT_API_KEY'] = JSON.stringify('');
+    defineVars['import.meta.env.NUTRICHAT_API_KEY'] = JSON.stringify('');
+  }
+  
+  // Log durante build
+  console.log('🔧 NutriChat API Key durante BUILD:');
+  console.log('  - process.env.NEXT_PUBLIC_NUTRICHAT_API_KEY:', process.env.NEXT_PUBLIC_NUTRICHAT_API_KEY ? `${String(process.env.NEXT_PUBLIC_NUTRICHAT_API_KEY).substring(0, 10)}...` : 'NO ENCONTRADO');
+  console.log('  - process.env.VITE_NUTRICHAT_API_KEY:', process.env.VITE_NUTRICHAT_API_KEY ? `${String(process.env.VITE_NUTRICHAT_API_KEY).substring(0, 10)}...` : 'NO ENCONTRADO');
+  console.log('  - nutriChatApiKey (resultado final):', nutriChatApiKey ? `${String(nutriChatApiKey).substring(0, 10)}...` : 'NO ENCONTRADO');
+  
   // ===== STRIPE CONFIGURATION =====
   // PRIORIDAD: VITE_* (Vite expone automáticamente) > NEXT_PUBLIC_* (fallback) > sin prefijo (legacy)
   // En Vercel, process.env tiene acceso a todas las variables durante el build

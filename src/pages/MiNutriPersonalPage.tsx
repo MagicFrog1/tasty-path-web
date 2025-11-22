@@ -41,28 +41,27 @@ const shimmer = keyframes`
 
 // Estilos base
 const PageWrapper = styled.div`
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 32px 24px;
   width: 100%;
-  margin: 0;
-  padding: 12px;
   animation: ${fadeInUp} 0.6s ease-out;
-  box-sizing: border-box;
-  overflow-x: hidden;
 
   @media (max-width: 768px) {
-    padding: 10px;
+    padding: 24px 16px;
   }
 
   @media (max-width: 480px) {
-    padding: 8px;
+    padding: 20px 12px;
   }
 `;
 
 const Header = styled.div`
-  margin-bottom: 12px;
+  margin-bottom: 40px;
   text-align: center;
 
   @media (max-width: 768px) {
-    margin-bottom: 10px;
+    margin-bottom: 32px;
   }
 `;
 
@@ -91,20 +90,19 @@ const Subtitle = styled.p`
 
 const ContentGrid = styled.div`
   display: grid;
-  gap: 0;
+  gap: 20px;
   grid-template-columns: 1fr;
-  width: 100%;
-  box-sizing: border-box;
-  min-width: 0;
+
+  @media (min-width: 1200px) {
+    grid-template-columns: 1.5fr 1fr;
+    gap: 24px;
+  }
 `;
 
 const MainContent = styled.div`
   display: grid;
-  gap: 0;
+  gap: 20px;
   min-width: 0; /* Permite que el contenido se ajuste */
-  width: 100%;
-  box-sizing: border-box;
-  overflow-x: hidden;
 `;
 
 const Sidebar = styled.aside`
@@ -115,54 +113,35 @@ const Sidebar = styled.aside`
 
 const Card = styled.div`
   background: ${theme.colors.white};
-  border-radius: 12px;
-  padding: 12px;
+  border-radius: 20px;
+  padding: 24px;
   box-shadow: ${theme.shadows.md};
   border: 1px solid rgba(46, 139, 87, 0.1);
   animation: ${fadeInUp} 0.6s ease-out;
-  width: 100%;
-  box-sizing: border-box;
-  min-width: 0;
-  overflow-x: hidden;
 
   @media (max-width: 768px) {
-    padding: 10px;
-    border-radius: 10px;
+    padding: 20px;
+    border-radius: 16px;
   }
 
   @media (max-width: 480px) {
-    padding: 8px;
-    border-radius: 8px;
+    padding: 16px;
+    border-radius: 12px;
   }
 `;
 
 const PremiumBadge = styled.div`
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  gap: 12px;
+  gap: 8px;
   padding: 12px 20px;
   border-radius: 12px;
-  background: linear-gradient(135deg, rgba(34, 197, 94, 0.15) 0%, rgba(46, 139, 87, 0.12) 100%);
-  border: 1.5px solid rgba(46, 139, 87, 0.25);
-  color: ${theme.colors.primaryDark};
+  background: linear-gradient(135deg, rgba(46, 139, 87, 0.1) 0%, rgba(34, 197, 94, 0.08) 100%);
+  border: 1.5px solid rgba(46, 139, 87, 0.2);
+  color: ${theme.colors.primary};
   font-weight: 600;
-  font-size: 15px;
-  margin: 0 auto 16px auto;
-  max-width: 600px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(46, 139, 87, 0.2);
-    background: linear-gradient(135deg, rgba(34, 197, 94, 0.2) 0%, rgba(46, 139, 87, 0.15) 100%);
-  }
-  
-  svg {
-    color: ${theme.colors.primaryDark};
-    flex-shrink: 0;
-  }
+  font-size: 14px;
+  margin-bottom: 24px;
 `;
 
 // Pantalla de carga para generación de planes mensales
@@ -360,6 +339,13 @@ const MiNutriPersonalPage: React.FC = () => {
       setIsLoadingContent(true);
     }
     
+    // Timeout de seguridad: 5 minutos (300 segundos) para la generación completa
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => {
+        reject(new Error('Timeout: La generación del plan está tomando demasiado tiempo. Por favor, intenta de nuevo.'));
+      }, 300000); // 5 minutos
+    });
+    
     try {
       // Verificar si ya existe contenido guardado
       const savedContent = localStorage.getItem(`minutri_content_${module.id}`);
@@ -376,13 +362,21 @@ const MiNutriPersonalPage: React.FC = () => {
           await new Promise(resolve => setTimeout(resolve, 500));
         }
         
+        // Callback de progreso para actualizar la UI
+        const progressCallback = (step: number, total: number, message: string) => {
+          if (showLoading) {
+            setLoadingStep(step);
+            setLoadingStatus(message);
+          }
+        };
+        
         if (showLoading) {
           setLoadingStep(3);
-          setLoadingStatus('Generando menús personalizados con IA (esto puede tomar unos minutos)...');
+          setLoadingStatus('Generando menús personalizados con IA (esto puede tomar 1-2 minutos)...');
         }
         
-        // Generar contenido completo del módulo
-        content = await generateModuleContent(
+        // Generar contenido completo del módulo con timeout
+        const generationPromise = generateModuleContent(
           module.id,
           {
             finalGoal: roadmap.finalGoal,
@@ -398,18 +392,16 @@ const MiNutriPersonalPage: React.FC = () => {
             activityLevel: profile?.activityLevel,
             allergies: (profile as any)?.allergies || [],
             dietaryPreferences: (profile as any)?.dietaryPreferences || [],
-          }
+          },
+          progressCallback
         );
         
-        if (showLoading) {
-          setLoadingStep(4);
-          setLoadingStatus('Generando planes de ejercicio...');
-          await new Promise(resolve => setTimeout(resolve, 500));
-        }
+        // Esperar a que termine la generación o el timeout
+        content = await Promise.race([generationPromise, timeoutPromise]) as any;
         
         if (showLoading) {
-          setLoadingStep(5);
-          setLoadingStatus('Generando listas de compras...');
+          setLoadingStep(6);
+          setLoadingStatus('Guardando plan generado...');
           await new Promise(resolve => setTimeout(resolve, 500));
         }
         
@@ -423,16 +415,34 @@ const MiNutriPersonalPage: React.FC = () => {
         }
       }
       
+      // Verificar que el contenido se generó correctamente
+      if (!content || !content.days || content.days.length === 0) {
+        throw new Error('El contenido generado está vacío o incompleto');
+      }
+      
       setModuleContent(content);
       
       // Obtener contenido del día actual
       const todayContent = content.days.find((d: DailyContent) => d.dayNumber === day) || content.days[0];
       setDailyContent(todayContent);
-    } catch (error) {
+      
+      console.log('✅ Contenido del módulo cargado exitosamente:', {
+        moduleId: module.id,
+        totalDays: content.days.length,
+        currentDay: day,
+        hasMeals: todayContent?.meals ? true : false,
+        hasExercise: todayContent?.exercise ? true : false,
+      });
+      
+    } catch (error: any) {
       console.error('Error cargando contenido del módulo:', error);
       if (showLoading) {
-        setLoadingStatus('Error al generar el plan. Por favor, intenta de nuevo.');
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        const errorMessage = error?.message || 'Error al generar el plan. Por favor, intenta de nuevo.';
+        setLoadingStatus(errorMessage);
+        await new Promise(resolve => setTimeout(resolve, 3000));
+      } else {
+        // Mostrar mensaje de error al usuario
+        alert('Error al cargar el plan. Por favor, recarga la página e intenta de nuevo.');
       }
     } finally {
       if (showLoading) {
@@ -495,25 +505,55 @@ const MiNutriPersonalPage: React.FC = () => {
   }
 
   return (
-    <PageWrapper>
-      <Header>
-        <Title style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px' }}>
-          <FiTarget />
-          MiNutri Personal
-        </Title>
-        <Subtitle>
-          Tu dashboard de seguimiento Premium impulsado por IA con roadmaps dinámicos de 30 días
-        </Subtitle>
-      </Header>
+    <>
+      {/* Overlay de carga durante generación del plan */}
+      <LoadingOverlay show={isGeneratingPlan}>
+        <LoadingContent>
+          <Spinner />
+          <LoadingTitle>Cargando tu plan...</LoadingTitle>
+          <LoadingMessage>
+            {loadingStatus || 'Por favor espera'}
+          </LoadingMessage>
+          <LoadingSteps>
+            <LoadingStep active={loadingStep >= 1} completed={loadingStep > 1}>
+              Iniciando generación de plan mensal
+            </LoadingStep>
+            <LoadingStep active={loadingStep >= 2} completed={loadingStep > 2}>
+              Calculando objetivos nutricionales
+            </LoadingStep>
+            <LoadingStep active={loadingStep >= 3} completed={loadingStep > 3}>
+              Generando menús personalizados con IA
+            </LoadingStep>
+            <LoadingStep active={loadingStep >= 4} completed={loadingStep > 4}>
+              Generando planes de ejercicio
+            </LoadingStep>
+            <LoadingStep active={loadingStep >= 5} completed={loadingStep > 5}>
+              Generando listas de compras
+            </LoadingStep>
+            <LoadingStep active={loadingStep >= 6} completed={loadingStep > 6}>
+              Finalizando plan mensual
+            </LoadingStep>
+          </LoadingSteps>
+        </LoadingContent>
+      </LoadingOverlay>
 
-      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '12px' }}>
+      <PageWrapper>
+        <Header>
+          <Title>
+            <FiTarget style={{ marginRight: '12px', display: 'inline-block' }} />
+            MiNutri Personal
+          </Title>
+          <Subtitle>
+            Tu dashboard de seguimiento Premium impulsado por IA con roadmaps dinámicos de 30 días
+          </Subtitle>
+        </Header>
+
         <PremiumBadge>
-          <FiCheckCircle size={20} />
+          <FiCheckCircle />
           MiNutri Personal - Tu Plan de Alimentación Personalizado
         </PremiumBadge>
-      </div>
 
-      <ContentGrid>
+        <ContentGrid>
         <MainContent>
           {isOnboarding ? (
             <OnboardingStep
@@ -633,6 +673,7 @@ const MiNutriPersonalPage: React.FC = () => {
         </MainContent>
       </ContentGrid>
     </PageWrapper>
+    </>
   );
 };
 

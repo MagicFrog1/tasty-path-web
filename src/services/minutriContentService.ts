@@ -64,7 +64,8 @@ export const generateModuleContent = async (
     activityLevel?: string;
     allergies?: string[];
     dietaryPreferences?: string[];
-  }
+  },
+  onProgress?: (step: number, total: number, message: string) => void
 ): Promise<ModuleContent> => {
   const days: DailyContent[] = [];
   const weeklyShoppingLists: { week: number; items: string[] }[] = [];
@@ -90,18 +91,139 @@ export const generateModuleContent = async (
     dailyCalories = tdee + 300; // Superávit de 300 calorías
   }
   
-  // Generar contenido para cada día del módulo
+  // Optimización: Generar menús por semanas (4 semanas de 7 días cada una)
+  // Esto reduce las llamadas a la IA de 30 a solo 4
+  if (onProgress) onProgress(1, 6, 'Generando plan mensual completo...');
+  
+  const weeksToGenerate = 4; // 4 semanas de 7 días = 28 días, luego agregamos 2 días más
+  const allMeals: { breakfast: DailyMeal; lunch: DailyMeal; dinner: DailyMeal }[] = [];
+  
+  try {
+    // Generar menús para cada semana (4 semanas)
+    for (let week = 1; week <= weeksToGenerate; week++) {
+      if (onProgress) {
+        onProgress(week + 1, 6, `Generando menús para la semana ${week} de ${weeksToGenerate}...`);
+      }
+      
+      // Una sola llamada a la IA para generar 7 días de menú para esta semana
+      const aiResponse = await AIMenuService.generateWeeklyMenu({
+        nutritionGoals: {
+          protein: roadmapData.finalGoal === 'muscle_gain' ? Math.round(dailyCalories * 0.35 / 4) : 
+                  roadmapData.finalGoal === 'weight_loss' ? Math.round(dailyCalories * 0.30 / 4) : 
+                  Math.round(dailyCalories * 0.25 / 4),
+          carbs: roadmapData.finalGoal === 'weight_loss' ? Math.round(dailyCalories * 0.35 / 4) : 
+                 Math.round(dailyCalories * 0.45 / 4),
+          fat: Math.round(dailyCalories * 0.25 / 9),
+          fiber: 30,
+        },
+        totalCalories: dailyCalories,
+        dietaryPreferences: userProfile.dietaryPreferences || [],
+        allergies: userProfile.allergies || [],
+        weight: userProfile.weight,
+        height: userProfile.height,
+        age: userProfile.age,
+        gender: userProfile.gender,
+        activityLevel: userProfile.activityLevel as any || 'moderate',
+      });
+      
+      if (aiResponse.success && aiResponse.weeklyMenu && aiResponse.weeklyMenu.length > 0) {
+        // Procesar los 7 días generados por la IA
+        for (let dayInWeek = 0; dayInWeek < 7 && (week - 1) * 7 + dayInWeek + 1 <= 30; dayInWeek++) {
+          const day = (week - 1) * 7 + dayInWeek + 1;
+          if (day > 30) break;
+          
+          const dayMenu = aiResponse.weeklyMenu[dayInWeek] || aiResponse.weeklyMenu[0];
+          const breakfastCalories = Math.round(dailyCalories * 0.25);
+          const lunchCalories = Math.round(dailyCalories * 0.35);
+          const dinnerCalories = Math.round(dailyCalories * 0.30);
+          const proteinRatio = roadmapData.finalGoal === 'muscle_gain' ? 0.35 : 
+                              roadmapData.finalGoal === 'weight_loss' ? 0.30 : 0.25;
+          const carbsRatio = roadmapData.finalGoal === 'weight_loss' ? 0.35 : 0.45;
+          const fatRatio = 0.25;
+          
+          const breakfast: DailyMeal = {
+            id: `breakfast-day-${day}`,
+            name: dayMenu.meals.breakfast?.name || `Desayuno Día ${day}`,
+            description: dayMenu.meals.breakfast?.instructions || '',
+            ingredients: dayMenu.meals.breakfast?.ingredients || [],
+            preparation: dayMenu.meals.breakfast?.instructions || '',
+            nutrition: {
+              calories: dayMenu.meals.breakfast?.nutrition?.calories || breakfastCalories,
+              protein: dayMenu.meals.breakfast?.nutrition?.protein || Math.round(breakfastCalories * proteinRatio / 4),
+              carbs: dayMenu.meals.breakfast?.nutrition?.carbs || Math.round(breakfastCalories * carbsRatio / 4),
+              fat: dayMenu.meals.breakfast?.nutrition?.fat || Math.round(breakfastCalories * fatRatio / 9),
+            },
+            time: 'Desayuno',
+          };
+          
+          const lunch: DailyMeal = {
+            id: `lunch-day-${day}`,
+            name: dayMenu.meals.lunch?.name || `Almuerzo Día ${day}`,
+            description: dayMenu.meals.lunch?.instructions || '',
+            ingredients: dayMenu.meals.lunch?.ingredients || [],
+            preparation: dayMenu.meals.lunch?.instructions || '',
+            nutrition: {
+              calories: dayMenu.meals.lunch?.nutrition?.calories || lunchCalories,
+              protein: dayMenu.meals.lunch?.nutrition?.protein || Math.round(lunchCalories * proteinRatio / 4),
+              carbs: dayMenu.meals.lunch?.nutrition?.carbs || Math.round(lunchCalories * carbsRatio / 4),
+              fat: dayMenu.meals.lunch?.nutrition?.fat || Math.round(lunchCalories * fatRatio / 9),
+            },
+            time: 'Almuerzo',
+          };
+          
+          const dinner: DailyMeal = {
+            id: `dinner-day-${day}`,
+            name: dayMenu.meals.dinner?.name || `Cena Día ${day}`,
+            description: dayMenu.meals.dinner?.instructions || '',
+            ingredients: dayMenu.meals.dinner?.ingredients || [],
+            preparation: dayMenu.meals.dinner?.instructions || '',
+            nutrition: {
+              calories: dayMenu.meals.dinner?.nutrition?.calories || dinnerCalories,
+              protein: dayMenu.meals.dinner?.nutrition?.protein || Math.round(dinnerCalories * proteinRatio / 4),
+              carbs: dayMenu.meals.dinner?.nutrition?.carbs || Math.round(dinnerCalories * carbsRatio / 4),
+              fat: dayMenu.meals.dinner?.nutrition?.fat || Math.round(dinnerCalories * fatRatio / 9),
+            },
+            time: 'Cena',
+          };
+          
+          allMeals.push({ breakfast, lunch, dinner });
+        }
+      } else {
+        // Fallback: generar menús básicos para esta semana
+        for (let dayInWeek = 0; dayInWeek < 7 && (week - 1) * 7 + dayInWeek + 1 <= 30; dayInWeek++) {
+          const day = (week - 1) * 7 + dayInWeek + 1;
+          if (day > 30) break;
+          const meals = await generateDailyMeals(day, dailyCalories, roadmapData.finalGoal, userProfile);
+          allMeals.push(meals);
+        }
+      }
+    }
+    
+    // Agregar 2 días adicionales si faltan (para completar 30 días)
+    while (allMeals.length < 30) {
+      const day = allMeals.length + 1;
+      const meals = await generateDailyMeals(day, dailyCalories, roadmapData.finalGoal, userProfile);
+      allMeals.push(meals);
+    }
+    
+    if (onProgress) onProgress(6, 6, 'Finalizando plan mensual...');
+    
+  } catch (error) {
+    console.error('Error generando plan mensual optimizado, usando fallback:', error);
+    // Fallback: generar todos los días de forma básica si falla
+    for (let day = 1; day <= 30; day++) {
+      const meals = await generateDailyMeals(day, dailyCalories, roadmapData.finalGoal, userProfile);
+      allMeals.push(meals);
+    }
+  }
+  
+  // Construir los días completos con ejercicios y tips
   for (let day = 1; day <= 30; day++) {
     const date = new Date();
     date.setDate(date.getDate() + ((moduleId - 1) * 30) + (day - 1));
     
-    // Generar menús del día
-    const meals = await generateDailyMeals(day, dailyCalories, roadmapData.finalGoal, userProfile);
-    
-    // Generar ejercicio del día
+    const meals = allMeals[day - 1];
     const exercise = generateDailyExercise(day, roadmapData.finalGoal, moduleId);
-    
-    // Generar tips del día
     const tips = generateDailyTips(day, roadmapData.finalGoal, moduleId);
     
     // Generar lista de compras (agregar ingredientes únicos)

@@ -14,7 +14,7 @@ export const AI_CONFIG = {
   // Configuración de menús
   MENU_GENERATION: {
     MAX_RETRIES: 3,
-    TIMEOUT_MS: 45000, // 45 segundos para mejor respuesta
+    TIMEOUT_MS: 120000, // 2 minutos para generación de plan mensal (aumentado de 45s)
     FALLBACK_ENABLED: false, // DESHABILITADO - Forzar uso de IA
   },
   

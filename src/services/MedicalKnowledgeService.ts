@@ -157,6 +157,60 @@ class MedicalKnowledgeService {
       avoidFoods: ["alimentos ultra-procesados", "bebidas calóricas", "snacks altos en calorías"],
       emphasizeFoods: ["proteínas magras", "vegetales bajos en calorías", "frutas enteras", "granos integrales"],
       medicalSources: ["Cell Metabolism 2024", "Cochrane Database 2024"]
+    },
+    
+    {
+      condition: "Ganancia de Peso",
+      macronutrients: {
+        protein: { min: 1.4, max: 1.8, unit: 'g/kg' },
+        carbs: { min: 45, max: 60, unit: '%' },
+        fat: { min: 25, max: 35, unit: '%' }
+      },
+      specificRecommendations: [
+        "Superávit calórico 300-500 kcal/día",
+        "Comidas frecuentes (5-6/día)",
+        "Densidad calórica saludable",
+        "Proteína adecuada para evitar ganancia de grasa"
+      ],
+      avoidFoods: ["alimentos ultra-procesados", "azúcares añadidos en exceso"],
+      emphasizeFoods: ["granos integrales", "frutos secos", "aguacate", "aceites saludables", "proteínas magras", "lácteos"],
+      medicalSources: ["Journal of the Academy of Nutrition and Dietetics 2024", "Nutrition Reviews 2024"]
+    },
+    
+    {
+      condition: "Ganancia de Músculo",
+      macronutrients: {
+        protein: { min: 1.8, max: 2.4, unit: 'g/kg' },
+        carbs: { min: 45, max: 55, unit: '%' },
+        fat: { min: 20, max: 30, unit: '%' }
+      },
+      specificRecommendations: [
+        "Proteína 1.8-2.4g/kg para síntesis proteica",
+        "Carbohidratos pre/post entrenamiento",
+        "Timing proteico: 20-30g cada 3-4 horas",
+        "Creatina 3-5g/día (opcional, evidencia sólida)"
+      ],
+      avoidFoods: ["alimentos ultra-procesados", "grasas trans"],
+      emphasizeFoods: ["proteínas completas (huevo, pollo, pescado, lácteos)", "carbohidratos complejos", "grasas saludables"],
+      medicalSources: ["Journal of the International Society of Sports Nutrition 2024", "Sports Medicine 2024"]
+    },
+    
+    {
+      condition: "Pérdida de Músculo",
+      macronutrients: {
+        protein: { min: 1.6, max: 2.0, unit: 'g/kg' },
+        carbs: { min: 40, max: 50, unit: '%' },
+        fat: { min: 25, max: 35, unit: '%' }
+      },
+      specificRecommendations: [
+        "Proteína alta para preservar masa muscular",
+        "Resistencia a la pérdida de músculo durante déficit",
+        "Entrenamiento de fuerza esencial",
+        "Leucina 2.5-3g por comida para estimular síntesis"
+      ],
+      avoidFoods: ["déficit calórico extremo", "proteína insuficiente"],
+      emphasizeFoods: ["proteínas de alta calidad", "carbohidratos para energía", "omega-3 antiinflamatorio"],
+      medicalSources: ["American Journal of Clinical Nutrition 2024", "Nutrition & Metabolism 2024"]
     }
   ];
 
@@ -195,6 +249,40 @@ class MedicalKnowledgeService {
       if (protocol) {
         specificProtocols.push(`
 🎯 PROTOCOLO PÉRDIDA DE PESO (Evidencia 2024):
+• Proteína: ${protocol.macronutrients.protein.min}-${protocol.macronutrients.protein.max}${protocol.macronutrients.protein.unit}
+• Carbohidratos: ${protocol.macronutrients.carbs.min}-${protocol.macronutrients.carbs.max}${protocol.macronutrients.carbs.unit}
+• Grasas: ${protocol.macronutrients.fat.min}-${protocol.macronutrients.fat.max}${protocol.macronutrients.fat.unit}
+
+✅ ENFATIZAR: ${protocol.emphasizeFoods.join(', ')}
+❌ EVITAR: ${protocol.avoidFoods.join(', ')}
+
+📚 Fuentes: ${protocol.medicalSources.join(', ')}
+        `);
+      }
+    }
+
+    if (userProfile.goals.includes('weight_gain')) {
+      const protocol = this.NUTRITION_PROTOCOLS.find(p => p.condition === 'Ganancia de Peso');
+      if (protocol) {
+        specificProtocols.push(`
+🎯 PROTOCOLO GANANCIA DE PESO (Evidencia 2024):
+• Proteína: ${protocol.macronutrients.protein.min}-${protocol.macronutrients.protein.max}${protocol.macronutrients.protein.unit}
+• Carbohidratos: ${protocol.macronutrients.carbs.min}-${protocol.macronutrients.carbs.max}${protocol.macronutrients.carbs.unit}
+• Grasas: ${protocol.macronutrients.fat.min}-${protocol.macronutrients.fat.max}${protocol.macronutrients.fat.unit}
+
+✅ ENFATIZAR: ${protocol.emphasizeFoods.join(', ')}
+❌ EVITAR: ${protocol.avoidFoods.join(', ')}
+
+📚 Fuentes: ${protocol.medicalSources.join(', ')}
+        `);
+      }
+    }
+
+    if (userProfile.goals.includes('muscle_gain')) {
+      const protocol = this.NUTRITION_PROTOCOLS.find(p => p.condition === 'Ganancia de Músculo');
+      if (protocol) {
+        specificProtocols.push(`
+💪 PROTOCOLO GANANCIA DE MÚSCULO (Evidencia 2024):
 • Proteína: ${protocol.macronutrients.protein.min}-${protocol.macronutrients.protein.max}${protocol.macronutrients.protein.unit}
 • Carbohidratos: ${protocol.macronutrients.carbs.min}-${protocol.macronutrients.carbs.max}${protocol.macronutrients.carbs.unit}
 • Grasas: ${protocol.macronutrients.fat.min}-${protocol.macronutrients.fat.max}${protocol.macronutrients.fat.unit}
@@ -290,6 +378,90 @@ class MedicalKnowledgeService {
   }
 
   /**
+   * Genera información sobre alérgenos comunes y alternativas
+   */
+  public generateAllergenKnowledge(): string {
+    return `
+🚫 ALÉRGENOS Y ALTERNATIVAS (Evidencia 2024):
+
+🌾 GLUTEN (Enfermedad Celíaca/Sensibilidad):
+• Evitar: trigo, cebada, centeno, avena (contaminada)
+• Alternativas: arroz, quinoa, mijo, trigo sarraceno, amaranto
+• Fuente: American Gastroenterological Association 2024
+
+🥛 LACTOSA (Intolerancia):
+• Evitar: leche, quesos frescos, yogur (según tolerancia)
+• Alternativas: leche sin lactosa, bebidas vegetales (soja, almendra, avena), quesos curados
+• Calcio alternativo: sardinas, brócoli, almendras, semillas de sésamo
+• Fuente: World Allergy Organization 2024
+
+🥜 FRUTOS SECOS:
+• Evitar: nueces, almendras, avellanas, pistachos, anacardos
+• Alternativas proteicas: legumbres, semillas (girasol, calabaza), pescado, huevos
+• Fuente: European Academy of Allergy 2024
+
+🦐 MARISCOS:
+• Evitar: pescados, mariscos, crustáceos
+• Alternativas omega-3: semillas de chía, lino, algas, aceite de algas
+• Fuente: American College of Allergy 2024
+
+🥚 HUEVOS:
+• Evitar: huevos y productos que los contengan
+• Alternativas proteicas: legumbres, tofu, tempeh, proteína vegetal
+• Para horneado: semillas de chía molidas + agua, puré de manzana
+• Fuente: Journal of Allergy and Clinical Immunology 2024
+
+🌰 SOJA:
+• Evitar: soja y derivados (tofu, tempeh, leche de soja)
+• Alternativas proteicas: legumbres, frutos secos (si no hay alergia), semillas
+• Fuente: Food Allergy Research & Education 2024
+
+⚠️ IMPORTANTE: En caso de alergias severas, siempre consultar con alergólogo. 
+Las alternativas deben ser validadas según tolerancia individual.
+    `;
+  }
+
+  /**
+   * Genera conocimiento sobre recetas y preparación de alimentos
+   */
+  public generateRecipeKnowledge(): string {
+    return `
+👨‍🍳 RECETAS Y PREPARACIÓN DE ALIMENTOS (Evidencia 2024):
+
+🔥 MÉTODOS DE COCCIÓN SALUDABLES:
+• Vapor: preserva nutrientes, sin grasas añadidas
+• Horno: reduce necesidad de aceite, mantiene sabor
+• Plancha/Sartén antiadherente: mínima grasa necesaria
+• Hervido: conserva nutrientes si se consume el caldo
+• Evitar: frituras profundas, carbonización excesiva
+
+🥗 PREPARACIÓN DE VEGETALES:
+• Cocción al dente: preserva vitaminas y textura
+• Consumo crudo cuando sea posible: maximiza nutrientes
+• Variedad de colores: diferentes fitonutrientes
+• Fuente: Journal of Food Science 2024
+
+🍳 TÉCNICAS PARA MEJORAR SABOR SIN CALORÍAS:
+• Hierbas frescas: albahaca, cilantro, perejil, orégano
+• Especias: cúrcuma, pimentón, comino, canela
+• Ácidos: limón, vinagre balsámico, vinagre de manzana
+• Umami natural: champiñones, tomates secos, miso
+
+📊 CONSERVACIÓN DE NUTRIENTES:
+• Almacenamiento: frío y oscuro para vegetales
+• Preparación justo antes de consumir cuando sea posible
+• Congelación rápida: preserva nutrientes mejor que conservas
+• Fuente: Food Chemistry 2024
+
+⚖️ BALANCE DE MACRONUTRIENTES EN RECETAS:
+• Proteína: 20-30% del plato
+• Carbohidratos complejos: 40-50%
+• Vegetales: 30-40% del volumen
+• Grasas saludables: moderadas pero presentes
+    `;
+  }
+
+  /**
    * Obtiene citaciones médicas para una recomendación específica
    */
   public getMedicalCitations(topic: string): MedicalGuideline[] {
@@ -301,18 +473,43 @@ class MedicalKnowledgeService {
 
   /**
    * Genera conocimiento médico completo para prompts de IA
+   * Incluye información relevante según el contexto de la pregunta
    */
-  public generateComprehensiveMedicalPrompt(userProfile: any): string {
+  public generateComprehensiveMedicalPrompt(userProfile: any, userQuestion?: string): string {
     const personalizedKnowledge = this.generateMedicalKnowledge(userProfile);
     const timingRecommendations = this.generateMealTimingRecommendations();
     const functionalFoods = this.generateFunctionalFoodsKnowledge();
+    const allergenKnowledge = this.generateAllergenKnowledge();
+    const recipeKnowledge = this.generateRecipeKnowledge();
+
+    // Determinar qué información incluir según la pregunta del usuario
+    let relevantKnowledge = personalizedKnowledge + '\n' + timingRecommendations + '\n' + functionalFoods;
+    
+    if (userQuestion) {
+      const lowerQuestion = userQuestion.toLowerCase();
+      
+      // Incluir información sobre alérgenos si la pregunta lo menciona
+      if (lowerQuestion.includes('alérgeno') || lowerQuestion.includes('alergia') || 
+          lowerQuestion.includes('intolerancia') || lowerQuestion.includes('gluten') || 
+          lowerQuestion.includes('lactosa') || lowerQuestion.includes('frutos secos') ||
+          lowerQuestion.includes('mariscos') || lowerQuestion.includes('huevo') ||
+          lowerQuestion.includes('soja') || lowerQuestion.includes('celíaco')) {
+        relevantKnowledge += '\n' + allergenKnowledge;
+      }
+      
+      // Incluir información sobre recetas si la pregunta lo menciona
+      if (lowerQuestion.includes('receta') || lowerQuestion.includes('cocinar') || 
+          lowerQuestion.includes('preparar') || lowerQuestion.includes('plato') ||
+          lowerQuestion.includes('cocción') || lowerQuestion.includes('cómo hacer')) {
+        relevantKnowledge += '\n' + recipeKnowledge;
+      }
+    } else {
+      // Si no hay pregunta específica, incluir todo el conocimiento
+      relevantKnowledge += '\n' + allergenKnowledge + '\n' + recipeKnowledge;
+    }
 
     return `
-${personalizedKnowledge}
-
-${timingRecommendations}
-
-${functionalFoods}
+${relevantKnowledge}
 
 🎯 INSTRUCCIONES PARA IA:
 • APLICAR este conocimiento médico específico en cada recomendación
@@ -323,6 +520,8 @@ ${functionalFoods}
 • INCLUIR variedad de 30+ plantas diferentes por semana
 • RESPETAR cronobiología en horarios de comidas
 • LIMITAR ultra-procesados a <10% calorías totales
+• SER FLEXIBLE y responder preguntas sobre: peso (subir/bajar), músculo (ganar/perder), platos, recetas, consejos, alérgenos, etc.
+• USAR la información médica relevante según el contexto de la pregunta
 
 ⚠️ IMPORTANTE: Estas son directrices generales basadas en evidencia científica. 
 Para condiciones médicas específicas, recomendar consulta con profesional de salud.
