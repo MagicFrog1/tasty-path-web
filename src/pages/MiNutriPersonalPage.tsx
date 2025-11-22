@@ -465,18 +465,6 @@ const MiNutriPersonalPage: React.FC = () => {
             </>
           )}
         </MainContent>
-
-
-          <Card>
-            <h3 style={{ margin: '0 0 20px 0', fontSize: '20px', fontWeight: 700, color: theme.colors.primaryDark, display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <FiTrendingUp />
-              Progreso General
-            </h3>
-            <p style={{ margin: '0', color: theme.colors.textSecondary, lineHeight: '1.6', fontSize: '15px' }}>
-              Estadísticas y logros desbloqueados
-            </p>
-          </Card>
-        </Sidebar>
       </ContentGrid>
     </PageWrapper>
   );
