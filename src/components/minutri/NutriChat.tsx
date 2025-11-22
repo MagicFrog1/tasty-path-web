@@ -9,8 +9,9 @@ import { ENV_CONFIG } from '../../../env.config';
 const ChatContainer = styled.div`
   display: grid;
   grid-template-rows: auto 1fr auto;
-  height: 500px;
-  max-height: 500px;
+  min-height: 500px;
+  max-height: 700px;
+  height: 100%;
 `;
 
 const ChatHeader = styled.div`
