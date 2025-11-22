@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import styled from 'styled-components';
-import { FiHome, FiCalendar, FiShoppingCart, FiUser, FiStar, FiBookOpen, FiMenu, FiX } from 'react-icons/fi';
+import { FiHome, FiCalendar, FiShoppingCart, FiUser, FiStar, FiBookOpen, FiMenu, FiX, FiTarget } from 'react-icons/fi';
 import { FaKitchenSet } from 'react-icons/fa6';
 import { theme } from '../styles/theme';
 import { useSubscription } from '../context/SubscriptionContext';
@@ -452,6 +452,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ title, subtitle }) => {
     { to: '/planes', label: 'Planes Guardados', icon: <FiCalendar /> },
     { to: '/generador', label: 'Generador IA', icon: <FaKitchenSet /> },
     ...(isPremium ? [{ to: '/lista-compra', label: 'Lista de Compras', icon: <FiShoppingCart /> }] : []),
+    ...(isPremium ? [{ to: '/minutri-personal', label: 'MiNutri Personal', icon: <FiTarget /> }] : []),
     { to: '/perfil', label: 'Mi Perfil', icon: <FiUser /> },
     { to: '/suscripcion', label: 'Suscripción', icon: <FiStar /> },
     { to: '/fuentes-medicas', label: 'Fuentes Médicas', icon: <FiBookOpen /> },

@@ -15,6 +15,7 @@ const SubscriptionPage = React.lazy(() => import('./src/pages/SubscriptionPage')
 const SavedPlansPage = React.lazy(() => import('./src/pages/SavedPlansPage'));
 const PlanDetailPage = React.lazy(() => import('./src/pages/PlanDetailPage'));
 const MedicalSourcesPage = React.lazy(() => import('./src/pages/MedicalSourcesPage'));
+const MiNutriPersonalPage = React.lazy(() => import('./src/pages/MiNutriPersonalPage'));
 const TermsPage = React.lazy(() => import('./src/pages/TermsPage'));
 const PrivacyPage = React.lazy(() => import('./src/pages/PrivacyPage'));
 const SecurityPage = React.lazy(() => import('./src/pages/SecurityPage'));
@@ -55,6 +56,7 @@ const AppRoutes: React.FC = () => {
           <Route path="/dashboard" element={<HomePage />} />
           <Route path="/generador" element={<PlanGeneratorPage />} />
           <Route path="/lista-compra" element={<ShoppingListPage />} />
+          <Route path="/minutri-personal" element={<MiNutriPersonalPage />} />
           <Route path="/perfil" element={<ProfilePage />} />
           <Route path="/suscripcion" element={<SubscriptionPage />} />
           <Route path="/planes" element={<SavedPlansPage />} />
