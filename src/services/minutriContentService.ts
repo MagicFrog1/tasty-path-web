@@ -1,6 +1,4 @@
 // Servicio para generar contenido detallado de MiNutri Personal
-import AIMenuService, { AIMenuRequest } from './AIMenuService';
-import { useUserProfile } from '../context/UserProfileContext';
 
 export interface DailyMeal {
   id: string;

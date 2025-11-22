@@ -378,8 +378,8 @@ const MiNutriPersonalPage: React.FC = () => {
 
               {activeModule && (
                 <Card>
-                  <h2 style={{ margin: '0 0 24px 0', fontSize: '24px', fontWeight: 700, color: theme.colors.primaryDark }}>
-                    Módulo Activo (30 Días)
+                  <h2 style={{ margin: '0 0 20px 0', fontSize: '22px', fontWeight: 700, color: theme.colors.primaryDark }}>
+                    Módulo Activo - Día {currentDay} de 30
                   </h2>
                   {isLoadingContent ? (
                     <div style={{ textAlign: 'center', padding: '40px', color: theme.colors.textSecondary }}>
