@@ -398,6 +398,7 @@ const MiNutriPersonalPage: React.FC = () => {
                       totalMonths={modules.length}
                       days={moduleContent.days}
                       dayCompletions={dayCompletions}
+                      onMonthChange={(month) => setCurrentMonth(month)}
                       onDayUpdate={(dayNumber, mealType, completed) => {
                         // Actualizar tracking
                         const updated = trackingDays.map(d => {

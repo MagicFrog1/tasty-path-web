@@ -431,6 +431,7 @@ const MonthlyCalendarView: React.FC<MonthlyCalendarViewProps> = ({
   days,
   onDayUpdate,
   dayCompletions,
+  onMonthChange,
 }) => {
   const [viewMode, setViewMode] = useState<'month' | 'week'>('month');
   const [expandedDay, setExpandedDay] = useState<number | null>(null);
@@ -504,11 +505,25 @@ const MonthlyCalendarView: React.FC<MonthlyCalendarViewProps> = ({
             </ViewButton>
           </ViewToggle>
           <NavigationButtons>
-            <NavButton disabled={monthNumber === 1}>
+            <NavButton 
+              disabled={monthNumber === 1}
+              onClick={() => {
+                if (monthNumber > 1 && onMonthChange) {
+                  onMonthChange(monthNumber - 1);
+                }
+              }}
+            >
               <FiChevronLeft />
               Anterior
             </NavButton>
-            <NavButton disabled={monthNumber === totalMonths}>
+            <NavButton 
+              disabled={monthNumber === totalMonths}
+              onClick={() => {
+                if (monthNumber < totalMonths && onMonthChange) {
+                  onMonthChange(monthNumber + 1);
+                }
+              }}
+            >
               Siguiente
               <FiChevronRight />
             </NavButton>
