@@ -24,12 +24,15 @@ const Timeline = styled.div`
   }
 `;
 
-const ModuleCard = styled.div<{ isActive: boolean; isCompleted: boolean }>`
+const ModuleCard = styled.div<{ isActive: boolean; isCompleted: boolean; isLocked: boolean }>`
   position: relative;
   padding: 24px;
   border-radius: 16px;
   margin-bottom: 24px;
   background: ${props => {
+    if (props.isLocked) {
+      return 'rgba(0, 0, 0, 0.02)';
+    }
     if (props.isActive) {
       return 'linear-gradient(135deg, rgba(46, 139, 87, 0.12) 0%, rgba(34, 197, 94, 0.08) 100%)';
     }
@@ -39,16 +42,21 @@ const ModuleCard = styled.div<{ isActive: boolean; isCompleted: boolean }>`
     return 'rgba(255, 255, 255, 0.6)';
   }};
   border: 1.5px solid ${props => {
+    if (props.isLocked) return 'rgba(0, 0, 0, 0.1)';
     if (props.isActive) return 'rgba(46, 139, 87, 0.3)';
     if (props.isCompleted) return 'rgba(46, 139, 87, 0.2)';
     return 'rgba(46, 139, 87, 0.1)';
   }};
   box-shadow: ${props => props.isActive ? theme.shadows.md : 'none'};
   transition: all 0.3s ease;
+  opacity: ${props => props.isLocked ? 0.5 : 1};
+  cursor: ${props => props.isLocked ? 'not-allowed' : 'default'};
   
   &:hover {
-    transform: translateX(4px);
-    box-shadow: ${theme.shadows.sm};
+    ${props => !props.isLocked && `
+      transform: translateX(4px);
+      box-shadow: ${theme.shadows.sm};
+    `}
   }
 `;
 
@@ -156,7 +164,10 @@ interface Module {
   milestone: string;
   isActive: boolean;
   isCompleted: boolean;
+  isLocked: boolean;
   progress: number;
+  adherence: number;
+  targetAdherence: number;
 }
 
 interface RoadmapViewProps {
@@ -191,17 +202,23 @@ const RoadmapView: React.FC<RoadmapViewProps> = ({ modules, currentValue, target
             key={module.id}
             isActive={module.isActive}
             isCompleted={module.isCompleted}
+            isLocked={module.isLocked}
           >
             <ModuleDot isActive={module.isActive} isCompleted={module.isCompleted}>
-              {module.isCompleted ? <FiCheckCircle /> : module.isActive ? <FiClock /> : <FiTarget />}
+              {module.isCompleted ? <FiCheckCircle /> : module.isActive ? <FiClock /> : module.isLocked ? <FiTarget /> : <FiTarget />}
             </ModuleDot>
             
             <ModuleHeader>
               <ModuleTitle>
                 {module.title}
+                {module.isLocked && (
+                  <span style={{ fontSize: '14px', color: theme.colors.textSecondary, fontWeight: 400 }}>
+                    {' '}(Bloqueado - Completa el módulo anterior)
+                  </span>
+                )}
               </ModuleTitle>
               <ModuleStatus isActive={module.isActive} isCompleted={module.isCompleted}>
-                {module.isCompleted ? 'Completado' : module.isActive ? 'En Progreso' : 'Bloqueado'}
+                {module.isLocked ? '🔒 Bloqueado' : module.isCompleted ? '✅ Completado' : module.isActive ? '🔄 En Progreso' : '⏳ Pendiente'}
               </ModuleStatus>
             </ModuleHeader>
 
@@ -211,15 +228,32 @@ const RoadmapView: React.FC<RoadmapViewProps> = ({ modules, currentValue, target
                 {module.startDate} - {module.endDate}
               </InfoItem>
               {module.isActive && (
+                <>
+                  <InfoItem>
+                    <FiTrendingUp />
+                    {module.progress}% completado
+                  </InfoItem>
+                  <InfoItem>
+                    <FiTrendingUp />
+                    Adherencia: {module.adherence}% / {module.targetAdherence}%
+                  </InfoItem>
+                </>
+              )}
+              {module.isCompleted && (
                 <InfoItem>
-                  <FiTrendingUp />
-                  {module.progress}% completado
+                  <FiCheckCircle />
+                  Adherencia final: {module.adherence}%
                 </InfoItem>
               )}
             </ModuleInfo>
 
             <Milestone>
               <strong>Hito del Módulo:</strong> {module.milestone}
+              {module.isLocked && (
+                <div style={{ marginTop: '8px', fontSize: '13px', color: theme.colors.textSecondary }}>
+                  Este módulo se desbloqueará cuando completes el módulo anterior con al menos {module.targetAdherence}% de adherencia.
+                </div>
+              )}
             </Milestone>
           </ModuleCard>
         ))}

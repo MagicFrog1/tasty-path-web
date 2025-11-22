@@ -17,7 +17,10 @@ export interface Module {
   milestone: string;
   isActive: boolean;
   isCompleted: boolean;
+  isLocked: boolean;
   progress: number;
+  adherence: number;
+  targetAdherence: number; // Adherencia mínima requerida para desbloquear el siguiente módulo
 }
 
 export interface DayTracking {
@@ -75,7 +78,10 @@ export const minutriService = {
           : `Alcanzar ${targetValue.toFixed(1)}kg`,
         isActive: i === 0,
         isCompleted: false,
+        isLocked: i > 0, // Los módulos después del primero están bloqueados inicialmente
         progress: 0,
+        adherence: 0,
+        targetAdherence: 80, // Requiere 80% de adherencia para desbloquear el siguiente módulo
       });
     }
     
@@ -152,6 +158,45 @@ export const minutriService = {
     const diffTime = today.getTime() - start.getTime();
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
     return Math.min(Math.max(diffDays + 1, 1), 30);
+  },
+
+  // Verificar y desbloquear módulos
+  checkAndUnlockModules: (modules: Module[]): Module[] => {
+    const updated = [...modules];
+    
+    for (let i = 0; i < updated.length; i++) {
+      const module = updated[i];
+      
+      // Si el módulo está completado y tiene la adherencia requerida
+      if (module.isCompleted && module.adherence >= module.targetAdherence) {
+        // Desbloquear el siguiente módulo si existe
+        if (i + 1 < updated.length && updated[i + 1].isLocked) {
+          updated[i + 1].isLocked = false;
+          updated[i + 1].isActive = true;
+          console.log(`✅ Módulo ${i + 2} desbloqueado!`);
+        }
+      }
+    }
+    
+    return updated;
+  },
+
+  // Completar módulo actual
+  completeModule: (moduleId: number, finalAdherence: number): void => {
+    const modules = this.getModules();
+    if (!modules) return;
+    
+    const module = modules.find(m => m.id === moduleId);
+    if (!module) return;
+    
+    module.isCompleted = true;
+    module.isActive = false;
+    module.adherence = finalAdherence;
+    module.progress = 100;
+    
+    // Verificar y desbloquear siguiente módulo
+    const updated = this.checkAndUnlockModules(modules);
+    this.saveModules(updated);
   },
 };
 
