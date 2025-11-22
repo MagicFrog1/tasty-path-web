@@ -237,6 +237,81 @@ const LegalLinkArrow = styled.div`
   }
 `;
 
+const PremiumMessage = styled.div`
+  padding: 24px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(46, 139, 87, 0.08) 0%, rgba(34, 197, 94, 0.05) 100%);
+  border: 1.5px solid rgba(46, 139, 87, 0.2);
+  margin-top: 16px;
+  
+  @media (max-width: 768px) {
+    padding: 20px;
+    border-radius: 14px;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 16px;
+    border-radius: 12px;
+  }
+`;
+
+const PremiumMessageTitle = styled.h3`
+  margin: 0 0 12px 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: ${theme.colors.primaryDark};
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  
+  svg {
+    color: ${theme.colors.primary};
+    flex-shrink: 0;
+  }
+  
+  @media (max-width: 480px) {
+    font-size: 16px;
+    gap: 8px;
+  }
+`;
+
+const PremiumMessageText = styled.p`
+  margin: 0 0 16px 0;
+  color: ${theme.colors.textSecondary};
+  font-size: 15px;
+  line-height: 1.6;
+  
+  @media (max-width: 480px) {
+    font-size: 14px;
+  }
+`;
+
+const PremiumMessageButton = styled.button`
+  padding: 12px 24px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, ${theme.colors.primary} 0%, rgba(34, 197, 94, 0.9) 100%);
+  color: white;
+  font-size: 15px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(46, 139, 87, 0.3);
+  }
+  
+  &:active {
+    transform: translateY(0);
+  }
+  
+  @media (max-width: 480px) {
+    padding: 10px 20px;
+    font-size: 14px;
+  }
+`;
+
 const ActionButton = styled.button<{ variant?: 'danger' | 'primary' | 'secondary' }>`
   display: flex;
   align-items: center;
@@ -562,20 +637,7 @@ const ProfilePage: React.FC = () => {
           Gestión de Cuenta
         </SectionTitle>
         <ActionsGrid>
-          <ActionButton
-            variant="primary"
-            onClick={() => navigate('/suscripcion')}
-          >
-            <ActionButtonContent>
-              <ActionButtonIcon variant="primary">
-                <FiCreditCard />
-              </ActionButtonIcon>
-              <ActionButtonText>Gestión de Suscripciones</ActionButtonText>
-            </ActionButtonContent>
-            <FiArrowRight />
-          </ActionButton>
-          
-          {currentPlan && currentPlan.plan !== 'free' && currentPlan.isActive && (
+          {currentPlan && currentPlan.plan !== 'free' && currentPlan.isActive ? (
             <ActionButton
               variant="primary"
               onClick={handleOpenBillingPortal}
@@ -586,11 +648,24 @@ const ProfilePage: React.FC = () => {
                   <FiSettings />
                 </ActionButtonIcon>
                 <ActionButtonText>
-                  {isOpeningPortal ? 'Abriendo portal...' : 'Gestionar Suscripción en Stripe'}
+                  {isOpeningPortal ? 'Abriendo portal...' : 'Gestionar Suscripción'}
                 </ActionButtonText>
               </ActionButtonContent>
               <FiArrowRight />
             </ActionButton>
+          ) : (
+            <PremiumMessage>
+              <PremiumMessageTitle>
+                <FiCreditCard />
+                Suscripción Premium Requerida
+              </PremiumMessageTitle>
+              <PremiumMessageText>
+                Para gestionar tu suscripción, actualizar métodos de pago o cambiar de plan, necesitas tener una suscripción activa. Descubre nuestros planes Premium y desbloquea todas las funcionalidades de TastyPath.
+              </PremiumMessageText>
+              <PremiumMessageButton onClick={() => navigate('/suscripcion')}>
+                Ver Planes Premium
+              </PremiumMessageButton>
+            </PremiumMessage>
           )}
         </ActionsGrid>
       </ActionsCard>
