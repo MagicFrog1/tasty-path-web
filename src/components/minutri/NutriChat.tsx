@@ -151,7 +151,7 @@ interface NutriChatProps {
 const NutriChat: React.FC<NutriChatProps> = ({ adherence, currentDay, totalDays }) => {
   const [messages, setMessages] = useState<Array<{ text: string; isUser: boolean }>>([
     {
-      text: '¡Hola! Soy NutriChat, tu asistente virtual especializado en alimentación y nutrición. Puedo ayudarte con dudas sobre tu plan alimenticio, ingredientes, recetas, valores nutricionales y cualquier pregunta relacionada con nutrición. ¿En qué puedo ayudarte?',
+      text: '¡Hola! 👋 Soy NutriChat, tu asistente personal de nutrición. Estoy aquí para ayudarte con cualquier pregunta sobre alimentación, desde las más simples hasta las más complejas. ¿En qué puedo ayudarte hoy?',
       isUser: false
     }
   ]);
@@ -188,27 +188,6 @@ const NutriChat: React.FC<NutriChatProps> = ({ adherence, currentDay, totalDays 
     setIsTyping(true);
 
     try {
-      // Verificar si la pregunta es sobre nutrición/alimentación
-      const nutritionKeywords = [
-        'nutrición', 'alimentación', 'comida', 'alimento', 'dieta', 'calorías', 'proteína', 'carbohidrato',
-        'grasa', 'vitamina', 'mineral', 'fibra', 'receta', 'ingrediente', 'cocinar', 'preparar',
-        'macronutriente', 'micronutriente', 'metabolismo', 'digestión', 'absorción', 'nutriente',
-        'saludable', 'nutritivo', 'balanceado', 'plan alimenticio', 'menú', 'desayuno', 'almuerzo', 'cena'
-      ];
-      
-      const isNutritionQuestion = nutritionKeywords.some(keyword => 
-        userMessage.toLowerCase().includes(keyword)
-      );
-
-      if (!isNutritionQuestion) {
-        setMessages(prev => [...prev, { 
-          text: 'Lo siento, pero solo puedo ayudarte con preguntas relacionadas con alimentación y nutrición. Soy NutriChat, tu asistente especializado en nutrición. ¿Tienes alguna pregunta sobre tu plan alimenticio, ingredientes, recetas o nutrición en general?', 
-          isUser: false 
-        }]);
-        setIsTyping(false);
-        return;
-      }
-
       // Obtener conocimiento médico relevante
       const medicalKnowledge = medicalKnowledgeService.generateComprehensiveMedicalPrompt({
         allergies: [],
@@ -221,9 +200,15 @@ const NutriChat: React.FC<NutriChatProps> = ({ adherence, currentDay, totalDays 
         activityLevel: 'moderate',
       });
 
-      // Generar respuesta con IA real
+      // Construir historial de conversación para contexto
+      const conversationHistory = messages.slice(-6).map(msg => ({
+        role: msg.isUser ? 'user' : 'assistant',
+        content: msg.text,
+      }));
+
+      // Generar respuesta con IA real para TODAS las preguntas
       if (isAIConfigured()) {
-        const prompt = `Eres NutriChat, un asistente virtual especializado exclusivamente en alimentación y nutrición. Tu conocimiento está basado en fuentes médicas y científicas confiables.
+        const systemPrompt = `Eres NutriChat, un asistente virtual especializado en alimentación y nutrición. Te comportas como un asistente humano real, amigable y conversacional.
 
 ${medicalKnowledge}
 
@@ -231,17 +216,17 @@ CONTEXTO DEL USUARIO:
 - Día actual del módulo: ${currentDay} de ${totalDays}
 - Adherencia al plan: ${adherence}%
 
-INSTRUCCIONES CRÍTICAS:
-1. SOLO responde preguntas relacionadas con alimentación, nutrición, dietas, ingredientes, recetas y temas relacionados.
-2. Si la pregunta NO es sobre nutrición/alimentación, responde amablemente: "Lo siento, pero solo puedo ayudarte con preguntas relacionadas con alimentación y nutrición. Soy NutriChat, tu asistente especializado en nutrición. ¿Tienes alguna pregunta sobre tu plan alimenticio, ingredientes, recetas o nutrición en general?"
-3. Usa el conocimiento médico proporcionado para dar respuestas precisas y basadas en evidencia.
-4. Sé amable, profesional y claro en tus respuestas.
-5. Si no estás seguro de algo, admítelo amablemente y sugiere consultar con un profesional de la salud.
-6. Mantén las respuestas concisas pero informativas.
+INSTRUCCIONES IMPORTANTES:
+1. Comportarte como un asistente humano real: sé amigable, conversacional y natural.
+2. Responde a saludos simples (hola, buenos días, etc.) de forma cálida y natural.
+3. Para preguntas sobre nutrición/alimentación: usa el conocimiento médico proporcionado y da respuestas precisas y basadas en evidencia.
+4. Para preguntas que NO son sobre nutrición: responde amablemente explicando que solo puedes ayudar con temas de alimentación y nutrición, pero hazlo de forma conversacional y natural.
+5. Mantén un tono amigable, profesional y accesible.
+6. Si no estás seguro de algo, admítelo amablemente y sugiere consultar con un profesional de la salud.
+7. Responde de forma concisa pero completa, adaptándote al nivel de la pregunta (simple o compleja).
+8. Usa emojis ocasionalmente para hacer la conversación más amigable (pero no excesivamente).
 
-PREGUNTA DEL USUARIO: ${userMessage}
-
-Responde SOLO con la respuesta a la pregunta, sin explicaciones adicionales ni formato markdown.`;
+Responde de forma natural y conversacional, como lo haría un asistente humano real.`;
 
         const response = await fetch(AI_CONFIG.OPENAI_BASE_URL + '/v1/chat/completions', {
           method: 'POST',
@@ -254,15 +239,16 @@ Responde SOLO con la respuesta a la pregunta, sin explicaciones adicionales ni f
             messages: [
               {
                 role: 'system',
-                content: 'Eres NutriChat, un asistente virtual especializado exclusivamente en alimentación y nutrición. Responde de forma amable, profesional y basada en evidencia científica.',
+                content: systemPrompt,
               },
+              ...conversationHistory,
               {
                 role: 'user',
-                content: prompt,
+                content: userMessage,
               },
             ],
-            temperature: 0.7,
-            max_tokens: 500,
+            temperature: 0.8, // Más creativo para respuestas más naturales
+            max_tokens: 600,
           }),
         });
 
@@ -278,17 +264,28 @@ Responde SOLO con la respuesta a la pregunta, sin explicaciones adicionales ni f
         }
       }
 
-      // Fallback: Respuesta básica si la IA no está disponible
+      // Fallback: Respuestas básicas más naturales si la IA no está disponible
+      const lowerMessage = userMessage.toLowerCase();
       let response = '';
       
-      if (userMessage.toLowerCase().includes('comida') || userMessage.toLowerCase().includes('alimento') || userMessage.toLowerCase().includes('ingrediente') || userMessage.toLowerCase().includes('receta')) {
+      // Saludos simples
+      if (lowerMessage.includes('hola') || lowerMessage.includes('buenos días') || lowerMessage.includes('buenas tardes') || lowerMessage.includes('buenas noches') || lowerMessage === 'hi' || lowerMessage === 'hello') {
+        response = '¡Hola! 👋 Me alegra saludarte. ¿En qué puedo ayudarte con tu nutrición hoy?';
+      } else if (lowerMessage.includes('gracias') || lowerMessage.includes('thanks')) {
+        response = '¡De nada! 😊 Estoy aquí para ayudarte siempre que lo necesites. ¿Hay algo más sobre nutrición en lo que pueda asistirte?';
+      } else if (lowerMessage.includes('adiós') || lowerMessage.includes('hasta luego') || lowerMessage.includes('bye')) {
+        response = '¡Hasta luego! 👋 Recuerda que estoy aquí cuando necesites ayuda con tu nutrición. ¡Que tengas un excelente día!';
+      } else if (lowerMessage.includes('cómo estás') || lowerMessage.includes('qué tal')) {
+        response = '¡Muy bien, gracias por preguntar! 😊 Estoy aquí para ayudarte con todo lo relacionado con nutrición. ¿En qué puedo asistirte?';
+      } else if (lowerMessage.includes('comida') || lowerMessage.includes('alimento') || lowerMessage.includes('ingrediente') || lowerMessage.includes('receta')) {
         response = 'Tu plan nutricional está diseñado específicamente para ayudarte a alcanzar tus objetivos. Cada comida está balanceada con los macronutrientes necesarios. ¿Quieres saber más sobre algún ingrediente específico o sobre cómo preparar alguna receta?';
-      } else if (userMessage.toLowerCase().includes('nutrición') || userMessage.toLowerCase().includes('dieta') || userMessage.toLowerCase().includes('calorías')) {
+      } else if (lowerMessage.includes('nutrición') || lowerMessage.includes('dieta') || lowerMessage.includes('calorías')) {
         response = 'La nutrición es fundamental para alcanzar tus objetivos. Tu plan está diseñado con las calorías y macronutrientes adecuados para tu meta. ¿Hay algún aspecto específico de la nutrición que te gustaría conocer mejor?';
-      } else if (userMessage.toLowerCase().includes('adherencia') || userMessage.toLowerCase().includes('progreso')) {
+      } else if (lowerMessage.includes('adherencia') || lowerMessage.includes('progreso')) {
         response = 'Tu adherencia actual es del ' + adherence + '%. Para mejorar, te sugiero: 1) Planificar tus comidas con anticipación, 2) Preparar ingredientes con antelación, 3) Seguir las recetas del plan. ¿Quieres que te ayude a mejorar algún aspecto específico de tu alimentación?';
       } else {
-        response = 'Entiendo tu pregunta sobre nutrición. Basándome en tu progreso actual (adherencia del ' + adherence + '%), te recomiendo mantener la consistencia en tus comidas. ¿Hay algo específico sobre tu plan alimenticio que te gustaría aclarar?';
+        // Respuesta genérica más amigable
+        response = 'Entiendo tu pregunta. Aunque puedo ayudarte mejor con temas de nutrición y alimentación, estaré encantado de responder. ¿Podrías reformular tu pregunta relacionándola con nutrición, o tienes alguna duda específica sobre tu plan alimenticio?';
       }
 
       setMessages(prev => [...prev, { text: response, isUser: false }]);
@@ -296,7 +293,7 @@ Responde SOLO con la respuesta a la pregunta, sin explicaciones adicionales ni f
     } catch (error) {
       console.error('Error en NutriChat:', error);
       setMessages(prev => [...prev, { 
-        text: 'Lo siento, hubo un error al procesar tu pregunta. Por favor, intenta de nuevo o reformula tu pregunta sobre nutrición.', 
+        text: 'Lo siento, hubo un error al procesar tu pregunta. Por favor, intenta de nuevo. 😊', 
         isUser: false 
       }]);
       setIsTyping(false);
