@@ -1,12 +1,14 @@
 ﻿import React, { useState } from 'react';
 import styled from 'styled-components';
 import { Link, useNavigate } from 'react-router-dom';
-import { FiUser, FiMail, FiFileText, FiShield, FiLock, FiInfo, FiArrowRight, FiLogOut, FiTrash2, FiCreditCard } from 'react-icons/fi';
+import { FiUser, FiMail, FiFileText, FiShield, FiLock, FiInfo, FiArrowRight, FiLogOut, FiTrash2, FiCreditCard, FiSettings } from 'react-icons/fi';
 import { useUserProfile } from '../context/UserProfileContext';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../services/supabase';
 import { DatabaseService } from '../services/databaseService';
 import { theme } from '../styles/theme';
+import { redirectToBillingPortal } from '../services/stripeService';
+import { useSubscription } from '../context/SubscriptionContext';
 
 const PageWrapper = styled.div`
   max-width: 800px;
@@ -473,6 +475,47 @@ const ProfilePage: React.FC = () => {
     }
   };
 
+  const { currentPlan } = useSubscription();
+  const [isOpeningPortal, setIsOpeningPortal] = useState(false);
+
+  const handleOpenBillingPortal = async () => {
+    setIsOpeningPortal(true);
+    try {
+      // Intentar obtener el customer ID de diferentes fuentes
+      let customerId: string | null = null;
+
+      // 1. Intentar obtenerlo del localStorage (si se guardó después de la suscripción)
+      const storedCustomerId = localStorage.getItem('stripe_customer_id');
+      if (storedCustomerId) {
+        customerId = storedCustomerId;
+        console.log('📋 Customer ID encontrado en localStorage');
+      }
+
+      // 2. Si no está en localStorage, intentar obtenerlo de la suscripción actual
+      // Nota: Esto requeriría que el customer ID se almacene cuando se crea la suscripción
+      // Por ahora, si no hay customer ID, mostraremos un mensaje
+      
+      if (!customerId) {
+        // Si el usuario tiene una suscripción activa pero no hay customer ID guardado,
+        // necesitamos obtenerlo de otra forma (por ejemplo, desde el backend o la base de datos)
+        // Por ahora, mostraremos un mensaje informativo
+        alert('No se encontró información de suscripción de Stripe. Si acabas de suscribirte, por favor espera unos momentos y vuelve a intentar. Si el problema persiste, contacta al soporte.');
+        return;
+      }
+
+      const result = await redirectToBillingPortal(customerId);
+      
+      if (!result.success && result.error) {
+        alert(result.error);
+      }
+    } catch (error) {
+      console.error('Error abriendo portal de facturación:', error);
+      alert('Error al abrir el portal de facturación. Por favor, intenta de nuevo o contacta al soporte.');
+    } finally {
+      setIsOpeningPortal(false);
+    }
+  };
+
   return (
     <PageWrapper>
       <Header>
@@ -531,6 +574,24 @@ const ProfilePage: React.FC = () => {
             </ActionButtonContent>
             <FiArrowRight />
           </ActionButton>
+          
+          {currentPlan && currentPlan.plan !== 'free' && currentPlan.isActive && (
+            <ActionButton
+              variant="primary"
+              onClick={handleOpenBillingPortal}
+              disabled={isOpeningPortal}
+            >
+              <ActionButtonContent>
+                <ActionButtonIcon variant="primary">
+                  <FiSettings />
+                </ActionButtonIcon>
+                <ActionButtonText>
+                  {isOpeningPortal ? 'Abriendo portal...' : 'Gestionar Suscripción en Stripe'}
+                </ActionButtonText>
+              </ActionButtonContent>
+              <FiArrowRight />
+            </ActionButton>
+          )}
         </ActionsGrid>
       </ActionsCard>
 

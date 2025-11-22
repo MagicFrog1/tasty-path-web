@@ -77,7 +77,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // URLs de redirección
     const origin = req.headers.origin || req.headers.referer?.split('/').slice(0, 3).join('/') || 'http://localhost:5173';
-    const successUrl = `${origin}/suscripcion?success=true&plan=${planId}`;
+    // Incluir {CHECKOUT_SESSION_ID} en la URL para poder obtenerlo después
+    const successUrl = `${origin}/suscripcion?success=true&plan=${planId}&session_id={CHECKOUT_SESSION_ID}`;
     const cancelUrl = `${origin}/suscripcion?canceled=true`;
 
     console.log('🔄 Creando sesión de checkout de Stripe...');
@@ -99,12 +100,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       cancel_url: cancelUrl,
       customer_email: customerEmail,
       billing_address_collection: 'auto',
+      // Guardar el customer ID en los metadatos para poder recuperarlo después
+      metadata: {
+        planId: planId,
+      },
     });
 
     console.log('✅ Sesión de checkout creada:', session.id);
+    console.log('📋 Customer ID (si existe):', session.customer || 'Se creará después del pago');
 
-    // Devolver la URL de la sesión
-    return res.status(200).json({ url: session.url });
+    // Devolver la URL de la sesión y el customer ID si está disponible
+    return res.status(200).json({ 
+      url: session.url,
+      sessionId: session.id,
+      customerId: session.customer as string | null,
+    });
   } catch (error: any) {
     console.error('❌ Error creando sesión de checkout:', error);
     console.error('📋 Detalles del error:', {

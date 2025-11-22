@@ -134,3 +134,89 @@ export const isStripeConfigured = (): boolean => {
   );
 };
 
+/**
+ * Redirige al usuario al Portal de Clientes de Stripe para gestionar su suscripción
+ * Permite actualizar tarjeta, cambiar plan, cancelar suscripción, ver facturas, etc.
+ * 
+ * @param customerId - El ID del cliente de Stripe (ej: cus_xxxxx)
+ * @returns Promise con el resultado de la operación
+ */
+export const redirectToBillingPortal = async (
+  customerId: string
+): Promise<{ success: boolean; error?: string }> => {
+  try {
+    console.log('🔄 Iniciando redirección al Portal de Clientes de Stripe...');
+    console.log('📋 Customer ID:', customerId ? `${customerId.substring(0, 20)}...` : 'NO PROPORCIONADO');
+    
+    if (!customerId) {
+      console.error('❌ Customer ID no proporcionado');
+      return {
+        success: false,
+        error: 'No se encontró el ID del cliente. Asegúrate de haber completado una suscripción primero.',
+      };
+    }
+
+    // Llamar a la API del backend para crear la sesión del portal
+    const response = await fetch('/api/create-billing-portal', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        customerId,
+      }),
+    });
+
+    if (!response.ok) {
+      let errorData;
+      try {
+        errorData = await response.json();
+      } catch (e) {
+        errorData = { error: `Error del servidor (${response.status}): ${response.statusText}` };
+      }
+      
+      console.error('❌ Error creando sesión del portal:', errorData);
+      console.error('📋 Status:', response.status);
+      
+      let errorMessage = errorData.error || errorData.message || `Error al crear la sesión del portal (${response.status}). Por favor, intenta de nuevo.`;
+      
+      // Mensajes de error más específicos
+      if (errorMessage.includes('STRIPE_BILLING_PORTAL_ID')) {
+        errorMessage += '\n\n💡 Solución: El Portal de Clientes no está configurado. Contacta al administrador.';
+      }
+      
+      if (errorMessage.includes('customerId') || errorMessage.includes('cliente')) {
+        errorMessage += '\n\n💡 Asegúrate de haber completado una suscripción primero.';
+      }
+      
+      return {
+        success: false,
+        error: errorMessage,
+      };
+    }
+
+    const { url } = await response.json();
+
+    if (!url) {
+      console.error('❌ No se recibió URL del portal');
+      return {
+        success: false,
+        error: 'No se recibió la URL del portal. Por favor, intenta de nuevo.',
+      };
+    }
+
+    console.log('✅ Sesión del portal creada, redirigiendo...');
+    
+    // Redirigir al usuario a la URL del portal
+    window.location.href = url;
+    
+    return { success: true };
+  } catch (error) {
+    console.error('❌ Error en redirectToBillingPortal:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Error desconocido al acceder al portal',
+    };
+  }
+};
+

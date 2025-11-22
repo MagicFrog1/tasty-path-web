@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
-import { FiCheckCircle, FiGift, FiStar, FiTrendingUp, FiZap, FiShield, FiLock } from 'react-icons/fi';
+import { FiCheckCircle, FiGift, FiStar, FiTrendingUp, FiZap, FiShield, FiLock, FiSettings } from 'react-icons/fi';
 import { TbCrown } from 'react-icons/tb';
 import { useSubscription } from '../context/SubscriptionContext';
 import { theme } from '../styles/theme';
-import { redirectToCheckout, isStripeConfigured } from '../services/stripeService';
+import { redirectToCheckout, isStripeConfigured, redirectToBillingPortal } from '../services/stripeService';
 import { useAuth } from '../context/AuthContext';
 import { useLocation } from 'react-router-dom';
 import { ENV_CONFIG } from '../../env.config';
@@ -437,6 +437,7 @@ const SubscriptionPage: React.FC = () => {
   const location = useLocation();
   const [isProcessing, setIsProcessing] = useState(false);
   const [stripeAvailable, setStripeAvailable] = useState(false);
+  const [isOpeningPortal, setIsOpeningPortal] = useState(false);
 
   // Verificar si Stripe está configurado
   useEffect(() => {
@@ -449,10 +450,27 @@ const SubscriptionPage: React.FC = () => {
     const success = params.get('success');
     const canceled = params.get('canceled');
     const plan = params.get('plan') as 'weekly' | 'monthly' | 'annual' | null;
+    const sessionId = params.get('session_id');
 
     if (success && plan) {
       // El pago fue exitoso, actualizar la suscripción
       selectPlan(plan).then(() => {
+        // Si hay un session_id, intentar obtener el customer ID
+        if (sessionId) {
+          // Obtener el customer ID de la sesión de checkout
+          fetch(`/api/get-checkout-session?session_id=${sessionId}`)
+            .then(res => res.json())
+            .then(data => {
+              if (data.customerId) {
+                // Guardar el customer ID en localStorage para uso futuro
+                localStorage.setItem('stripe_customer_id', data.customerId);
+                console.log('✅ Customer ID guardado:', data.customerId);
+              }
+            })
+            .catch(error => {
+              console.error('Error obteniendo customer ID:', error);
+            });
+        }
         // Limpiar la URL
         window.history.replaceState({}, '', '/suscripcion');
       }).catch(error => {
@@ -461,6 +479,10 @@ const SubscriptionPage: React.FC = () => {
     } else if (canceled) {
       // El usuario canceló el pago
       console.log('Pago cancelado por el usuario');
+      window.history.replaceState({}, '', '/suscripcion');
+    } else if (params.get('portal_return')) {
+      // El usuario regresó del portal de facturación
+      console.log('Usuario regresó del portal de facturación');
       window.history.replaceState({}, '', '/suscripcion');
     }
   }, [location.search, selectPlan]);
@@ -518,6 +540,37 @@ const SubscriptionPage: React.FC = () => {
       console.error('❌ Error seleccionando plan:', error);
       setIsProcessing(false);
       alert('Error al procesar el pago. Por favor, intenta de nuevo. Si el problema persiste, contacta con soporte.');
+    }
+  };
+
+  const handleOpenBillingPortal = async () => {
+    setIsOpeningPortal(true);
+    try {
+      // Intentar obtener el customer ID de diferentes fuentes
+      let customerId: string | null = null;
+
+      // 1. Intentar obtenerlo del localStorage
+      const storedCustomerId = localStorage.getItem('stripe_customer_id');
+      if (storedCustomerId) {
+        customerId = storedCustomerId;
+        console.log('📋 Customer ID encontrado en localStorage');
+      }
+
+      if (!customerId) {
+        alert('No se encontró información de suscripción de Stripe. Si acabas de suscribirte, por favor espera unos momentos y vuelve a intentar. Si el problema persiste, contacta al soporte.');
+        return;
+      }
+
+      const result = await redirectToBillingPortal(customerId);
+      
+      if (!result.success && result.error) {
+        alert(result.error);
+      }
+    } catch (error) {
+      console.error('Error abriendo portal de facturación:', error);
+      alert('Error al abrir el portal de facturación. Por favor, intenta de nuevo o contacta al soporte.');
+    } finally {
+      setIsOpeningPortal(false);
     }
   };
 
@@ -656,6 +709,37 @@ const SubscriptionPage: React.FC = () => {
           </BenefitCard>
         </BenefitGrid>
       </PremiumBenefits>
+
+      {currentPlan && currentPlan.plan !== 'free' && currentPlan.isActive && (
+        <div style={{
+          marginTop: '48px',
+          padding: '32px',
+          background: 'linear-gradient(135deg, rgba(46, 139, 87, 0.08) 0%, rgba(34, 197, 94, 0.05) 100%)',
+          borderRadius: '24px',
+          border: '1px solid rgba(46, 139, 87, 0.15)',
+          textAlign: 'center',
+        }}>
+          <h3 style={{ margin: '0 0 16px 0', fontSize: '20px', fontWeight: 700, color: '#0a0e13' }}>
+            Gestiona tu Suscripción
+          </h3>
+          <p style={{ margin: '0 0 24px 0', color: '#4a5568', lineHeight: '1.6' }}>
+            Actualiza tu tarjeta de crédito, cambia de plan, cancela tu suscripción o revisa tu historial de facturación.
+          </p>
+          <SelectButton
+            highlight={true}
+            isCurrent={false}
+            onClick={handleOpenBillingPortal}
+            disabled={isOpeningPortal}
+          >
+            {isOpeningPortal ? 'Abriendo portal...' : (
+              <>
+                <FiSettings style={{ marginRight: '8px' }} />
+                Gestionar Suscripción en Stripe
+              </>
+            )}
+          </SelectButton>
+        </div>
+      )}
     </PageWrapper>
   );
 };
