@@ -163,6 +163,7 @@ const MiNutriPersonalPage: React.FC = () => {
 
   // Permitir acceso a todos los usuarios (incluyendo plan gratis)
   // const isPremium = currentPlan && currentPlan.plan !== 'free' && currentPlan.isActive;
+  const isPremium = true; // Siempre permitir acceso
 
   useEffect(() => {
     // Verificar si ya tiene un roadmap configurado
