@@ -452,7 +452,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ title, subtitle }) => {
     { to: '/planes', label: 'Planes Guardados', icon: <FiCalendar /> },
     { to: '/generador', label: 'Generador IA', icon: <FaKitchenSet /> },
     ...(isPremium ? [{ to: '/lista-compra', label: 'Lista de Compras', icon: <FiShoppingCart /> }] : []),
-    ...(isPremium ? [{ to: '/minutri-personal', label: 'MiNutri Personal', icon: <FiTarget /> }] : []),
+      { to: '/minutri-personal', label: 'MiNutri Personal', icon: <FiTarget /> },
     { to: '/perfil', label: 'Mi Perfil', icon: <FiUser /> },
     { to: '/suscripcion', label: 'Suscripción', icon: <FiStar /> },
     { to: '/fuentes-medicas', label: 'Fuentes Médicas', icon: <FiBookOpen /> },

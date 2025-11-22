@@ -161,8 +161,8 @@ const MiNutriPersonalPage: React.FC = () => {
   const [currentMonth, setCurrentMonth] = useState(1);
   const [dayCompletions, setDayCompletions] = useState<{ [dayNumber: number]: { breakfast: boolean; lunch: boolean; dinner: boolean; exercise: boolean } }>({});
 
-  // Verificar si el usuario es premium
-  const isPremium = currentPlan && currentPlan.plan !== 'free' && currentPlan.isActive;
+  // Permitir acceso a todos los usuarios (incluyendo plan gratis)
+  // const isPremium = currentPlan && currentPlan.plan !== 'free' && currentPlan.isActive;
 
   useEffect(() => {
     // Verificar si ya tiene un roadmap configurado
@@ -325,7 +325,7 @@ const MiNutriPersonalPage: React.FC = () => {
 
       <PremiumBadge>
         <FiCheckCircle />
-        Funcionalidad Premium Activa
+        MiNutri Personal - Tu Plan de Alimentación Personalizado
       </PremiumBadge>
 
       <ContentGrid>
