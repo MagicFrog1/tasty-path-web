@@ -58,6 +58,7 @@ const AppRoutes: React.FC = () => {
           <Route path="/generador" element={<PlanGeneratorPage />} />
           <Route path="/lista-compra" element={<ShoppingListPage />} />
           <Route path="/minutri-personal" element={<MiNutriPersonalPage />} />
+          <Route path="/nutrichat" element={<NutriChatPage />} />
           <Route path="/perfil" element={<ProfilePage />} />
           <Route path="/suscripcion" element={<SubscriptionPage />} />
           <Route path="/planes" element={<SavedPlansPage />} />
