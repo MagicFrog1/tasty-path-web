@@ -431,25 +431,6 @@ const MiNutriPersonalPage: React.FC = () => {
                   )}
                 </Card>
               )}
-
-              {!isOnboarding && (
-                <Card>
-                  <div style={{ marginBottom: '20px' }}>
-                    <h2 style={{ margin: '0 0 8px 0', fontSize: '22px', fontWeight: 700, color: theme.colors.primaryDark, display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <FiMessageCircle />
-                      NutriChat
-                    </h2>
-                    <p style={{ margin: '0', color: theme.colors.textSecondary, lineHeight: '1.6', fontSize: '14px' }}>
-                      Tu asistente virtual especializado en alimentación y nutrición
-                    </p>
-                  </div>
-                  <NutriChat
-                    adherence={adherence}
-                    currentDay={currentDay}
-                    totalDays={30}
-                  />
-                </Card>
-              )}
             </>
           )}
 
