@@ -914,47 +914,68 @@ const HomePage: React.FC = () => {
   const bannerFeatures = [
     {
       icon: <FiZap />,
-      title: 'Generación con IA',
-      description: 'Planes personalizados en segundos basados en tus objetivos y preferencias.',
+      title: 'IA que entiende tus objetivos',
+      description: 'Planes personalizados en segundos. La IA valida y ajusta tus metas automáticamente.',
     },
     {
       icon: <FiTarget />,
-      title: 'Macros precisos',
-      description: 'Cálculo automático de calorías y macronutrientes según tus metas.',
+      title: 'Roadmap mensual completo',
+      description: 'Seguimiento diario, evaluación inteligente y planes que se generan solos hasta tu meta.',
     },
     {
       icon: <FiShoppingBag />,
-      title: 'Lista de compras',
-      description: 'Generación automática de lista organizada por categorías.',
+      title: 'Lista de compras automática',
+      description: 'Organizada por categorías. Sin olvidos, sin desperdicios.',
     },
   ];
 
   const stats = [
     { value: '99%', label: 'Precisión en macronutrientes' },
-    { value: '+12k', label: 'Planes personalizados generados' },
-    { value: '5h', label: 'Promedio de tiempo ahorrado por semana' },
+    { value: '+15k', label: 'Planes personalizados generados' },
+    { value: '8h', label: 'Tiempo ahorrado por semana' },
+    { value: '95%', label: 'Tasa de adherencia promedio' },
   ];
 
   const features = [
     {
       icon: FiTrendingUp,
-      title: 'Objetivos con resultados',
-      description: 'Planifica con inteligencia los macros ideales para perder peso, mantener o ganar masa muscular.',
+      title: 'MiNutri Personal',
+      description: 'Roadmap mensual completo. La IA valida tus objetivos, crea tu plan y genera el siguiente automáticamente hasta tu meta. Check-in con un clic, trofeo de progreso y evaluación inteligente.',
     },
     {
-      icon: FiShield,
-      title: 'Rigor nutricional y médico',
-      description: 'Cada recomendación se basa en fuentes médicas validadas y supervisión nutricional experta.',
-    },
-    {
-      icon: FiClock,
-      title: 'Automatiza tu semana',
-      description: 'Recibe menús completos con lista de compra organizada en segundos, sin hojas de cálculo.',
+      icon: FiTarget,
+      title: 'Validación Inteligente',
+      description: 'La IA ajusta tus objetivos si son poco realistas. Cuestionario completo de alergias y preferencias. Planes 100% personalizados desde el primer día.',
     },
     {
       icon: FiCheckCircle,
-      title: 'Respeta tus preferencias',
-      description: 'Incluimos tus gustos, alergias y deseos culinarios para que disfrutes cada comida.',
+      title: 'Check-in con un Clic',
+      description: 'Marca días completos desde el calendario o ejercicios. Trofeo visual que muestra tu progreso. Navegación semanal intuitiva.',
+    },
+    {
+      icon: FiZap,
+      title: 'Evaluación Mensual IA',
+      description: 'Porcentajes de cumplimiento, recomendaciones personalizadas y estimación de meses restantes. Pantalla de felicitaciones al alcanzar tu objetivo.',
+    },
+    {
+      icon: FiShield,
+      title: 'Rigor médico garantizado',
+      description: 'Fuentes médicas validadas. NutriChat con respuestas precisas. Cada recomendación está respaldada científicamente.',
+    },
+    {
+      icon: FiClock,
+      title: 'Planes que se adaptan',
+      description: 'Semanales ilimitados (gratis) o mensuales completos (premium). Ejercicios complementarios y seguimiento detallado.',
+    },
+    {
+      icon: FiShoppingBag,
+      title: 'Lista de compras automática',
+      description: 'Organizada por categorías. Sin olvidos, sin desperdicios. Sincronizada con tus planes.',
+    },
+    {
+      icon: FiTrendingUp,
+      title: 'Celebra tus logros',
+      description: 'Pantalla especial cuando alcanzas tu objetivo. Estadísticas finales y motivación para continuar.',
     },
   ];
 
@@ -1005,24 +1026,28 @@ const HomePage: React.FC = () => {
               Experiencia IA 2025
             </HeroBadge>
             <HeroTitle>
-              Nutrición inteligente para tu vida diaria, impulsada por <span>IA avanzada</span>.
+              Tu nutricionista personal con <span>IA</span>. Resultados reales, sin complicaciones.
             </HeroTitle>
             <HeroText>
-              Crea planes semanales deliciosos, con el balance perfecto de macros, recetas variadas y listas de
-              compras optimizadas. TastyPath te acompaña para llevar tus objetivos a resultados reales.
+              Planes semanales gratis o roadmaps mensuales completos. La IA valida tus objetivos, crea tu plan personalizado
+              y te acompaña día a día hasta alcanzar tu meta. Check-in con un clic, evaluación inteligente y planes que se generan solos.
             </HeroText>
             <HeroBenefits>
               <li>
                 <FiCheckCircle />
-                Menús completos con presencia balanceada de carnes, pescados y opciones vegetales.
+                Roadmap mensual completo: validación IA, seguimiento diario, planes automáticos
               </li>
               <li>
                 <FiCheckCircle />
-                Ajustamos calorías, macros y raciones a tus metas y preferencias alimentarias.
+                Check-in con un clic: marca días completos fácilmente, trofeo visual de progreso
               </li>
               <li>
                 <FiCheckCircle />
-                Sincronización con compras inteligentes y recordatorios semanales.
+                Planes 100% personalizados: semanales gratis, mensuales premium con ajuste automático
+              </li>
+              <li>
+                <FiCheckCircle />
+                NutriChat inteligente: respuestas precisas según tus objetivos y progreso
               </li>
             </HeroBenefits>
             <HeroActions>
@@ -1049,10 +1074,10 @@ const HomePage: React.FC = () => {
       <Section>
         <SectionHeader>
           <SectionTag>Ventajas clave</SectionTag>
-          <SectionTitle>La experiencia TastyPath se siente como tu nutricionista personal</SectionTitle>
+          <SectionTitle>Tu nutricionista personal con IA</SectionTitle>
           <SectionDescription>
-            Centralizamos en un panel elegante todo lo que necesitas para planificar, comprar y cocinar con la
-            tranquilidad de estar siguiendo un plan hecho a tu medida.
+            Todo en un solo lugar: planes personalizados, validación inteligente, seguimiento diario y evaluación mensual.
+            La IA genera tus planes automáticamente hasta alcanzar tu meta. Sin complicaciones, solo resultados.
           </SectionDescription>
         </SectionHeader>
 
@@ -1077,7 +1102,7 @@ const HomePage: React.FC = () => {
           <SectionTag>Acceso rápido</SectionTag>
           <SectionTitle>Todo tu ecosistema nutricional a un clic</SectionTitle>
           <SectionDescription>
-            Navega por tus herramientas favoritas y mantén el control de tu alimentación semanal desde un solo lugar.
+            Planes semanales, MiNutri Personal, NutriChat y lista de compras. Control total desde un solo lugar.
           </SectionDescription>
         </SectionHeader>
 

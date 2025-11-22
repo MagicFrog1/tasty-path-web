@@ -17,6 +17,7 @@ import {
   FiFeather,
   FiBook,
   FiCoffee,
+  FiCheckCircle,
 } from 'react-icons/fi';
 
 // Animaciones profesionales y modernas
@@ -964,9 +965,13 @@ const LandingPage: React.FC = () => {
   const { user } = useAuth();
 
   const heroList = [
-    'IA nutricional entrenada con criterios médicos',
-    'Menús adaptados a tus gustos y alergias',
-    'Lista de compras automatizada en segundos',
+    'IA que valida y ajusta tus objetivos automáticamente',
+    'Roadmap mensual completo con seguimiento diario',
+    'Check-in con un clic: marca días completos fácilmente',
+    'Evaluación mensual inteligente con recomendaciones personalizadas',
+    'Planes que se generan solos hasta alcanzar tu meta',
+    'Cuestionario completo de alergias y preferencias',
+    'Lista de compras automática sin olvidos',
   ];
 
   const stats = [
@@ -978,41 +983,66 @@ const LandingPage: React.FC = () => {
 
   const benefits = [
     {
-      title: 'Personalización total',
-      description: 'Objetivos, niveles de actividad, alergias y horarios ajustados a tu estilo de vida.',
+      title: 'MiNutri Personal',
+      description: 'Roadmap mensual completo. La IA valida objetivos, crea tu plan y genera el siguiente automáticamente. Check-in con un clic, trofeo visual y evaluación inteligente.',
       icon: <FiTarget />,
     },
     {
-      title: 'Salud y bienestar',
-      description: 'Recomendaciones respaldadas por fuentes médicas y equilibrio nutricional.',
+      title: 'Validación y Check-in Inteligente',
+      description: 'La IA ajusta objetivos poco realistas. Marca días completos con un clic. Trofeo que muestra tu progreso en tiempo real.',
+      icon: <FiCheckCircle />,
+    },
+    {
+      title: 'Evaluación Mensual con IA',
+      description: 'Porcentajes de cumplimiento, recomendaciones personalizadas y estimación de meses restantes. Celebra cuando alcanzas tu objetivo.',
+      icon: <FiTrendingUp />,
+    },
+    {
+      title: 'Planes que se adaptan',
+      description: 'Semanales ilimitados (gratis) o mensuales completos (premium). Navegación intuitiva y generación automática del siguiente plan.',
+      icon: <FiZap />,
+    },
+    {
+      title: 'Salud garantizada',
+      description: 'Fuentes médicas validadas. NutriChat con respuestas precisas. Equilibrio nutricional en cada recomendación.',
       icon: <FiHeart />,
     },
     {
-      title: 'Seguridad alimentaria',
-      description: 'Control exhaustivo de alérgenos y requisitos específicos.',
+      title: 'Seguridad total',
+      description: 'Cuestionario completo de alergias y preferencias. Control exhaustivo de alérgenos. Planes 100% seguros.',
       icon: <FiShield />,
     },
     {
-      title: 'Compra organizada',
-      description: 'Lista inteligente por categorías y cantidades exactas.',
+      title: 'Compra sin olvidos',
+      description: 'Lista organizada por categorías. Cantidades exactas. Optimizada para tus planes.',
       icon: <FiShoppingBag />,
     },
   ];
 
   const steps = [
     {
-      title: '1. Cuestionario',
-      description: 'Cuéntanos tus objetivos, alergias, preferencias dietéticas y ritmo de vida.',
+      title: '1. Define y valida',
+      description: 'La IA valida y ajusta tu objetivo. Completa el cuestionario de alergias y preferencias.',
       icon: <FiActivity />,
     },
     {
-      title: '2. Generación IA',
-      description: 'Creamos un plan semanal equilibrado con macros y recetas variadas.',
+      title: '2. Plan personalizado',
+      description: 'Semanales: menús equilibrados. Mensuales: roadmap completo con ejercicios y evaluación.',
       icon: <FiZap />,
     },
     {
-      title: '3. Lista de compras',
-      description: 'Te damos una lista clara y agrupada para ir al supermercado sin olvidos.',
+      title: '3. Check-in diario',
+      description: 'Marca días completos con un clic. Trofeo visual de progreso. Navegación semanal intuitiva.',
+      icon: <FiCheckCircle />,
+    },
+    {
+      title: '4. Evaluación y siguiente plan',
+      description: 'Evaluación mensual con IA. El siguiente plan se genera automáticamente hasta tu meta.',
+      icon: <FiTrendingUp />,
+    },
+    {
+      title: '5. Lista de compras',
+      description: 'Organizada por categorías. Sin olvidos, sin desperdicios.',
       icon: <FiClock />,
     },
   ];
@@ -1022,25 +1052,25 @@ const LandingPage: React.FC = () => {
       name: 'Gratis',
       price: '0€',
       highlight: false,
-      features: ['1 plan semanal', 'Lista de compras básica', 'Funciones esenciales'],
+      features: ['Planes semanales ilimitados', 'Lista de compras básica', 'NutriChat', 'Funciones esenciales'],
     },
     {
       name: 'Semanal',
       price: '3,49€',
       highlight: true,
-      features: ['Planes ilimitados', 'Preferencias y alérgenos completos'],
+      features: ['Todo del plan Gratis', 'Preferencias y alérgenos completos', 'NutriChat mejorado'],
     },
     {
       name: 'Mensual',
       price: '2,49€',
       highlight: false,
-      features: ['Todo del Semanal', 'Analíticas avanzadas', 'Soporte prioritario'],
+      features: ['Todo del plan Semanal', 'MiNutri Personal (roadmap mensual)', 'Validación de objetivos con IA', 'Seguimiento completo con check-in', 'Evaluación mensual con IA', 'Generación automática de planes', 'Soporte prioritario'],
     },
     {
       name: 'Anual',
       price: '19,99€',
       highlight: false,
-      features: ['Ahorras más', 'Actualizaciones exclusivas', 'Acceso early a nuevas funciones'],
+      features: ['Todo del plan Mensual', 'Ahorras más', 'Actualizaciones exclusivas', 'Acceso early a nuevas funciones', 'Pantalla de felicitaciones personalizada'],
     },
   ];
 
@@ -1123,8 +1153,8 @@ const LandingPage: React.FC = () => {
             <HeroCopy>
               <HeroTitle>Nutrición inteligente diseñada para ti</HeroTitle>
               <HeroSubtitle>
-                Genera menús semanales personalizados con IA, obtén una lista de compras inteligente y
-                recomendaciones fiables validadas por nuestro equipo nutricional.
+                Planes personalizados con IA. Roadmap mensual completo con seguimiento diario y evaluación inteligente.
+                La IA genera tus planes automáticamente hasta tu meta. Lista de compras automática y recomendaciones validadas.
               </HeroSubtitle>
               <HeroList>
                 {heroList.map((item) => (
@@ -1150,9 +1180,12 @@ const LandingPage: React.FC = () => {
                 <span>Automatiza tu semana con IA</span>
               </HeroPanelHeading>
               <PanelList>
-                <li>Analizamos tus datos metabólicos y objetivos.</li>
+                <li>IA valida tus objetivos y los ajusta automáticamente.</li>
+                <li>Roadmap mensual con seguimiento diario y evaluación inteligente.</li>
+                <li>Check-in con un clic desde calendario o ejercicios.</li>
+                <li>Trofeo visual que muestra tu progreso en tiempo real.</li>
                 <li>Recetas variadas con macros y tiempos de preparación.</li>
-                <li>Lista de compras sin desperdicio.</li>
+                <li>Lista de compras optimizada sin desperdicios.</li>
               </PanelList>
             </HeroPanel>
           </HeroLayout>

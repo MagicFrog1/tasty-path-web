@@ -394,7 +394,7 @@ const SavedPlansPage: React.FC = () => {
       <PageWrapper>
         <Header>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16 }}>
-            <h1>Mis Planes</h1>
+            <h1>Mis Planes Semanales</h1>
           </div>
           <p>Aún no has generado ningún plan semanal. Crea tu primer plan con IA para comenzar a organizar tus comidas.</p>
         </Header>
@@ -495,7 +495,7 @@ const SavedPlansPage: React.FC = () => {
     <PageWrapper>
       <Header>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16 }}>
-          <h1>Mis Planes</h1>
+          <h1>Mis Planes Semanales</h1>
           <div style={{ display: 'flex', gap: 12 }}>
             {selectionMode && (
               <ActionButton

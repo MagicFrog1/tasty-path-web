@@ -12,6 +12,14 @@ import { minutriService } from '../../services/minutriService';
 const NUTRICHAT_API_KEY = ENV_CONFIG.NUTRICHAT_API_KEY || AI_CONFIG.OPENAI_API_KEY;
 const NUTRICHAT_BASE_URL = 'https://api.openai.com/v1/chat/completions';
 
+// Debug: Verificar configuración de API Key
+console.log('🔍 NutriChat - Debug de API Key:');
+console.log('  - ENV_CONFIG.NUTRICHAT_API_KEY:', ENV_CONFIG.NUTRICHAT_API_KEY ? `${ENV_CONFIG.NUTRICHAT_API_KEY.substring(0, 10)}...` : 'NO CONFIGURADA');
+console.log('  - AI_CONFIG.OPENAI_API_KEY:', AI_CONFIG.OPENAI_API_KEY ? `${AI_CONFIG.OPENAI_API_KEY.substring(0, 10)}...` : 'NO CONFIGURADA');
+console.log('  - NUTRICHAT_API_KEY final:', NUTRICHAT_API_KEY ? `${NUTRICHAT_API_KEY.substring(0, 10)}...` : 'NO CONFIGURADA');
+console.log('  - import.meta.env.VITE_NUTRICHAT_API_KEY:', typeof import.meta !== 'undefined' && import.meta.env?.VITE_NUTRICHAT_API_KEY ? `${import.meta.env.VITE_NUTRICHAT_API_KEY.substring(0, 10)}...` : 'NO ENCONTRADA');
+console.log('  - import.meta.env.NEXT_PUBLIC_NUTRICHAT_API_KEY:', typeof import.meta !== 'undefined' && import.meta.env?.NEXT_PUBLIC_NUTRICHAT_API_KEY ? `${import.meta.env.NEXT_PUBLIC_NUTRICHAT_API_KEY.substring(0, 10)}...` : 'NO ENCONTRADA');
+
 const ChatContainer = styled.div`
   display: grid;
   grid-template-rows: auto 1fr auto;
@@ -56,7 +64,9 @@ const MessagesContainer = styled.div`
   }
 `;
 
-const Message = styled.div<{ isUser: boolean }>`
+const Message = styled.div.withConfig({
+  shouldForwardProp: (prop) => prop !== 'isUser',
+})<{ isUser: boolean }>`
   display: flex;
   justify-content: ${props => props.isUser ? 'flex-end' : 'flex-start'};
   
@@ -205,7 +215,7 @@ const NutriChat: React.FC<NutriChatProps> = ({ adherence, currentDay, totalDays 
         else if (roadmap.finalGoal === 'maintenance') goals.push('maintenance');
       }
 
-      // Obtener conocimiento médico relevante usando el perfil del usuario
+      // Obtener conocimiento médico relevante usando el perfil del usuario y la pregunta
       const medicalKnowledge = medicalKnowledgeService.generateComprehensiveMedicalPrompt({
         age: profile?.age || 30,
         gender: (profile?.gender as 'male' | 'female') || 'male',
@@ -214,7 +224,7 @@ const NutriChat: React.FC<NutriChatProps> = ({ adherence, currentDay, totalDays 
         activityLevel: profile?.activityLevel || 'moderate',
         goals: goals.length > 0 ? goals : ['maintenance'],
         medicalConditions: (profile as any)?.medicalConditions || [],
-      });
+      }, userMessage);
 
       // Construir historial de conversación para contexto
       const conversationHistory = messages.slice(-6).map(msg => ({
@@ -223,9 +233,10 @@ const NutriChat: React.FC<NutriChatProps> = ({ adherence, currentDay, totalDays 
       }));
 
       // Generar respuesta con IA real para TODAS las preguntas usando la API key de NutriChat
-      if (NUTRICHAT_API_KEY && NUTRICHAT_API_KEY.length > 0) {
+      if (NUTRICHAT_API_KEY && NUTRICHAT_API_KEY.length > 0 && NUTRICHAT_API_KEY.startsWith('sk-')) {
         console.log('🤖 NutriChat: Enviando solicitud a OpenAI...');
         console.log('🔑 API Key presente:', !!NUTRICHAT_API_KEY);
+        console.log('🔑 API Key válida (empieza con sk-):', NUTRICHAT_API_KEY.startsWith('sk-'));
         console.log('📝 Modelo:', AI_CONFIG.OPENAI_MODEL || 'gpt-4o-mini');
         console.log('💬 Mensaje del usuario:', userMessage);
         
@@ -236,13 +247,18 @@ IMPORTANTE - DISCLAIMER MÉDICO:
 - Si el usuario tiene condiciones médicas específicas, siempre recomienda consultar con un médico o nutricionista certificado.
 - Nunca prescribas tratamientos médicos ni diagnósticos.
 
-ÁMBITO DE CONOCIMIENTO:
-SOLO puedes responder preguntas relacionadas con:
-- Nutrición y alimentación
+ÁMBITO DE CONOCIMIENTO - SE FLEXIBLE:
+Puedes responder preguntas sobre:
+- Nutrición y alimentación (macronutrientes, micronutrientes, suplementos, etc.)
+- Subir o bajar de peso (estrategias, déficit/superávit calórico, etc.)
+- Ganar o perder músculo (proteína, entrenamiento, timing nutricional, etc.)
+- Platos y recetas (preparación, ingredientes, técnicas de cocción, etc.)
+- Alérgenos e intolerancias (gluten, lactosa, frutos secos, alternativas, etc.)
+- Consejos nutricionales generales y específicos
 - Ejercicio físico y actividad física
-- Ayuda sobre el uso de la plataforma TastyPath (cómo usar funciones, navegación, etc.)
+- Ayuda sobre el uso de la plataforma TastyPath
 
-Si la pregunta NO está relacionada con estos temas, responde amablemente: "Lo siento, pero solo puedo ayudarte con temas de nutrición, ejercicio físico o ayuda sobre cómo usar TastyPath. ¿Hay algo en lo que pueda asistirte relacionado con estos temas?"
+SÉ FLEXIBLE: Si la pregunta está relacionada con nutrición, alimentación, ejercicio o salud en general, responde usando el conocimiento médico proporcionado. Solo rechaza preguntas completamente fuera de estos temas.
 
 ${medicalKnowledge}
 
@@ -254,13 +270,18 @@ INSTRUCCIONES:
 1. Comportarte como un nutricionista profesional pero amigable: sé conversacional, natural y empático.
 2. Responde a saludos simples (hola, buenos días, etc.) de forma cálida y natural.
 3. Para preguntas sobre nutrición/alimentación: usa el conocimiento médico proporcionado y da respuestas precisas, basadas en evidencia científica, pero siempre con un disclaimer de que no sustituye consejo profesional.
-4. Para preguntas sobre ejercicio: proporciona consejos generales y seguros, siempre recomendando consultar con un entrenador si es necesario.
-5. Para preguntas sobre la plataforma: ayuda al usuario a entender cómo usar las funciones de TastyPath.
-6. Mantén un tono amigable, profesional y accesible.
-7. Si no estás seguro de algo, admítelo amablemente y sugiere consultar con un profesional de la salud.
-8. Responde de forma concisa pero completa, adaptándote al nivel de la pregunta (simple o compleja).
-9. Usa emojis ocasionalmente para hacer la conversación más amigable (pero no excesivamente).
-10. SIEMPRE incluye un recordatorio amigable de que tus consejos son orientativos cuando respondas preguntas de salud/nutrición.
+4. Para preguntas sobre subir/bajar peso: usa los protocolos médicos relevantes del conocimiento proporcionado.
+5. Para preguntas sobre ganar/perder músculo: usa la información sobre ganancia de músculo y pérdida de músculo del conocimiento proporcionado.
+6. Para preguntas sobre platos y recetas: usa la información sobre recetas y preparación de alimentos del conocimiento proporcionado.
+7. Para preguntas sobre alérgenos: usa la información sobre alérgenos y alternativas del conocimiento proporcionado.
+8. Para preguntas sobre ejercicio: proporciona consejos generales y seguros, siempre recomendando consultar con un entrenador si es necesario.
+9. Para preguntas sobre la plataforma: ayuda al usuario a entender cómo usar las funciones de TastyPath.
+10. Mantén un tono amigable, profesional y accesible.
+11. Si no estás seguro de algo, admítelo amablemente y sugiere consultar con un profesional de la salud.
+12. Responde de forma concisa pero completa, adaptándote al nivel de la pregunta (simple o compleja).
+13. Usa emojis ocasionalmente para hacer la conversación más amigable (pero no excesivamente).
+14. SIEMPRE incluye un recordatorio amigable de que tus consejos son orientativos cuando respondas preguntas de salud/nutrición.
+15. USA SIEMPRE la información médica proporcionada cuando sea relevante para la pregunta del usuario.
 
 Responde de forma natural y conversacional, como lo haría un nutricionista humano real.`;
 
@@ -310,8 +331,25 @@ Responde de forma natural y conversacional, como lo haría un nutricionista huma
             statusText: response.statusText,
             error: errorData
           });
-          throw new Error(`Error de API: ${response.status} - ${errorData.error?.message || 'Error desconocido'}`);
+          
+          let errorMessage = 'Error al procesar tu solicitud.';
+          if (response.status === 401) {
+            errorMessage = 'Error de autenticación con la API. Por favor, verifica la configuración de la API key.';
+          } else if (response.status === 429) {
+            errorMessage = 'Demasiadas solicitudes. Por favor, espera un momento e intenta de nuevo.';
+          } else if (response.status === 500) {
+            errorMessage = 'Error en el servidor de OpenAI. Por favor, intenta de nuevo en unos momentos.';
+          } else if (errorData.error?.message) {
+            errorMessage = `Error: ${errorData.error.message}`;
+          }
+          
+          throw new Error(errorMessage);
         }
+      } else {
+        console.warn('⚠️ NutriChat: API Key no configurada o inválida');
+        console.warn('  - NUTRICHAT_API_KEY presente:', !!NUTRICHAT_API_KEY);
+        console.warn('  - NUTRICHAT_API_KEY longitud:', NUTRICHAT_API_KEY?.length || 0);
+        console.warn('  - NUTRICHAT_API_KEY empieza con sk-:', NUTRICHAT_API_KEY?.startsWith('sk-') || false);
       }
 
       // Fallback: Respuestas básicas más naturales si la IA no está disponible

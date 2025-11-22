@@ -66,9 +66,23 @@ export const ENV_CONFIG = {
   
   // NutriChat API Key (específica para el chat de nutrición)
   // Configurar en Vercel como VITE_NUTRICHAT_API_KEY o NEXT_PUBLIC_NUTRICHAT_API_KEY
-  NUTRICHAT_API_KEY: getEnvVar('NUTRICHAT_API_KEY') || 
-                      import.meta?.env?.VITE_NUTRICHAT_API_KEY || 
-                      import.meta?.env?.NEXT_PUBLIC_NUTRICHAT_API_KEY || '',
+  // IMPORTANTE: En Vercel, las variables VITE_* no se exponen automáticamente, usar NEXT_PUBLIC_*
+  NUTRICHAT_API_KEY: (() => {
+    // Prioridad 1: NEXT_PUBLIC_* (funciona en Vercel)
+    if (typeof import.meta !== 'undefined' && import.meta.env?.NEXT_PUBLIC_NUTRICHAT_API_KEY) {
+      return import.meta.env.NEXT_PUBLIC_NUTRICHAT_API_KEY;
+    }
+    // Prioridad 2: VITE_* (funciona en desarrollo local)
+    if (typeof import.meta !== 'undefined' && import.meta.env?.VITE_NUTRICHAT_API_KEY) {
+      return import.meta.env.VITE_NUTRICHAT_API_KEY;
+    }
+    // Prioridad 3: getEnvVar (busca en múltiples lugares)
+    const fromGetEnvVar = getEnvVar('NUTRICHAT_API_KEY');
+    if (fromGetEnvVar) {
+      return fromGetEnvVar;
+    }
+    return '';
+  })(),
   
   // API Configuration
   OPENAI_API_URL: 'https://api.openai.com/v1/chat/completions',

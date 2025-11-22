@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
-import { FiChevronLeft, FiChevronRight, FiChevronDown, FiChevronUp, FiCheckCircle, FiCoffee, FiActivity, FiInfo, FiCalendar } from 'react-icons/fi';
+import { FiChevronLeft, FiChevronRight, FiChevronDown, FiChevronUp, FiCheckCircle, FiCoffee, FiActivity, FiInfo, FiCalendar, FiCheck } from 'react-icons/fi';
 import { theme } from '../../styles/theme';
 import { DailyContent } from '../../services/minutriContentService';
 
@@ -212,6 +212,62 @@ const DayNumber = styled.div<{ isToday: boolean; isWeekView?: boolean }>`
   
   @media (max-width: 480px) {
     font-size: ${props => props.isWeekView ? '14px' : '12px'};
+  }
+`;
+
+const CompleteDayButton = styled.button<{ completed: boolean; isWeekView?: boolean }>`
+  position: absolute;
+  top: ${props => props.isWeekView ? '8px' : '6px'};
+  right: ${props => props.isWeekView ? '8px' : '6px'};
+  width: ${props => props.isWeekView ? '28px' : '24px'};
+  height: ${props => props.isWeekView ? '28px' : '24px'};
+  border-radius: 50%;
+  border: 2px solid ${props => props.completed ? theme.colors.primary : '#e2e8f0'};
+  background: ${props => props.completed 
+    ? 'linear-gradient(135deg, #2E8B57 0%, #3CB371 100%)'
+    : 'white'};
+  color: ${props => props.completed ? 'white' : theme.colors.textSecondary};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: ${props => props.completed 
+    ? '0 2px 6px rgba(46, 139, 87, 0.3)'
+    : '0 1px 3px rgba(0, 0, 0, 0.1)'};
+  z-index: 10;
+  padding: 0;
+  
+  &:hover {
+    transform: scale(1.1);
+    box-shadow: ${props => props.completed 
+      ? '0 4px 10px rgba(46, 139, 87, 0.4)'
+      : '0 2px 6px rgba(99, 102, 241, 0.2)'};
+    border-color: ${props => props.completed ? theme.colors.primaryDark : '#6366f1'};
+    background: ${props => props.completed 
+      ? 'linear-gradient(135deg, #2E8B57 0%, #3CB371 100%)'
+      : 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)'};
+    color: white;
+  }
+  
+  &:active {
+    transform: scale(0.95);
+  }
+  
+  svg {
+    font-size: ${props => props.isWeekView ? '14px' : '12px'};
+    stroke-width: 3;
+  }
+  
+  @media (max-width: 480px) {
+    width: ${props => props.isWeekView ? '24px' : '20px'};
+    height: ${props => props.isWeekView ? '24px' : '20px'};
+    top: ${props => props.isWeekView ? '6px' : '4px'};
+    right: ${props => props.isWeekView ? '6px' : '4px'};
+    
+    svg {
+      font-size: ${props => props.isWeekView ? '12px' : '10px'};
+    }
   }
 `;
 
@@ -535,6 +591,7 @@ const MonthlyCalendarView: React.FC<MonthlyCalendarViewProps> = ({
   const [viewMode, setViewMode] = useState<'month' | 'week'>('month');
   const [expandedDay, setExpandedDay] = useState<number | null>(null);
   const [expandedMeals, setExpandedMeals] = useState<{ [key: string]: boolean }>({});
+  const [currentWeekStart, setCurrentWeekStart] = useState(1); // Día de inicio de la semana actual en vista semanal
 
   const weekDays = ['LUNES', 'MARTES', 'MIÉRCOLES', 'JUEVES', 'VIERNES', 'SÁBADO', 'DOMINGO'];
   const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
@@ -582,7 +639,9 @@ const MonthlyCalendarView: React.FC<MonthlyCalendarViewProps> = ({
       const mondayOffset = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Convertir a lunes = 0
       
       // Calcular el primer día de la semana (lunes) en términos del día del módulo
-      const weekStartDayInModule = Math.max(1, currentDayInModule - mondayOffset);
+      const weekStartDayInModule = viewMode === 'week' 
+        ? currentWeekStart 
+        : Math.max(1, currentDayInModule - mondayOffset);
       
       // Mostrar los 7 días de la semana
       for (let i = 0; i < 7; i++) {
@@ -649,33 +708,74 @@ const MonthlyCalendarView: React.FC<MonthlyCalendarViewProps> = ({
             <ViewButton active={viewMode === 'month'} onClick={() => setViewMode('month')}>
               Mes
             </ViewButton>
-            <ViewButton active={viewMode === 'week'} onClick={() => setViewMode('week')}>
+            <ViewButton active={viewMode === 'week'} onClick={() => {
+              setViewMode('week');
+              // Resetear a la semana actual cuando se cambia a vista semanal
+              const today = new Date();
+              const moduleStartDate = new Date(startDate);
+              moduleStartDate.setDate(1);
+              const daysSinceModuleStart = Math.floor((today.getTime() - moduleStartDate.getTime()) / (1000 * 60 * 60 * 24));
+              const currentDayInModule = Math.min(Math.max(1, daysSinceModuleStart + 1), 30);
+              const dayOfWeek = today.getDay();
+              const mondayOffset = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+              setCurrentWeekStart(Math.max(1, currentDayInModule - mondayOffset));
+            }}>
               Semana
             </ViewButton>
           </ViewToggle>
           <NavigationButtons>
-            <NavButton 
-              disabled={monthNumber === 1}
-              onClick={() => {
-                if (monthNumber > 1 && onMonthChange) {
-                  onMonthChange(monthNumber - 1);
-                }
-              }}
-            >
-              <FiChevronLeft />
-              Anterior
-            </NavButton>
-            <NavButton 
-              disabled={monthNumber === totalMonths}
-              onClick={() => {
-                if (monthNumber < totalMonths && onMonthChange) {
-                  onMonthChange(monthNumber + 1);
-                }
-              }}
-            >
-              Siguiente
-              <FiChevronRight />
-            </NavButton>
+            {viewMode === 'week' ? (
+              <>
+                <NavButton 
+                  disabled={currentWeekStart <= 1}
+                  onClick={() => {
+                    const newStart = Math.max(1, currentWeekStart - 7);
+                    setCurrentWeekStart(newStart);
+                  }}
+                >
+                  <FiChevronLeft />
+                  Semana Anterior
+                </NavButton>
+                <span style={{ fontSize: '14px', fontWeight: 600, color: theme.colors.primaryDark, padding: '0 12px' }}>
+                  Semana {Math.ceil(currentWeekStart / 7)} de {Math.ceil(30 / 7)}
+                </span>
+                <NavButton 
+                  disabled={currentWeekStart >= 24}
+                  onClick={() => {
+                    const newStart = Math.min(24, currentWeekStart + 7);
+                    setCurrentWeekStart(newStart);
+                  }}
+                >
+                  Semana Siguiente
+                  <FiChevronRight />
+                </NavButton>
+              </>
+            ) : (
+              <>
+                <NavButton 
+                  disabled={monthNumber === 1}
+                  onClick={() => {
+                    if (monthNumber > 1 && onMonthChange) {
+                      onMonthChange(monthNumber - 1);
+                    }
+                  }}
+                >
+                  <FiChevronLeft />
+                  Anterior
+                </NavButton>
+                <NavButton 
+                  disabled={monthNumber === totalMonths}
+                  onClick={() => {
+                    if (monthNumber < totalMonths && onMonthChange) {
+                      onMonthChange(monthNumber + 1);
+                    }
+                  }}
+                >
+                  Siguiente
+                  <FiChevronRight />
+                </NavButton>
+              </>
+            )}
           </NavigationButtons>
         </div>
       </CalendarHeader>
@@ -694,6 +794,16 @@ const MonthlyCalendarView: React.FC<MonthlyCalendarViewProps> = ({
           
           const dayContent = getDayContent(cell.day);
           const completions = dayCompletions[cell.day] || { breakfast: false, lunch: false, dinner: false, exercise: false };
+          const isDayComplete = completions.breakfast && completions.lunch && completions.dinner && completions.exercise;
+          
+          const handleCompleteDayClick = (e: React.MouseEvent) => {
+            e.stopPropagation(); // Evitar que se abra el modal del día
+            const newState = !isDayComplete;
+            onDayUpdate(cell.day!, 'breakfast', newState);
+            onDayUpdate(cell.day!, 'lunch', newState);
+            onDayUpdate(cell.day!, 'dinner', newState);
+            onDayUpdate(cell.day!, 'exercise', newState);
+          };
           
           return (
             <DayCell
@@ -703,6 +813,15 @@ const MonthlyCalendarView: React.FC<MonthlyCalendarViewProps> = ({
               isWeekView={viewMode === 'week'}
               onClick={() => handleDayClick(cell.day!)}
             >
+              <CompleteDayButton
+                completed={isDayComplete}
+                isWeekView={viewMode === 'week'}
+                onClick={handleCompleteDayClick}
+                title={isDayComplete ? 'Día completado - Click para desmarcar' : 'Marcar día completo'}
+              >
+                {isDayComplete && <FiCheck />}
+              </CompleteDayButton>
+              
               <DayNumber isToday={cell.isToday} isWeekView={viewMode === 'week'}>
                 <span>{cell.day}</span>
                 {cell.isToday && (
