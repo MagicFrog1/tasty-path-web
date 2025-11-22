@@ -624,9 +624,23 @@ const ProfilePage: React.FC = () => {
             <Input
               type="email"
               value={profile.email}
-              onChange={e => updateProfile({ email: e.target.value })}
+              readOnly
+              disabled
               placeholder="tu@email.com"
+              style={{
+                cursor: 'not-allowed',
+                opacity: 0.7,
+                backgroundColor: 'rgba(0, 0, 0, 0.02)'
+              }}
             />
+            <p style={{
+              margin: '8px 0 0 0',
+              fontSize: '13px',
+              color: theme.colors.textSecondary,
+              fontStyle: 'italic'
+            }}>
+              El email no se puede modificar después de crear la cuenta
+            </p>
           </Field>
         </FormGrid>
       </ProfileCard>
