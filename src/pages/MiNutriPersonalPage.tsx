@@ -267,6 +267,11 @@ const MiNutriPersonalPage: React.FC = () => {
   const [isLoadingContent, setIsLoadingContent] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(1);
   const [dayCompletions, setDayCompletions] = useState<{ [dayNumber: number]: { breakfast: boolean; lunch: boolean; dinner: boolean; exercise: boolean } }>({});
+  
+  // Estados para pantalla de carga
+  const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
+  const [loadingStep, setLoadingStep] = useState(0);
+  const [loadingStatus, setLoadingStatus] = useState('');
 
   // Permitir acceso a todos los usuarios (incluyendo plan gratis)
   // const isPremium = currentPlan && currentPlan.plan !== 'free' && currentPlan.isActive;
