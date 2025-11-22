@@ -1,4 +1,6 @@
 // Servicio para generar contenido detallado de MiNutri Personal
+import AIMenuService, { AIMenuRequest } from './AIMenuService';
+import { AI_CONFIG, isAIConfigured } from '../config/ai';
 
 export interface DailyMeal {
   id: string;
@@ -140,7 +142,7 @@ export const generateModuleContent = async (
   };
 };
 
-// Generar menús diarios usando IA
+// Generar menús diarios usando IA real
 const generateDailyMeals = async (
   day: number,
   dailyCalories: number,
@@ -156,6 +158,97 @@ const generateDailyMeals = async (
   const proteinRatio = goal === 'muscle_gain' ? 0.35 : goal === 'weight_loss' ? 0.30 : 0.25;
   const carbsRatio = goal === 'weight_loss' ? 0.35 : 0.45;
   const fatRatio = 0.25;
+  
+  const totalProtein = Math.round(dailyCalories * proteinRatio / 4);
+  const totalCarbs = Math.round(dailyCalories * carbsRatio / 4);
+  const totalFat = Math.round(dailyCalories * fatRatio / 9);
+  
+  // Si la IA está configurada, usar generación real
+  if (isAIConfigured()) {
+    try {
+      console.log(`🤖 Generando menú del día ${day} con IA...`);
+      
+      const aiRequest: AIMenuRequest = {
+        nutritionGoals: {
+          protein: totalProtein,
+          carbs: totalCarbs,
+          fat: totalFat,
+          fiber: 30,
+        },
+        totalCalories: dailyCalories,
+        dietaryPreferences: userProfile.dietaryPreferences || [],
+        allergies: userProfile.allergies || [],
+        weight: userProfile.weight,
+        height: userProfile.height,
+        age: userProfile.age,
+        gender: userProfile.gender,
+        activityLevel: userProfile.activityLevel || 'moderate',
+      };
+      
+      // Generar menú semanal y tomar el día correspondiente
+      const weekDay = ((day - 1) % 7) + 1;
+      const aiResponse = await AIMenuService.generateWeeklyMenu(aiRequest);
+      
+      if (aiResponse.success && aiResponse.weeklyMenu && aiResponse.weeklyMenu.length > 0) {
+        const dayMenu = aiResponse.weeklyMenu[weekDay - 1] || aiResponse.weeklyMenu[0];
+        
+        // Convertir formato de IA a formato de DailyMeal
+        const breakfast: DailyMeal = {
+          id: `breakfast-day-${day}`,
+          name: dayMenu.meals.breakfast?.name || generateMealName('breakfast', day, goal),
+          description: dayMenu.meals.breakfast?.instructions || generateMealDescription('breakfast', day, goal),
+          ingredients: dayMenu.meals.breakfast?.ingredients || generateMealIngredients('breakfast', day, goal),
+          preparation: dayMenu.meals.breakfast?.instructions || generateMealPreparation('breakfast', day, goal),
+          nutrition: {
+            calories: dayMenu.meals.breakfast?.nutrition?.calories || breakfastCalories,
+            protein: dayMenu.meals.breakfast?.nutrition?.protein || Math.round(breakfastCalories * proteinRatio / 4),
+            carbs: dayMenu.meals.breakfast?.nutrition?.carbs || Math.round(breakfastCalories * carbsRatio / 4),
+            fat: dayMenu.meals.breakfast?.nutrition?.fat || Math.round(breakfastCalories * fatRatio / 9),
+          },
+          time: 'Desayuno',
+        };
+        
+        const lunch: DailyMeal = {
+          id: `lunch-day-${day}`,
+          name: dayMenu.meals.lunch?.name || generateMealName('lunch', day, goal),
+          description: dayMenu.meals.lunch?.instructions || generateMealDescription('lunch', day, goal),
+          ingredients: dayMenu.meals.lunch?.ingredients || generateMealIngredients('lunch', day, goal),
+          preparation: dayMenu.meals.lunch?.instructions || generateMealPreparation('lunch', day, goal),
+          nutrition: {
+            calories: dayMenu.meals.lunch?.nutrition?.calories || lunchCalories,
+            protein: dayMenu.meals.lunch?.nutrition?.protein || Math.round(lunchCalories * proteinRatio / 4),
+            carbs: dayMenu.meals.lunch?.nutrition?.carbs || Math.round(lunchCalories * carbsRatio / 4),
+            fat: dayMenu.meals.lunch?.nutrition?.fat || Math.round(lunchCalories * fatRatio / 9),
+          },
+          time: 'Almuerzo',
+        };
+        
+        const dinner: DailyMeal = {
+          id: `dinner-day-${day}`,
+          name: dayMenu.meals.dinner?.name || generateMealName('dinner', day, goal),
+          description: dayMenu.meals.dinner?.instructions || generateMealDescription('dinner', day, goal),
+          ingredients: dayMenu.meals.dinner?.ingredients || generateMealIngredients('dinner', day, goal),
+          preparation: dayMenu.meals.dinner?.instructions || generateMealPreparation('dinner', day, goal),
+          nutrition: {
+            calories: dayMenu.meals.dinner?.nutrition?.calories || dinnerCalories,
+            protein: dayMenu.meals.dinner?.nutrition?.protein || Math.round(dinnerCalories * proteinRatio / 4),
+            carbs: dayMenu.meals.dinner?.nutrition?.carbs || Math.round(dinnerCalories * carbsRatio / 4),
+            fat: dayMenu.meals.dinner?.nutrition?.fat || Math.round(dinnerCalories * fatRatio / 9),
+          },
+          time: 'Cena',
+        };
+        
+        console.log(`✅ Menú del día ${day} generado con IA`);
+        return { breakfast, lunch, dinner };
+      }
+    } catch (error) {
+      console.error(`❌ Error generando menú del día ${day} con IA:`, error);
+      // Continuar con generación básica
+    }
+  }
+  
+  // Fallback: Generación básica si la IA no está disponible
+  console.log(`📝 Usando generación básica para el día ${day}`);
   
   const breakfast: DailyMeal = {
     id: `breakfast-day-${day}`,
@@ -289,9 +382,67 @@ const generateMealIngredients = (mealType: string, day: number, goal: string): s
   return ingredients[(day - 1) % ingredients.length];
 };
 
-// Generar preparación detallada
-const generateMealPreparation = (mealType: string, day: number, goal: string): string => {
-  return `Preparación detallada paso a paso para esta comida. Cocina los ingredientes según las instrucciones, asegurándote de mantener los valores nutricionales. Ajusta las porciones según tus necesidades calóricas específicas.`;
+// Generar preparación detallada con IA
+const generateMealPreparation = async (mealType: string, day: number, goal: string, mealName: string, ingredients: string[]): Promise<string> => {
+  if (isAIConfigured()) {
+    try {
+      const prompt = `Genera una receta detallada paso a paso en español para "${mealName}" con los siguientes ingredientes: ${ingredients.join(', ')}. 
+      
+El objetivo nutricional es: ${goal === 'weight_loss' ? 'pérdida de peso saludable' : goal === 'muscle_gain' ? 'ganancia de músculo' : 'mantenimiento'}.
+
+La receta debe incluir:
+1. Preparación paso a paso clara y concisa
+2. Tiempo de cocción aproximado
+3. Método de cocinado (horneado, plancha, vapor, etc.)
+4. Consejos para mantener los valores nutricionales
+5. Formato profesional y fácil de seguir
+
+Responde SOLO con la receta, sin explicaciones adicionales.`;
+
+      const response = await fetch(AI_CONFIG.OPENAI_BASE_URL + '/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${AI_CONFIG.OPENAI_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: AI_CONFIG.OPENAI_MODEL,
+          messages: [
+            {
+              role: 'system',
+              content: 'Eres un chef nutricionista experto que crea recetas saludables, detalladas y fáciles de seguir.',
+            },
+            {
+              role: 'user',
+              content: prompt,
+            },
+          ],
+          temperature: 0.7,
+          max_tokens: 500,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const recipe = data.choices[0]?.message?.content?.trim();
+        if (recipe) {
+          return recipe;
+        }
+      }
+    } catch (error) {
+      console.error('Error generando preparación con IA:', error);
+    }
+  }
+  
+  // Fallback: Preparación básica
+  return `Preparación detallada paso a paso para ${mealName}:
+
+1. Prepara todos los ingredientes: ${ingredients.slice(0, 3).join(', ')}.
+2. Cocina según el método apropiado (plancha, horno, vapor) manteniendo los valores nutricionales.
+3. Ajusta las porciones según tus necesidades calóricas específicas.
+4. Sirve caliente y disfruta de una comida nutritiva y equilibrada.
+
+Tiempo estimado: 20-30 minutos.`;
 };
 
 // Generar ejercicio diario
