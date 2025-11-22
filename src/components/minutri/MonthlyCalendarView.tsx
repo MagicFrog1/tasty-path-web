@@ -516,6 +516,7 @@ interface MonthlyCalendarViewProps {
   days: DailyContent[];
   onDayUpdate: (dayNumber: number, mealType: 'breakfast' | 'lunch' | 'dinner' | 'exercise', completed: boolean) => void;
   dayCompletions: { [dayNumber: number]: { breakfast: boolean; lunch: boolean; dinner: boolean; exercise: boolean } };
+  onMonthChange?: (month: number) => void;
 }
 
 const MonthlyCalendarView: React.FC<MonthlyCalendarViewProps> = ({
