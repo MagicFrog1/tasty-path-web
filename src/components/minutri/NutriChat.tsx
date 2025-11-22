@@ -6,6 +6,10 @@ import { AI_CONFIG, isAIConfigured } from '../../config/ai';
 import { medicalKnowledgeService } from '../../services/MedicalKnowledgeService';
 import { ENV_CONFIG } from '../../../env.config';
 
+// API Key específica para NutriChat
+const NUTRICHAT_API_KEY = ENV_CONFIG.NUTRICHAT_API_KEY || AI_CONFIG.OPENAI_API_KEY;
+const NUTRICHAT_BASE_URL = 'https://api.openai.com/v1/chat/completions';
+
 const ChatContainer = styled.div`
   display: grid;
   grid-template-rows: auto 1fr auto;
@@ -206,9 +210,22 @@ const NutriChat: React.FC<NutriChatProps> = ({ adherence, currentDay, totalDays 
         content: msg.text,
       }));
 
-      // Generar respuesta con IA real para TODAS las preguntas
-      if (isAIConfigured()) {
-        const systemPrompt = `Eres NutriChat, un asistente virtual especializado en alimentación y nutrición. Te comportas como un asistente humano real, amigable y conversacional.
+      // Generar respuesta con IA real para TODAS las preguntas usando la API key de NutriChat
+      if (NUTRICHAT_API_KEY && NUTRICHAT_API_KEY.length > 0) {
+        const systemPrompt = `Eres NutriChat, un asistente virtual especializado en alimentación, nutrición y ejercicio físico. Te comportas como un nutricionista profesional pero amigable y conversacional.
+
+IMPORTANTE - DISCLAIMER MÉDICO:
+- Debes SIEMPRE dejar claro que tus consejos son orientativos y NO sustituyen el consejo de un profesional de la salud.
+- Si el usuario tiene condiciones médicas específicas, siempre recomienda consultar con un médico o nutricionista certificado.
+- Nunca prescribas tratamientos médicos ni diagnósticos.
+
+ÁMBITO DE CONOCIMIENTO:
+SOLO puedes responder preguntas relacionadas con:
+- Nutrición y alimentación
+- Ejercicio físico y actividad física
+- Ayuda sobre el uso de la plataforma TastyPath (cómo usar funciones, navegación, etc.)
+
+Si la pregunta NO está relacionada con estos temas, responde amablemente: "Lo siento, pero solo puedo ayudarte con temas de nutrición, ejercicio físico o ayuda sobre cómo usar TastyPath. ¿Hay algo en lo que pueda asistirte relacionado con estos temas?"
 
 ${medicalKnowledge}
 
@@ -216,23 +233,25 @@ CONTEXTO DEL USUARIO:
 - Día actual del módulo: ${currentDay} de ${totalDays}
 - Adherencia al plan: ${adherence}%
 
-INSTRUCCIONES IMPORTANTES:
-1. Comportarte como un asistente humano real: sé amigable, conversacional y natural.
+INSTRUCCIONES:
+1. Comportarte como un nutricionista profesional pero amigable: sé conversacional, natural y empático.
 2. Responde a saludos simples (hola, buenos días, etc.) de forma cálida y natural.
-3. Para preguntas sobre nutrición/alimentación: usa el conocimiento médico proporcionado y da respuestas precisas y basadas en evidencia.
-4. Para preguntas que NO son sobre nutrición: responde amablemente explicando que solo puedes ayudar con temas de alimentación y nutrición, pero hazlo de forma conversacional y natural.
-5. Mantén un tono amigable, profesional y accesible.
-6. Si no estás seguro de algo, admítelo amablemente y sugiere consultar con un profesional de la salud.
-7. Responde de forma concisa pero completa, adaptándote al nivel de la pregunta (simple o compleja).
-8. Usa emojis ocasionalmente para hacer la conversación más amigable (pero no excesivamente).
+3. Para preguntas sobre nutrición/alimentación: usa el conocimiento médico proporcionado y da respuestas precisas, basadas en evidencia científica, pero siempre con un disclaimer de que no sustituye consejo profesional.
+4. Para preguntas sobre ejercicio: proporciona consejos generales y seguros, siempre recomendando consultar con un entrenador si es necesario.
+5. Para preguntas sobre la plataforma: ayuda al usuario a entender cómo usar las funciones de TastyPath.
+6. Mantén un tono amigable, profesional y accesible.
+7. Si no estás seguro de algo, admítelo amablemente y sugiere consultar con un profesional de la salud.
+8. Responde de forma concisa pero completa, adaptándote al nivel de la pregunta (simple o compleja).
+9. Usa emojis ocasionalmente para hacer la conversación más amigable (pero no excesivamente).
+10. SIEMPRE incluye un recordatorio amigable de que tus consejos son orientativos cuando respondas preguntas de salud/nutrición.
 
-Responde de forma natural y conversacional, como lo haría un asistente humano real.`;
+Responde de forma natural y conversacional, como lo haría un nutricionista humano real.`;
 
-        const response = await fetch(AI_CONFIG.OPENAI_BASE_URL + '/v1/chat/completions', {
+        const response = await fetch(NUTRICHAT_BASE_URL, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${AI_CONFIG.OPENAI_API_KEY}`,
+            'Authorization': `Bearer ${NUTRICHAT_API_KEY}`,
           },
           body: JSON.stringify({
             model: AI_CONFIG.OPENAI_MODEL,

@@ -144,6 +144,114 @@ const PremiumBadge = styled.div`
   margin-bottom: 24px;
 `;
 
+// Pantalla de carga para generación de planes mensales
+const LoadingOverlay = styled.div<{ show: boolean }>`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  z-index: 9999;
+  display: ${({ show }) => (show ? 'flex' : 'none')};
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 32px;
+  animation: ${({ show }) => (show ? 'fadeIn 0.3s ease' : 'none')};
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+`;
+
+const LoadingContent = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  text-align: center;
+  max-width: 500px;
+  padding: 0 32px;
+`;
+
+const Spinner = styled.div`
+  width: 80px;
+  height: 80px;
+  border: 6px solid rgba(46, 139, 87, 0.1);
+  border-top-color: ${theme.colors.primary};
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+`;
+
+const LoadingTitle = styled.h2`
+  margin: 0;
+  font-size: clamp(1.8rem, 4vw, 2.4rem);
+  font-weight: 800;
+  color: #0a0e13;
+  font-family: ${theme.fonts.heading};
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+`;
+
+const LoadingMessage = styled.p`
+  margin: 0;
+  font-size: 18px;
+  color: ${theme.colors.textSecondary};
+  line-height: 1.6;
+`;
+
+const LoadingSteps = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  margin-top: 8px;
+`;
+
+const LoadingStep = styled.div<{ active: boolean; completed: boolean }>`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: ${({ active, completed }) => 
+    completed ? 'rgba(46, 139, 87, 0.1)' : 
+    active ? 'rgba(46, 139, 87, 0.15)' : 
+    'rgba(46, 139, 87, 0.05)'};
+  color: ${({ active, completed }) => 
+    completed ? theme.colors.primary : 
+    active ? theme.colors.primaryDark : 
+    theme.colors.textSecondary};
+  font-size: 14px;
+  font-weight: ${({ active }) => (active ? 600 : 400)};
+  transition: all 0.3s ease;
+
+  &::before {
+    content: ${({ completed }) => (completed ? '"✓"' : '"○"')};
+    font-size: 18px;
+    font-weight: 700;
+    color: ${({ completed, active }) => 
+      completed ? theme.colors.primary : 
+      active ? theme.colors.primaryDark : 
+      theme.colors.textSecondary};
+    width: 24px;
+    text-align: center;
+  }
+`;
+
 const MiNutriPersonalPage: React.FC = () => {
   const { currentPlan } = useSubscription();
   const { profile } = useUserProfile();
@@ -376,9 +484,9 @@ const MiNutriPersonalPage: React.FC = () => {
                 setDayCompletions(completions);
                 
                 // Cargar contenido del módulo
-                setTimeout(() => {
-                  loadModuleContent(roadmapData, firstModule, 1);
-                }, 500);
+                    setTimeout(() => {
+                      loadModuleContent(roadmapData, firstModule, 1, true); // true = mostrar pantalla de carga
+                    }, 500);
               }}
             />
           ) : (
