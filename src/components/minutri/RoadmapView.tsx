@@ -219,10 +219,10 @@ interface Module {
   milestone: string;
   isActive: boolean;
   isCompleted: boolean;
-  isLocked: boolean;
+  isLocked?: boolean;
   progress: number;
-  adherence: number;
-  targetAdherence: number;
+  adherence?: number;
+  targetAdherence?: number;
 }
 
 interface RoadmapViewProps {
@@ -293,7 +293,7 @@ const RoadmapView: React.FC<RoadmapViewProps> = ({ modules, currentValue, target
 
       <ModulesContainer>
         {modules.map((module, index) => {
-          const isLocked = !module.isActive && !module.isCompleted;
+          const isLocked = module.isLocked !== undefined ? module.isLocked : (!module.isActive && !module.isCompleted);
           const color = PinColors[index % PinColors.length];
           
           return (
@@ -348,12 +348,14 @@ const RoadmapView: React.FC<RoadmapViewProps> = ({ modules, currentValue, target
                         <FiTrendingUp />
                         <span>{module.progress}%</span>
                       </InfoItem>
-                      <InfoItem>
-                        <span>Adherencia: {module.adherence}%</span>
-                      </InfoItem>
+                      {module.adherence !== undefined && (
+                        <InfoItem>
+                          <span>Adherencia: {module.adherence}%</span>
+                        </InfoItem>
+                      )}
                     </>
                   )}
-                  {module.isCompleted && (
+                  {module.isCompleted && module.adherence !== undefined && (
                     <InfoItem>
                       <FiCheckCircle />
                       <span>Adherencia: {module.adherence}%</span>
@@ -364,7 +366,7 @@ const RoadmapView: React.FC<RoadmapViewProps> = ({ modules, currentValue, target
                 <Milestone>
                   <strong>Hito:</strong>
                   <p>{module.milestone}</p>
-                  {isLocked && (
+                  {isLocked && module.targetAdherence !== undefined && (
                     <p style={{ marginTop: '8px', fontSize: '11px', fontStyle: 'italic' }}>
                       Completa el módulo anterior con {module.targetAdherence}% de adherencia para desbloquear
                     </p>

@@ -6,10 +6,10 @@ import { useSubscription } from '../context/SubscriptionContext';
 import { useUserProfile } from '../context/UserProfileContext';
 import OnboardingStep from '../components/minutri/OnboardingStep';
 import RoadmapView from '../components/minutri/RoadmapView';
-import EnhancedModuleTracker from '../components/minutri/EnhancedModuleTracker';
+import ActiveModuleTracker from '../components/minutri/ActiveModuleTracker';
 import NutriChat from '../components/minutri/NutriChat';
 import { minutriService, Module, DayTracking } from '../services/minutriService';
-import minutriAIService, { DailyMenu, ExercisePlan } from '../services/minutriAIService';
+import { generateModuleContent, DailyContent } from '../services/minutriContentService';
 
 // Animaciones
 const fadeInUp = keyframes`
@@ -92,40 +92,43 @@ const Subtitle = styled.p`
 
 const ContentGrid = styled.div`
   display: grid;
-  gap: 24px;
+  gap: 20px;
   grid-template-columns: 1fr;
 
-  @media (min-width: 1024px) {
-    grid-template-columns: 2fr 1fr;
+  @media (min-width: 1200px) {
+    grid-template-columns: 1.5fr 1fr;
+    gap: 24px;
   }
 `;
 
 const MainContent = styled.div`
   display: grid;
-  gap: 24px;
+  gap: 20px;
+  min-width: 0; /* Permite que el contenido se ajuste */
 `;
 
 const Sidebar = styled.aside`
   display: grid;
-  gap: 24px;
+  gap: 20px;
+  min-width: 0;
 `;
 
 const Card = styled.div`
   background: ${theme.colors.white};
-  border-radius: 24px;
-  padding: 32px;
+  border-radius: 20px;
+  padding: 24px;
   box-shadow: ${theme.shadows.md};
   border: 1px solid rgba(46, 139, 87, 0.1);
   animation: ${fadeInUp} 0.6s ease-out;
 
   @media (max-width: 768px) {
-    padding: 24px;
-    border-radius: 20px;
+    padding: 20px;
+    border-radius: 16px;
   }
 
   @media (max-width: 480px) {
-    padding: 20px;
-    border-radius: 16px;
+    padding: 16px;
+    border-radius: 12px;
   }
 `;
 
@@ -153,9 +156,9 @@ const MiNutriPersonalPage: React.FC = () => {
   const [trackingDays, setTrackingDays] = useState<DayTracking[]>([]);
   const [currentDay, setCurrentDay] = useState(1);
   const [adherence, setAdherence] = useState(0);
-  const [dailyMenu, setDailyMenu] = useState<DailyMenu | null>(null);
-  const [exercisePlan, setExercisePlan] = useState<ExercisePlan | null>(null);
-  const [isLoadingMenu, setIsLoadingMenu] = useState(false);
+  const [dailyContent, setDailyContent] = useState<DailyContent | null>(null);
+  const [moduleContent, setModuleContent] = useState<any>(null);
+  const [isLoadingContent, setIsLoadingContent] = useState(false);
 
   // Verificar si el usuario es premium
   const isPremium = currentPlan && currentPlan.plan !== 'free' && currentPlan.isActive;
@@ -195,35 +198,54 @@ const MiNutriPersonalPage: React.FC = () => {
         setCurrentDay(day);
         setAdherence(minutriService.calculateAdherence(tracking));
         
-        // Generar menú y ejercicio del día
-        loadDailyContent(roadmapData, active, day);
+        // Cargar o generar contenido del módulo
+        loadModuleContent(roadmapData, active, day);
       }
     }
   }, []);
 
-  const loadDailyContent = async (roadmap: any, module: Module, day: number) => {
-    setIsLoadingMenu(true);
+  const loadModuleContent = async (roadmap: any, module: Module, day: number) => {
+    setIsLoadingContent(true);
     try {
-      // Generar menú del día
-      const menu = await minutriAIService.generateDailyMenu(
-        day,
-        roadmap.finalGoal,
-        roadmap.currentValue,
-        roadmap.targetValue,
-        {}, // preferences
-        {}  // restrictions
-      );
-      setDailyMenu(menu);
+      // Verificar si ya existe contenido guardado
+      const savedContent = localStorage.getItem(`minutri_content_${module.id}`);
+      let content;
       
-      // Generar plan de ejercicios (semana actual)
-      const week = Math.ceil(day / 7);
-      const exercisePlans = minutriAIService.generateExercisePlan(week - 1, roadmap.finalGoal, roadmap.currentValue);
-      const todayExercise = exercisePlans.find(ep => ep.day === day) || exercisePlans[0];
-      setExercisePlan(todayExercise);
+      if (savedContent) {
+        content = JSON.parse(savedContent);
+      } else {
+        // Generar contenido completo del módulo
+        content = await generateModuleContent(
+          module.id,
+          {
+            finalGoal: roadmap.finalGoal,
+            targetValue: roadmap.targetValue,
+            currentValue: roadmap.currentValue,
+            timeframe: roadmap.timeframe,
+          },
+          {
+            weight: profile.weight,
+            height: profile.height,
+            age: profile.age,
+            gender: profile.gender,
+            activityLevel: profile.activityLevel,
+            allergies: profile.allergies || [],
+            dietaryPreferences: profile.dietaryPreferences || [],
+          }
+        );
+        // Guardar contenido generado
+        localStorage.setItem(`minutri_content_${module.id}`, JSON.stringify(content));
+      }
+      
+      setModuleContent(content);
+      
+      // Obtener contenido del día actual
+      const todayContent = content.days.find((d: DailyContent) => d.dayNumber === day) || content.days[0];
+      setDailyContent(todayContent);
     } catch (error) {
-      console.error('Error cargando contenido diario:', error);
+      console.error('Error cargando contenido del módulo:', error);
     } finally {
-      setIsLoadingMenu(false);
+      setIsLoadingContent(false);
     }
   };
 
@@ -326,6 +348,11 @@ const MiNutriPersonalPage: React.FC = () => {
                 setAdherence(0);
                 setHasRoadmap(true);
                 setIsOnboarding(false);
+                
+                // Cargar contenido del módulo
+                setTimeout(() => {
+                  loadModuleContent(roadmapData, firstModule, 1);
+                }, 500);
               }}
             />
           ) : (
@@ -336,7 +363,12 @@ const MiNutriPersonalPage: React.FC = () => {
                 </h2>
                 {modules.length > 0 && (
                   <RoadmapView
-                    modules={modules}
+                    modules={modules.map(m => ({
+                      ...m,
+                      isLocked: m.isLocked !== undefined ? m.isLocked : (!m.isActive && !m.isCompleted),
+                      adherence: m.adherence || 0,
+                      targetAdherence: m.targetAdherence || 85,
+                    }))}
                     currentValue={minutriService.getRoadmap()?.currentValue || 0}
                     targetValue={minutriService.getRoadmap()?.targetValue || 0}
                     timeframe={minutriService.getRoadmap()?.timeframe || 0}
@@ -349,19 +381,21 @@ const MiNutriPersonalPage: React.FC = () => {
                   <h2 style={{ margin: '0 0 24px 0', fontSize: '24px', fontWeight: 700, color: theme.colors.primaryDark }}>
                     Módulo Activo (30 Días)
                   </h2>
-                  {isLoadingMenu ? (
+                  {isLoadingContent ? (
                     <div style={{ textAlign: 'center', padding: '40px', color: theme.colors.textSecondary }}>
                       Generando tu plan del día...
                     </div>
                   ) : (
-                    <EnhancedModuleTracker
+                    <ActiveModuleTracker
                       moduleTitle={activeModule.title}
                       currentDay={currentDay}
                       totalDays={30}
                       adherence={adherence}
                       days={trackingDays}
-                      dailyMenu={dailyMenu}
-                      exercisePlan={exercisePlan}
+                      dailyContent={dailyContent ? {
+                        meals: dailyContent.meals,
+                        exercise: dailyContent.exercise,
+                      } : undefined}
                       onUpdate={(day, type, checked) => {
                         const updated = trackingDays.map(d => {
                           if (d.day === day) {
@@ -378,37 +412,15 @@ const MiNutriPersonalPage: React.FC = () => {
                         const newAdherence = minutriService.calculateAdherence(updated);
                         setAdherence(newAdherence);
                         
-                        // Actualizar adherencia del módulo
+                        // Actualizar progreso del módulo
                         const updatedModules = modules.map(m => {
                           if (m.id === activeModule.id) {
-                            return { ...m, adherence: newAdherence, progress: Math.round((day / 30) * 100) };
+                            return { ...m, progress: Math.round((currentDay / 30) * 100), adherence: newAdherence };
                           }
                           return m;
                         });
                         setModules(updatedModules);
                         minutriService.saveModules(updatedModules);
-                        
-                        // Verificar si se completó el módulo
-                        if (day === 30 && newAdherence >= activeModule.targetAdherence) {
-                          minutriService.completeModule(activeModule.id, newAdherence);
-                          // Recargar módulos para ver el desbloqueo
-                          const reloadedModules = minutriService.getModules();
-                          if (reloadedModules) {
-                            setModules(reloadedModules);
-                            const nextModule = reloadedModules.find(m => m.isActive && !m.isCompleted);
-                            if (nextModule) {
-                              setActiveModule(nextModule);
-                              const startDate = new Date(minutriService.getRoadmap()!.createdAt);
-                              startDate.setDate(startDate.getDate() + ((nextModule.id - 1) * 30));
-                              const newTracking = minutriService.initializeTracking(nextModule.id, startDate);
-                              minutriService.saveTracking(nextModule.id, newTracking);
-                              setTrackingDays(newTracking);
-                              setCurrentDay(1);
-                              setAdherence(0);
-                              loadDailyContent(minutriService.getRoadmap()!, nextModule, 1);
-                            }
-                          }
-                        }
                       }}
                     />
                   )}
