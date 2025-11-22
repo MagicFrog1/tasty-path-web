@@ -5,8 +5,7 @@ import { theme } from '../styles/theme';
 import { useSubscription } from '../context/SubscriptionContext';
 import { useUserProfile } from '../context/UserProfileContext';
 import OnboardingStep from '../components/minutri/OnboardingStep';
-import RoadmapView from '../components/minutri/RoadmapView';
-import ActiveModuleTracker from '../components/minutri/ActiveModuleTracker';
+import MonthlyCalendarView from '../components/minutri/MonthlyCalendarView';
 import NutriChat from '../components/minutri/NutriChat';
 import { minutriService, Module, DayTracking } from '../services/minutriService';
 import { generateModuleContent, DailyContent } from '../services/minutriContentService';
@@ -159,6 +158,10 @@ const MiNutriPersonalPage: React.FC = () => {
   const [dailyContent, setDailyContent] = useState<DailyContent | null>(null);
   const [moduleContent, setModuleContent] = useState<any>(null);
   const [isLoadingContent, setIsLoadingContent] = useState(false);
+  const [currentMonth, setCurrentMonth] = useState(1);
+  const [dayCompletions, setDayCompletions] = useState<{ [dayNumber: number]: { breakfast: boolean; lunch: boolean; dinner: boolean; exercise: boolean } }>({});
+  const [currentMonth, setCurrentMonth] = useState(1);
+  const [dayCompletions, setDayCompletions] = useState<{ [dayNumber: number]: { breakfast: boolean; lunch: boolean; dinner: boolean; exercise: boolean } }>({});
 
   // Verificar si el usuario es premium
   const isPremium = currentPlan && currentPlan.plan !== 'free' && currentPlan.isActive;
@@ -197,6 +200,18 @@ const MiNutriPersonalPage: React.FC = () => {
         const day = minutriService.getCurrentDay(active.startDate);
         setCurrentDay(day);
         setAdherence(minutriService.calculateAdherence(tracking));
+        
+        // Cargar completions desde tracking
+        const completions: { [key: number]: { breakfast: boolean; lunch: boolean; dinner: boolean; exercise: boolean } } = {};
+        tracking.forEach(t => {
+          completions[t.day] = {
+            breakfast: t.meals.breakfast,
+            lunch: t.meals.lunch,
+            dinner: t.meals.dinner,
+            exercise: t.exercise,
+          };
+        });
+        setDayCompletions(completions);
         
         // Cargar o generar contenido del módulo
         loadModuleContent(roadmapData, active, day);
@@ -348,6 +363,19 @@ const MiNutriPersonalPage: React.FC = () => {
                 setAdherence(0);
                 setHasRoadmap(true);
                 setIsOnboarding(false);
+                setCurrentMonth(1);
+                
+                // Inicializar completions
+                const completions: { [key: number]: { breakfast: boolean; lunch: boolean; dinner: boolean; exercise: boolean } } = {};
+                tracking.forEach(t => {
+                  completions[t.day] = {
+                    breakfast: t.meals.breakfast,
+                    lunch: t.meals.lunch,
+                    dinner: t.meals.dinner,
+                    exercise: t.exercise,
+                  };
+                });
+                setDayCompletions(completions);
                 
                 // Cargar contenido del módulo
                 setTimeout(() => {
@@ -357,58 +385,47 @@ const MiNutriPersonalPage: React.FC = () => {
             />
           ) : (
             <>
-              <Card>
-                <h2 style={{ margin: '0 0 24px 0', fontSize: '24px', fontWeight: 700, color: theme.colors.primaryDark }}>
-                  Roadmap Dinámico
-                </h2>
-                {modules.length > 0 && (
-                  <RoadmapView
-                    modules={modules.map(m => ({
-                      ...m,
-                      isLocked: m.isLocked !== undefined ? m.isLocked : (!m.isActive && !m.isCompleted),
-                      adherence: m.adherence || 0,
-                      targetAdherence: m.targetAdherence || 85,
-                    }))}
-                    currentValue={minutriService.getRoadmap()?.currentValue || 0}
-                    targetValue={minutriService.getRoadmap()?.targetValue || 0}
-                    timeframe={minutriService.getRoadmap()?.timeframe || 0}
-                  />
-                )}
-              </Card>
-
-              {activeModule && (
+              {activeModule && moduleContent && (
                 <Card>
-                  <h2 style={{ margin: '0 0 20px 0', fontSize: '22px', fontWeight: 700, color: theme.colors.primaryDark }}>
-                    Módulo Activo - Día {currentDay} de 30
-                  </h2>
                   {isLoadingContent ? (
-                    <div style={{ textAlign: 'center', padding: '40px', color: theme.colors.textSecondary }}>
-                      Generando tu plan del día...
+                    <div style={{ textAlign: 'center', padding: '60px', color: theme.colors.textSecondary }}>
+                      <div style={{ fontSize: '18px', marginBottom: '12px' }}>Generando tu plan mensual completo...</div>
+                      <div style={{ fontSize: '14px' }}>Esto puede tomar unos momentos</div>
                     </div>
                   ) : (
-                    <ActiveModuleTracker
-                      moduleTitle={activeModule.title}
-                      currentDay={currentDay}
-                      totalDays={30}
-                      adherence={adherence}
-                      days={trackingDays}
-                      dailyContent={dailyContent ? {
-                        meals: dailyContent.meals,
-                        exercise: dailyContent.exercise,
-                      } : undefined}
-                      onUpdate={(day, type, checked) => {
+                    <MonthlyCalendarView
+                      monthNumber={currentMonth}
+                      totalMonths={modules.length}
+                      days={moduleContent.days}
+                      dayCompletions={dayCompletions}
+                      onDayUpdate={(dayNumber, mealType, completed) => {
+                        // Actualizar tracking
                         const updated = trackingDays.map(d => {
-                          if (d.day === day) {
-                            if (type === 'exercise') {
-                              return { ...d, exercise: checked };
+                          if (d.day === dayNumber) {
+                            if (mealType === 'exercise') {
+                              return { ...d, exercise: completed };
                             } else {
-                              return { ...d, meals: { ...d.meals, [type]: checked } };
+                              return { ...d, meals: { ...d.meals, [mealType]: completed } };
                             }
                           }
                           return d;
                         });
                         setTrackingDays(updated);
                         minutriService.saveTracking(activeModule.id, updated);
+                        
+                        // Actualizar completions
+                        const newCompletions = { ...dayCompletions };
+                        if (!newCompletions[dayNumber]) {
+                          newCompletions[dayNumber] = { breakfast: false, lunch: false, dinner: false, exercise: false };
+                        }
+                        if (mealType === 'exercise') {
+                          newCompletions[dayNumber].exercise = completed;
+                        } else {
+                          newCompletions[dayNumber][mealType] = completed;
+                        }
+                        setDayCompletions(newCompletions);
+                        
+                        // Recalcular adherencia
                         const newAdherence = minutriService.calculateAdherence(updated);
                         setAdherence(newAdherence);
                         
