@@ -5,6 +5,8 @@ import { theme } from '../../styles/theme';
 import { AI_CONFIG, isAIConfigured } from '../../config/ai';
 import { medicalKnowledgeService } from '../../services/MedicalKnowledgeService';
 import { ENV_CONFIG } from '../../../env.config';
+import { useUserProfile } from '../../context/UserProfileContext';
+import { minutriService } from '../../services/minutriService';
 
 // API Key específica para NutriChat
 const NUTRICHAT_API_KEY = ENV_CONFIG.NUTRICHAT_API_KEY || AI_CONFIG.OPENAI_API_KEY;
@@ -153,6 +155,7 @@ interface NutriChatProps {
 }
 
 const NutriChat: React.FC<NutriChatProps> = ({ adherence, currentDay, totalDays }) => {
+  const { profile } = useUserProfile();
   const [messages, setMessages] = useState<Array<{ text: string; isUser: boolean }>>([
     {
       text: '¡Hola! 👋 Soy NutriChat, tu asistente personal de nutrición. Estoy aquí para ayudarte con cualquier pregunta sobre alimentación, desde las más simples hasta las más complejas. ¿En qué puedo ayudarte hoy?',
@@ -192,16 +195,25 @@ const NutriChat: React.FC<NutriChatProps> = ({ adherence, currentDay, totalDays 
     setIsTyping(true);
 
     try {
-      // Obtener conocimiento médico relevante
+      // Obtener información del roadmap para determinar objetivos
+      const roadmap = minutriService.getRoadmap();
+      const goals: string[] = [];
+      if (roadmap) {
+        if (roadmap.finalGoal === 'weight_loss') goals.push('weight_loss');
+        else if (roadmap.finalGoal === 'weight_gain') goals.push('weight_gain');
+        else if (roadmap.finalGoal === 'muscle_gain') goals.push('muscle_gain');
+        else if (roadmap.finalGoal === 'maintenance') goals.push('maintenance');
+      }
+
+      // Obtener conocimiento médico relevante usando el perfil del usuario
       const medicalKnowledge = medicalKnowledgeService.generateComprehensiveMedicalPrompt({
-        allergies: [],
-        dietaryPreferences: [],
-        medicalConditions: [],
-        weight: 70,
-        height: 170,
-        age: 30,
-        gender: 'male',
-        activityLevel: 'moderate',
+        age: profile?.age || 30,
+        gender: (profile?.gender as 'male' | 'female') || 'male',
+        weight: profile?.weight || 70,
+        height: profile?.height || 170,
+        activityLevel: profile?.activityLevel || 'moderate',
+        goals: goals.length > 0 ? goals : ['maintenance'],
+        medicalConditions: (profile as any)?.medicalConditions || [],
       });
 
       // Construir historial de conversación para contexto
@@ -212,6 +224,11 @@ const NutriChat: React.FC<NutriChatProps> = ({ adherence, currentDay, totalDays 
 
       // Generar respuesta con IA real para TODAS las preguntas usando la API key de NutriChat
       if (NUTRICHAT_API_KEY && NUTRICHAT_API_KEY.length > 0) {
+        console.log('🤖 NutriChat: Enviando solicitud a OpenAI...');
+        console.log('🔑 API Key presente:', !!NUTRICHAT_API_KEY);
+        console.log('📝 Modelo:', AI_CONFIG.OPENAI_MODEL || 'gpt-4o-mini');
+        console.log('💬 Mensaje del usuario:', userMessage);
+        
         const systemPrompt = `Eres NutriChat, un asistente virtual especializado en alimentación, nutrición y ejercicio físico. Te comportas como un nutricionista profesional pero amigable y conversacional.
 
 IMPORTANTE - DISCLAIMER MÉDICO:
@@ -254,7 +271,7 @@ Responde de forma natural y conversacional, como lo haría un nutricionista huma
             'Authorization': `Bearer ${NUTRICHAT_API_KEY}`,
           },
           body: JSON.stringify({
-            model: AI_CONFIG.OPENAI_MODEL,
+            model: AI_CONFIG.OPENAI_MODEL || 'gpt-4o-mini',
             messages: [
               {
                 role: 'system',
@@ -273,13 +290,27 @@ Responde de forma natural y conversacional, como lo haría un nutricionista huma
 
         if (response.ok) {
           const data = await response.json();
+          console.log('✅ NutriChat: Respuesta recibida de OpenAI');
           const aiResponse = data.choices[0]?.message?.content?.trim();
           
           if (aiResponse) {
+            console.log('✅ NutriChat: Respuesta procesada correctamente');
             setMessages(prev => [...prev, { text: aiResponse, isUser: false }]);
             setIsTyping(false);
             return;
+          } else {
+            console.error('❌ NutriChat: Respuesta de IA vacía:', data);
+            throw new Error('La respuesta de la IA está vacía');
           }
+        } else {
+          const errorData = await response.json().catch(() => ({}));
+          console.error('❌ NutriChat: Error en respuesta de API:', response.status, errorData);
+          console.error('❌ Detalles del error:', {
+            status: response.status,
+            statusText: response.statusText,
+            error: errorData
+          });
+          throw new Error(`Error de API: ${response.status} - ${errorData.error?.message || 'Error desconocido'}`);
         }
       }
 
@@ -309,10 +340,25 @@ Responde de forma natural y conversacional, como lo haría un nutricionista huma
 
       setMessages(prev => [...prev, { text: response, isUser: false }]);
       setIsTyping(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error en NutriChat:', error);
+      console.error('Detalles del error:', {
+        message: error?.message,
+        stack: error?.stack,
+        response: error?.response
+      });
+      
+      // Mensaje de error más informativo
+      let errorMessage = 'Lo siento, hubo un error al procesar tu pregunta. Por favor, intenta de nuevo. 😊';
+      
+      if (error?.message?.includes('API')) {
+        errorMessage = 'Parece que hay un problema con la conexión a la IA. Por favor, verifica tu conexión a internet e intenta de nuevo.';
+      } else if (error?.message?.includes('401') || error?.message?.includes('autenticación')) {
+        errorMessage = 'Error de autenticación con el servicio de IA. Por favor, contacta al soporte.';
+      }
+      
       setMessages(prev => [...prev, { 
-        text: 'Lo siento, hubo un error al procesar tu pregunta. Por favor, intenta de nuevo. 😊', 
+        text: errorMessage, 
         isUser: false 
       }]);
       setIsTyping(false);

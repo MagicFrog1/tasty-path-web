@@ -41,27 +41,28 @@ const shimmer = keyframes`
 
 // Estilos base
 const PageWrapper = styled.div`
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 32px 24px;
   width: 100%;
+  margin: 0;
+  padding: 12px;
   animation: ${fadeInUp} 0.6s ease-out;
+  box-sizing: border-box;
+  overflow-x: hidden;
 
   @media (max-width: 768px) {
-    padding: 24px 16px;
+    padding: 10px;
   }
 
   @media (max-width: 480px) {
-    padding: 20px 12px;
+    padding: 8px;
   }
 `;
 
 const Header = styled.div`
-  margin-bottom: 40px;
+  margin-bottom: 12px;
   text-align: center;
 
   @media (max-width: 768px) {
-    margin-bottom: 32px;
+    margin-bottom: 10px;
   }
 `;
 
@@ -90,19 +91,20 @@ const Subtitle = styled.p`
 
 const ContentGrid = styled.div`
   display: grid;
-  gap: 20px;
+  gap: 0;
   grid-template-columns: 1fr;
-
-  @media (min-width: 1200px) {
-    grid-template-columns: 1.5fr 1fr;
-    gap: 24px;
-  }
+  width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
 `;
 
 const MainContent = styled.div`
   display: grid;
-  gap: 20px;
+  gap: 0;
   min-width: 0; /* Permite que el contenido se ajuste */
+  width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
 `;
 
 const Sidebar = styled.aside`
@@ -113,35 +115,54 @@ const Sidebar = styled.aside`
 
 const Card = styled.div`
   background: ${theme.colors.white};
-  border-radius: 20px;
-  padding: 24px;
+  border-radius: 12px;
+  padding: 12px;
   box-shadow: ${theme.shadows.md};
   border: 1px solid rgba(46, 139, 87, 0.1);
   animation: ${fadeInUp} 0.6s ease-out;
+  width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
+  overflow-x: hidden;
 
   @media (max-width: 768px) {
-    padding: 20px;
-    border-radius: 16px;
+    padding: 10px;
+    border-radius: 10px;
   }
 
   @media (max-width: 480px) {
-    padding: 16px;
-    border-radius: 12px;
+    padding: 8px;
+    border-radius: 8px;
   }
 `;
 
 const PremiumBadge = styled.div`
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  gap: 12px;
   padding: 12px 20px;
   border-radius: 12px;
-  background: linear-gradient(135deg, rgba(46, 139, 87, 0.1) 0%, rgba(34, 197, 94, 0.08) 100%);
-  border: 1.5px solid rgba(46, 139, 87, 0.2);
-  color: ${theme.colors.primary};
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.15) 0%, rgba(46, 139, 87, 0.12) 100%);
+  border: 1.5px solid rgba(46, 139, 87, 0.25);
+  color: ${theme.colors.primaryDark};
   font-weight: 600;
-  font-size: 14px;
-  margin-bottom: 24px;
+  font-size: 15px;
+  margin: 0 auto 16px auto;
+  max-width: 600px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(46, 139, 87, 0.2);
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.2) 0%, rgba(46, 139, 87, 0.15) 100%);
+  }
+  
+  svg {
+    color: ${theme.colors.primaryDark};
+    flex-shrink: 0;
+  }
 `;
 
 // Pantalla de carga para generación de planes mensales
@@ -476,8 +497,8 @@ const MiNutriPersonalPage: React.FC = () => {
   return (
     <PageWrapper>
       <Header>
-        <Title>
-          <FiTarget style={{ marginRight: '12px', display: 'inline-block' }} />
+        <Title style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px' }}>
+          <FiTarget />
           MiNutri Personal
         </Title>
         <Subtitle>
@@ -485,10 +506,12 @@ const MiNutriPersonalPage: React.FC = () => {
         </Subtitle>
       </Header>
 
-      <PremiumBadge>
-        <FiCheckCircle />
-        MiNutri Personal - Tu Plan de Alimentación Personalizado
-      </PremiumBadge>
+      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '12px' }}>
+        <PremiumBadge>
+          <FiCheckCircle size={20} />
+          MiNutri Personal - Tu Plan de Alimentación Personalizado
+        </PremiumBadge>
+      </div>
 
       <ContentGrid>
         <MainContent>
