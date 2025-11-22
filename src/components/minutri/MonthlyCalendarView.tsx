@@ -18,6 +18,19 @@ const CalendarHeader = styled.div`
   border-radius: 16px;
   background: linear-gradient(135deg, rgba(46, 139, 87, 0.08) 0%, rgba(34, 197, 94, 0.05) 100%);
   border: 1.5px solid rgba(46, 139, 87, 0.2);
+  flex-wrap: wrap;
+  gap: 16px;
+  
+  @media (max-width: 768px) {
+    padding: 16px;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 12px;
+    margin-bottom: 16px;
+  }
 `;
 
 const MonthTitle = styled.h2`
@@ -28,6 +41,14 @@ const MonthTitle = styled.h2`
   display: flex;
   align-items: center;
   gap: 10px;
+  
+  @media (max-width: 768px) {
+    font-size: 20px;
+  }
+  
+  @media (max-width: 480px) {
+    font-size: 18px;
+  }
 `;
 
 const NavigationButtons = styled.div`
@@ -90,32 +111,56 @@ const ViewButton = styled.button<{ active: boolean }>`
   }
 `;
 
-const CalendarGrid = styled.div`
+const CalendarGrid = styled.div<{ isWeekView?: boolean }>`
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 12px;
+  gap: ${props => props.isWeekView ? '8px' : '12px'};
   background: ${theme.colors.white};
   border-radius: 20px;
-  padding: 20px;
+  padding: ${props => props.isWeekView ? '16px' : '20px'};
   box-shadow: ${theme.shadows.md};
   border: 1px solid rgba(46, 139, 87, 0.1);
+  width: 100%;
+  overflow-x: auto;
+  
+  @media (max-width: 768px) {
+    gap: ${props => props.isWeekView ? '6px' : '8px'};
+    padding: ${props => props.isWeekView ? '12px' : '16px'};
+    border-radius: 16px;
+  }
+  
+  @media (max-width: 480px) {
+    gap: ${props => props.isWeekView ? '4px' : '6px'};
+    padding: ${props => props.isWeekView ? '10px' : '12px'};
+    border-radius: 12px;
+  }
 `;
 
-const DayHeader = styled.div`
+const DayHeader = styled.div<{ isWeekView?: boolean }>`
   text-align: center;
-  padding: 12px 8px;
+  padding: ${props => props.isWeekView ? '8px 4px' : '12px 8px'};
   font-weight: 700;
-  font-size: 14px;
+  font-size: ${props => props.isWeekView ? '12px' : '14px'};
   color: ${theme.colors.primaryDark};
   border-bottom: 2px solid rgba(46, 139, 87, 0.2);
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  
+  @media (max-width: 768px) {
+    font-size: ${props => props.isWeekView ? '10px' : '12px'};
+    padding: ${props => props.isWeekView ? '6px 2px' : '10px 6px'};
+  }
+  
+  @media (max-width: 480px) {
+    font-size: ${props => props.isWeekView ? '9px' : '11px'};
+    padding: ${props => props.isWeekView ? '4px 1px' : '8px 4px'};
+  }
 `;
 
-const DayCell = styled.div<{ isToday: boolean; isEmpty: boolean }>`
-  min-height: 120px;
-  padding: 12px;
-  border-radius: 12px;
+const DayCell = styled.div<{ isToday: boolean; isEmpty: boolean; isWeekView?: boolean }>`
+  min-height: ${props => props.isWeekView ? '180px' : '120px'};
+  padding: ${props => props.isWeekView ? '10px 8px' : '12px'};
+  border-radius: ${props => props.isWeekView ? '10px' : '12px'};
   border: 1.5px solid ${props => props.isToday 
     ? theme.colors.primary 
     : 'rgba(46, 139, 87, 0.1)'};
@@ -128,6 +173,16 @@ const DayCell = styled.div<{ isToday: boolean; isEmpty: boolean }>`
   transition: all 0.3s ease;
   position: relative;
   
+  @media (max-width: 768px) {
+    min-height: ${props => props.isWeekView ? '150px' : '100px'};
+    padding: ${props => props.isWeekView ? '8px 6px' : '10px'};
+  }
+  
+  @media (max-width: 480px) {
+    min-height: ${props => props.isWeekView ? '130px' : '90px'};
+    padding: ${props => props.isWeekView ? '6px 4px' : '8px'};
+  }
+  
   &:hover {
     ${props => !props.isEmpty && `
       transform: translateY(-2px);
@@ -137,14 +192,22 @@ const DayCell = styled.div<{ isToday: boolean; isEmpty: boolean }>`
   }
 `;
 
-const DayNumber = styled.div<{ isToday: boolean }>`
-  font-size: 16px;
+const DayNumber = styled.div<{ isToday: boolean; isWeekView?: boolean }>`
+  font-size: ${props => props.isWeekView ? '18px' : '16px'};
   font-weight: 700;
   color: ${props => props.isToday ? theme.colors.primary : theme.colors.primaryDark};
-  margin-bottom: 8px;
+  margin-bottom: ${props => props.isWeekView ? '10px' : '8px'};
   display: flex;
   align-items: center;
   justify-content: space-between;
+  
+  @media (max-width: 768px) {
+    font-size: ${props => props.isWeekView ? '16px' : '14px'};
+  }
+  
+  @media (max-width: 480px) {
+    font-size: ${props => props.isWeekView ? '14px' : '12px'};
+  }
 `;
 
 const DayContent = styled.div`
@@ -152,20 +215,21 @@ const DayContent = styled.div`
   gap: 6px;
 `;
 
-const MealPreview = styled.div<{ completed: boolean }>`
+const MealPreview = styled.div<{ completed: boolean; isWeekView?: boolean }>`
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 8px;
+  gap: ${props => props.isWeekView ? '8px' : '6px'};
+  padding: ${props => props.isWeekView ? '8px 10px' : '6px 8px'};
   border-radius: 8px;
   background: ${props => props.completed 
     ? 'rgba(46, 139, 87, 0.1)'
     : 'rgba(46, 139, 87, 0.05)'};
-  font-size: 11px;
+  font-size: ${props => props.isWeekView ? '12px' : '11px'};
   color: ${theme.colors.textSecondary};
+  margin-bottom: ${props => props.isWeekView ? '6px' : '4px'};
   
   svg {
-    font-size: 12px;
+    font-size: ${props => props.isWeekView ? '14px' : '12px'};
     color: ${props => props.completed ? theme.colors.primary : theme.colors.textSecondary};
     flex-shrink: 0;
   }
@@ -174,24 +238,39 @@ const MealPreview = styled.div<{ completed: boolean }>`
     flex: 1;
     overflow: hidden;
     text-overflow: ellipsis;
-    white-space: nowrap;
+    white-space: ${props => props.isWeekView ? 'normal' : 'nowrap'};
+    line-height: ${props => props.isWeekView ? '1.4' : '1.2'};
+    display: ${props => props.isWeekView ? '-webkit-box' : 'block'};
+    -webkit-line-clamp: ${props => props.isWeekView ? '2' : '1'};
+    -webkit-box-orient: ${props => props.isWeekView ? 'vertical' : 'horizontal'};
+  }
+  
+  @media (max-width: 768px) {
+    font-size: ${props => props.isWeekView ? '11px' : '10px'};
+    padding: ${props => props.isWeekView ? '6px 8px' : '5px 6px'};
+  }
+  
+  @media (max-width: 480px) {
+    font-size: ${props => props.isWeekView ? '10px' : '9px'};
+    padding: ${props => props.isWeekView ? '5px 6px' : '4px 5px'};
   }
 `;
 
-const ExercisePreview = styled.div<{ completed: boolean }>`
+const ExercisePreview = styled.div<{ completed: boolean; isWeekView?: boolean }>`
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 8px;
+  gap: ${props => props.isWeekView ? '8px' : '6px'};
+  padding: ${props => props.isWeekView ? '8px 10px' : '6px 8px'};
   border-radius: 8px;
   background: ${props => props.completed 
     ? 'rgba(46, 139, 87, 0.1)'
     : 'rgba(46, 139, 87, 0.05)'};
-  font-size: 11px;
+  font-size: ${props => props.isWeekView ? '12px' : '11px'};
   color: ${theme.colors.textSecondary};
+  margin-top: ${props => props.isWeekView ? '4px' : '2px'};
   
   svg {
-    font-size: 12px;
+    font-size: ${props => props.isWeekView ? '14px' : '12px'};
     color: ${props => props.completed ? theme.colors.primary : theme.colors.textSecondary};
     flex-shrink: 0;
   }
@@ -200,7 +279,21 @@ const ExercisePreview = styled.div<{ completed: boolean }>`
     flex: 1;
     overflow: hidden;
     text-overflow: ellipsis;
-    white-space: nowrap;
+    white-space: ${props => props.isWeekView ? 'normal' : 'nowrap'};
+    line-height: ${props => props.isWeekView ? '1.4' : '1.2'};
+    display: ${props => props.isWeekView ? '-webkit-box' : 'block'};
+    -webkit-line-clamp: ${props => props.isWeekView ? '2' : '1'};
+    -webkit-box-orient: ${props => props.isWeekView ? 'vertical' : 'horizontal'};
+  }
+  
+  @media (max-width: 768px) {
+    font-size: ${props => props.isWeekView ? '11px' : '10px'};
+    padding: ${props => props.isWeekView ? '6px 8px' : '5px 6px'};
+  }
+  
+  @media (max-width: 480px) {
+    font-size: ${props => props.isWeekView ? '10px' : '9px'};
+    padding: ${props => props.isWeekView ? '5px 6px' : '4px 5px'};
   }
 `;
 
@@ -465,20 +558,46 @@ const MonthlyCalendarView: React.FC<MonthlyCalendarViewProps> = ({
   };
 
   const renderCalendarDays = () => {
-    const calendarDays: Array<{ day: number | null; isToday: boolean }> = [];
-    
-    // Días vacíos al inicio
-    for (let i = 0; i < startingDayOfWeek; i++) {
-      calendarDays.push({ day: null, isToday: false });
+    if (viewMode === 'week') {
+      // Vista semanal: mostrar solo los 7 días de la semana actual
+      const calendarDays: Array<{ day: number | null; isToday: boolean }> = [];
+      const todayDate = new Date();
+      const currentWeekStart = new Date(todayDate);
+      currentWeekStart.setDate(todayDate.getDate() - todayDate.getDay() + 1); // Lunes de esta semana
+      
+      // Calcular el día del mes para cada día de la semana
+      for (let i = 0; i < 7; i++) {
+        const weekDay = new Date(currentWeekStart);
+        weekDay.setDate(currentWeekStart.getDate() + i);
+        
+        // Solo mostrar días que estén en el mes actual del módulo
+        if (weekDay.getMonth() === currentMonth && weekDay.getFullYear() === currentYear) {
+          const day = weekDay.getDate();
+          const isToday = isCurrentMonth && day === today.getDate() && weekDay.getMonth() === today.getMonth();
+          calendarDays.push({ day, isToday });
+        } else {
+          calendarDays.push({ day: null, isToday: false });
+        }
+      }
+      
+      return calendarDays;
+    } else {
+      // Vista mensual: mostrar todos los días del mes
+      const calendarDays: Array<{ day: number | null; isToday: boolean }> = [];
+      
+      // Días vacíos al inicio
+      for (let i = 0; i < startingDayOfWeek; i++) {
+        calendarDays.push({ day: null, isToday: false });
+      }
+      
+      // Días del mes
+      for (let day = 1; day <= daysInMonth; day++) {
+        const isToday = isCurrentMonth && day === today.getDate();
+        calendarDays.push({ day, isToday });
+      }
+      
+      return calendarDays;
     }
-    
-    // Días del mes
-    for (let day = 1; day <= daysInMonth; day++) {
-      const isToday = isCurrentMonth && day === today.getDate();
-      calendarDays.push({ day, isToday });
-    }
-    
-    return calendarDays;
   };
 
   const handleDayClick = (day: number) => {
@@ -495,7 +614,7 @@ const MonthlyCalendarView: React.FC<MonthlyCalendarViewProps> = ({
           <FiCalendar />
           Calendario {monthNumber} mes {totalMonths > 1 ? `de ${totalMonths}` : ''}
         </MonthTitle>
-        <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
           <ViewToggle>
             <ViewButton active={viewMode === 'month'} onClick={() => setViewMode('month')}>
               Mes
@@ -531,14 +650,16 @@ const MonthlyCalendarView: React.FC<MonthlyCalendarViewProps> = ({
         </div>
       </CalendarHeader>
 
-      <CalendarGrid>
+      <CalendarGrid isWeekView={viewMode === 'week'}>
         {weekDays.map(day => (
-          <DayHeader key={day}>{day}</DayHeader>
+          <DayHeader key={day} isWeekView={viewMode === 'week'}>
+            {viewMode === 'week' ? day.substring(0, 3) : day}
+          </DayHeader>
         ))}
         
         {renderCalendarDays().map((cell, index) => {
           if (cell.day === null) {
-            return <DayCell key={index} isToday={false} isEmpty={true} />;
+            return <DayCell key={index} isToday={false} isEmpty={true} isWeekView={viewMode === 'week'} />;
           }
           
           const dayContent = getDayContent(cell.day);
@@ -549,36 +670,37 @@ const MonthlyCalendarView: React.FC<MonthlyCalendarViewProps> = ({
               key={index}
               isToday={cell.isToday}
               isEmpty={false}
+              isWeekView={viewMode === 'week'}
               onClick={() => handleDayClick(cell.day!)}
             >
-              <DayNumber isToday={cell.isToday}>
+              <DayNumber isToday={cell.isToday} isWeekView={viewMode === 'week'}>
                 <span>{cell.day}</span>
                 {cell.isToday && (
-                  <span style={{ fontSize: '10px', color: theme.colors.primary }}>HOY</span>
+                  <span style={{ fontSize: viewMode === 'week' ? '9px' : '10px', color: theme.colors.primary }}>HOY</span>
                 )}
               </DayNumber>
               
               {dayContent && (
                 <DayContent>
-                  <MealPreview completed={completions.breakfast}>
+                  <MealPreview completed={completions.breakfast} isWeekView={viewMode === 'week'}>
                     <FiCoffee />
                     <span>{dayContent.meals.breakfast.name}</span>
                     {completions.breakfast && <FiCheckCircle />}
                   </MealPreview>
                   
-                  <MealPreview completed={completions.lunch}>
+                  <MealPreview completed={completions.lunch} isWeekView={viewMode === 'week'}>
                     <FiCoffee />
                     <span>{dayContent.meals.lunch.name}</span>
                     {completions.lunch && <FiCheckCircle />}
                   </MealPreview>
                   
-                  <MealPreview completed={completions.dinner}>
+                  <MealPreview completed={completions.dinner} isWeekView={viewMode === 'week'}>
                     <FiCoffee />
                     <span>{dayContent.meals.dinner.name}</span>
                     {completions.dinner && <FiCheckCircle />}
                   </MealPreview>
                   
-                  <ExercisePreview completed={completions.exercise}>
+                  <ExercisePreview completed={completions.exercise} isWeekView={viewMode === 'week'}>
                     <FiActivity />
                     <span>{dayContent.exercise.name}</span>
                     {completions.exercise && <FiCheckCircle />}
