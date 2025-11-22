@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import styled from 'styled-components';
+import { FiZap, FiCheckCircle } from 'react-icons/fi';
 import { theme } from '../styles/theme';
 import { useUserProfile } from '../context/UserProfileContext';
 import { useWeeklyPlan } from '../context/WeeklyPlanContext';
@@ -173,11 +174,14 @@ const SidebarCard = styled.aside`
   display: grid;
   gap: 20px;
   padding: 28px;
-  border-radius: 20px;
-  background: linear-gradient(135deg, rgba(46, 139, 87, 0.08) 0%, rgba(34, 197, 94, 0.05) 100%);
-  border: 1px solid rgba(46, 139, 87, 0.15);
-  box-shadow: 0 8px 32px rgba(46, 139, 87, 0.12);
-  backdrop-filter: blur(10px);
+  border-radius: 24px;
+  background: linear-gradient(135deg, rgba(46, 139, 87, 0.12) 0%, rgba(34, 197, 94, 0.08) 50%, rgba(16, 185, 129, 0.06) 100%);
+  border: 1.5px solid rgba(46, 139, 87, 0.2);
+  box-shadow: 
+    0 10px 40px rgba(46, 139, 87, 0.15),
+    0 4px 16px rgba(34, 197, 94, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(12px);
   color: ${theme.colors.primaryDark};
   position: relative;
   overflow: hidden;
@@ -188,24 +192,45 @@ const SidebarCard = styled.aside`
     top: 0;
     left: 0;
     right: 0;
-    height: 3px;
-    background: linear-gradient(90deg, ${theme.colors.primary} 0%, rgba(34, 197, 94, 0.8) 100%);
+    height: 4px;
+    background: linear-gradient(90deg, 
+      ${theme.colors.primary} 0%, 
+      rgba(34, 197, 94, 0.9) 50%,
+      rgba(16, 185, 129, 0.8) 100%);
+    box-shadow: 0 2px 8px rgba(46, 139, 87, 0.3);
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(34, 197, 94, 0.1) 0%, transparent 70%);
+    pointer-events: none;
   }
 `;
 
 const SidebarTitle = styled.h4`
   margin: 0;
-  font-size: 1.15rem;
-  font-weight: 700;
-  color: ${theme.colors.primaryDark};
-  letter-spacing: -0.01em;
+  font-size: 1.25rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, ${theme.colors.primaryDark} 0%, ${theme.colors.primary} 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -0.02em;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
+  position: relative;
+  z-index: 1;
 
-  &::before {
-    content: '💡';
-    font-size: 1.2rem;
+  svg {
+    color: ${theme.colors.primary};
+    filter: drop-shadow(0 2px 4px rgba(46, 139, 87, 0.3));
+    flex-shrink: 0;
   }
 `;
 
@@ -214,60 +239,94 @@ const SidebarList = styled.ul`
   padding: 0;
   list-style: none;
   display: grid;
-  gap: 14px;
+  gap: 16px;
   min-height: 200px;
   position: relative;
 
   li {
     position: relative;
-    padding: 12px 16px 12px 40px;
-    font-size: 0.9rem;
-    color: rgba(33, 37, 41, 0.85);
-    line-height: 1.6;
-    background: rgba(255, 255, 255, 0.6);
-    border-radius: 12px;
-    border-left: 3px solid ${theme.colors.primary};
-    box-shadow: 0 2px 8px rgba(46, 139, 87, 0.08);
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    animation: tipEnter 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    padding: 16px 18px 16px 56px;
+    font-size: 0.95rem;
+    color: rgba(33, 37, 41, 0.9);
+    line-height: 1.65;
+    font-weight: 500;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.85) 100%);
+    border-radius: 16px;
+    border-left: 5px solid;
+    border-image: linear-gradient(135deg, ${theme.colors.primary} 0%, rgba(34, 197, 94, 0.9) 100%) 1;
+    box-shadow: 
+      0 4px 12px rgba(46, 139, 87, 0.12),
+      0 2px 6px rgba(34, 197, 94, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: tipEnter 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
     opacity: 0;
     transform: translateY(20px) scale(0.95);
+    cursor: default;
+  }
+
+  li:nth-child(1) {
+    animation-delay: 0.1s;
+  }
+  li:nth-child(2) {
+    animation-delay: 0.2s;
+  }
+  li:nth-child(3) {
+    animation-delay: 0.3s;
+  }
+  li:nth-child(4) {
+    animation-delay: 0.4s;
   }
 
   li:hover {
-    background: rgba(255, 255, 255, 0.9);
-    box-shadow: 0 6px 20px rgba(46, 139, 87, 0.15);
-    transform: translateX(4px) translateY(-2px) scale(1.02);
-    border-left-width: 4px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0.95) 100%);
+    box-shadow: 
+      0 8px 24px rgba(46, 139, 87, 0.2),
+      0 4px 12px rgba(34, 197, 94, 0.15),
+      inset 0 1px 0 rgba(255, 255, 255, 1),
+      0 0 0 2px rgba(46, 139, 87, 0.1);
+    transform: translateX(6px) translateY(-3px) scale(1.03);
+    border-left-width: 6px;
   }
 
-  li:before {
-    content: '✓';
+  li .check-icon {
     position: absolute;
-    left: 14px;
-    top: 12px;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
     color: ${theme.colors.primary};
-    font-size: 1rem;
-    font-weight: 700;
+    font-size: 1.25rem;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 20px;
-    height: 20px;
-    background: rgba(46, 139, 87, 0.1);
+    width: 28px;
+    height: 28px;
+    background: linear-gradient(135deg, rgba(46, 139, 87, 0.15) 0%, rgba(34, 197, 94, 0.12) 100%);
     border-radius: 50%;
-    animation: iconPulse 0.6s ease-out 0.2s forwards;
+    box-shadow: 
+      0 2px 8px rgba(46, 139, 87, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    animation: iconPulse 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
     opacity: 0;
-    transform: scale(0);
+    transform: translateY(-50%) scale(0) rotate(-180deg);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  li:hover .check-icon {
+    background: linear-gradient(135deg, rgba(46, 139, 87, 0.25) 0%, rgba(34, 197, 94, 0.2) 100%);
+    box-shadow: 
+      0 4px 12px rgba(46, 139, 87, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    transform: translateY(-50%) scale(1.1) rotate(0deg);
   }
 
   @keyframes tipEnter {
     0% {
       opacity: 0;
-      transform: translateY(20px) scale(0.95) rotateX(-10deg);
+      transform: translateY(25px) scale(0.92) rotateX(-12deg);
     }
     50% {
-      transform: translateY(-5px) scale(1.02) rotateX(2deg);
+      transform: translateY(-6px) scale(1.03) rotateX(3deg);
     }
     100% {
       opacity: 1;
@@ -278,14 +337,14 @@ const SidebarList = styled.ul`
   @keyframes iconPulse {
     0% {
       opacity: 0;
-      transform: scale(0) rotate(-180deg);
+      transform: translateY(-50%) scale(0) rotate(-180deg);
     }
     60% {
-      transform: scale(1.2) rotate(10deg);
+      transform: translateY(-50%) scale(1.25) rotate(15deg);
     }
     100% {
       opacity: 1;
-      transform: scale(1) rotate(0deg);
+      transform: translateY(-50%) scale(1) rotate(0deg);
     }
   }
 `;
@@ -1627,16 +1686,23 @@ const PlanGeneratorPage: React.FC = () => {
           </StepCard>
 
           <SidebarCard>
-            <SidebarTitle>Consejos rápidos</SidebarTitle>
+            <SidebarTitle>
+              <FiZap size={22} />
+              Consejos rápidos
+            </SidebarTitle>
             <SidebarList>
               {currentHighlights.length > 0 ? (
                 currentHighlights.map((tip, index) => (
                   <li key={`${goal}-${currentStep}-${currentTipIndex}-${index}`}>
+                    <FiCheckCircle className="check-icon" />
                     {tip}
                   </li>
                 ))
               ) : (
-                <li>Selecciona un objetivo para ver consejos personalizados</li>
+                <li>
+                  <FiCheckCircle className="check-icon" />
+                  Selecciona un objetivo para ver consejos personalizados
+                </li>
               )}
             </SidebarList>
           </SidebarCard>
