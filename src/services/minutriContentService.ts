@@ -198,7 +198,7 @@ const generateDailyMeals = async (
           name: dayMenu.meals.breakfast?.name || generateMealName('breakfast', day, goal),
           description: dayMenu.meals.breakfast?.instructions || generateMealDescription('breakfast', day, goal),
           ingredients: dayMenu.meals.breakfast?.ingredients || generateMealIngredients('breakfast', day, goal),
-          preparation: dayMenu.meals.breakfast?.instructions || generateMealPreparation('breakfast', day, goal),
+          preparation: dayMenu.meals.breakfast?.instructions || await generateMealPreparation('breakfast', day, goal, dayMenu.meals.breakfast?.name || 'Desayuno', dayMenu.meals.breakfast?.ingredients || []),
           nutrition: {
             calories: dayMenu.meals.breakfast?.nutrition?.calories || breakfastCalories,
             protein: dayMenu.meals.breakfast?.nutrition?.protein || Math.round(breakfastCalories * proteinRatio / 4),
@@ -213,7 +213,7 @@ const generateDailyMeals = async (
           name: dayMenu.meals.lunch?.name || generateMealName('lunch', day, goal),
           description: dayMenu.meals.lunch?.instructions || generateMealDescription('lunch', day, goal),
           ingredients: dayMenu.meals.lunch?.ingredients || generateMealIngredients('lunch', day, goal),
-          preparation: dayMenu.meals.lunch?.instructions || generateMealPreparation('lunch', day, goal),
+          preparation: dayMenu.meals.lunch?.instructions || await generateMealPreparation('lunch', day, goal, dayMenu.meals.lunch?.name || 'Almuerzo', dayMenu.meals.lunch?.ingredients || []),
           nutrition: {
             calories: dayMenu.meals.lunch?.nutrition?.calories || lunchCalories,
             protein: dayMenu.meals.lunch?.nutrition?.protein || Math.round(lunchCalories * proteinRatio / 4),
@@ -228,7 +228,7 @@ const generateDailyMeals = async (
           name: dayMenu.meals.dinner?.name || generateMealName('dinner', day, goal),
           description: dayMenu.meals.dinner?.instructions || generateMealDescription('dinner', day, goal),
           ingredients: dayMenu.meals.dinner?.ingredients || generateMealIngredients('dinner', day, goal),
-          preparation: dayMenu.meals.dinner?.instructions || generateMealPreparation('dinner', day, goal),
+          preparation: dayMenu.meals.dinner?.instructions || await generateMealPreparation('dinner', day, goal, dayMenu.meals.dinner?.name || 'Cena', dayMenu.meals.dinner?.ingredients || []),
           nutrition: {
             calories: dayMenu.meals.dinner?.nutrition?.calories || dinnerCalories,
             protein: dayMenu.meals.dinner?.nutrition?.protein || Math.round(dinnerCalories * proteinRatio / 4),
@@ -255,7 +255,7 @@ const generateDailyMeals = async (
     name: generateMealName('breakfast', day, goal),
     description: generateMealDescription('breakfast', day, goal),
     ingredients: generateMealIngredients('breakfast', day, goal),
-    preparation: generateMealPreparation('breakfast', day, goal),
+    preparation: await generateMealPreparation('breakfast', day, goal, generateMealName('breakfast', day, goal), generateMealIngredients('breakfast', day, goal)),
     nutrition: {
       calories: breakfastCalories,
       protein: Math.round(breakfastCalories * proteinRatio / 4),
@@ -270,7 +270,7 @@ const generateDailyMeals = async (
     name: generateMealName('lunch', day, goal),
     description: generateMealDescription('lunch', day, goal),
     ingredients: generateMealIngredients('lunch', day, goal),
-    preparation: generateMealPreparation('lunch', day, goal),
+    preparation: await generateMealPreparation('lunch', day, goal, generateMealName('lunch', day, goal), generateMealIngredients('lunch', day, goal)),
     nutrition: {
       calories: lunchCalories,
       protein: Math.round(lunchCalories * proteinRatio / 4),
@@ -285,7 +285,7 @@ const generateDailyMeals = async (
     name: generateMealName('dinner', day, goal),
     description: generateMealDescription('dinner', day, goal),
     ingredients: generateMealIngredients('dinner', day, goal),
-    preparation: generateMealPreparation('dinner', day, goal),
+    preparation: await generateMealPreparation('dinner', day, goal, generateMealName('dinner', day, goal), generateMealIngredients('dinner', day, goal)),
     nutrition: {
       calories: dinnerCalories,
       protein: Math.round(dinnerCalories * proteinRatio / 4),
