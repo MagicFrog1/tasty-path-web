@@ -16,6 +16,7 @@ const SavedPlansPage = React.lazy(() => import('./src/pages/SavedPlansPage'));
 const PlanDetailPage = React.lazy(() => import('./src/pages/PlanDetailPage'));
 const MedicalSourcesPage = React.lazy(() => import('./src/pages/MedicalSourcesPage'));
 const MiNutriPersonalPage = React.lazy(() => import('./src/pages/MiNutriPersonalPage'));
+const NutriChatPage = React.lazy(() => import('./src/pages/NutriChatPage'));
 const TermsPage = React.lazy(() => import('./src/pages/TermsPage'));
 const PrivacyPage = React.lazy(() => import('./src/pages/PrivacyPage'));
 const SecurityPage = React.lazy(() => import('./src/pages/SecurityPage'));

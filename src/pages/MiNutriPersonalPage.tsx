@@ -6,7 +6,6 @@ import { useSubscription } from '../context/SubscriptionContext';
 import { useUserProfile } from '../context/UserProfileContext';
 import OnboardingStep from '../components/minutri/OnboardingStep';
 import MonthlyCalendarView from '../components/minutri/MonthlyCalendarView';
-import NutriChat from '../components/minutri/NutriChat';
 import { minutriService, Module, DayTracking } from '../services/minutriService';
 import { generateModuleContent, DailyContent } from '../services/minutriContentService';
 
@@ -93,9 +92,20 @@ const ContentGrid = styled.div`
   display: grid;
   gap: 20px;
   grid-template-columns: 1fr;
+
+  @media (min-width: 1200px) {
+    grid-template-columns: 1.5fr 1fr;
+    gap: 24px;
+  }
 `;
 
 const MainContent = styled.div`
+  display: grid;
+  gap: 20px;
+  min-width: 0; /* Permite que el contenido se ajuste */
+`;
+
+const Sidebar = styled.aside`
   display: grid;
   gap: 20px;
   min-width: 0;
@@ -318,7 +328,8 @@ const MiNutriPersonalPage: React.FC = () => {
         MiNutri Personal - Tu Plan de Alimentación Personalizado
       </PremiumBadge>
 
-      <MainContent>
+      <ContentGrid>
+        <MainContent>
           {isOnboarding ? (
             <OnboardingStep
               onComplete={(data) => {
@@ -431,28 +442,11 @@ const MiNutriPersonalPage: React.FC = () => {
                   )}
                 </Card>
               )}
+
             </>
           )}
-
-          {!isOnboarding && (
-            <Card>
-              <div style={{ marginBottom: '20px' }}>
-                <h2 style={{ margin: '0 0 8px 0', fontSize: '22px', fontWeight: 700, color: theme.colors.primaryDark, display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <FiMessageCircle />
-                  NutriChat
-                </h2>
-                <p style={{ margin: '0', color: theme.colors.textSecondary, lineHeight: '1.6', fontSize: '14px' }}>
-                  Tu asistente virtual especializado en alimentación y nutrición. Basado en fuentes médicas verificadas.
-                </p>
-              </div>
-              <NutriChat
-                adherence={adherence}
-                currentDay={currentDay}
-                totalDays={30}
-              />
-            </Card>
-          )}
         </MainContent>
+      </ContentGrid>
     </PageWrapper>
   );
 };
