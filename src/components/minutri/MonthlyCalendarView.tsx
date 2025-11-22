@@ -563,28 +563,36 @@ const MonthlyCalendarView: React.FC<MonthlyCalendarViewProps> = ({
       // Vista semanal: mostrar solo los 7 días de la semana actual del módulo
       const calendarDays: Array<{ day: number | null; isToday: boolean }> = [];
       
-      // Calcular el primer día del módulo (día 1 del módulo actual)
-      const moduleStartDay = ((monthNumber - 1) * 30) + 1;
-      const currentDayInModule = today.getDate() - (new Date().getDate() - moduleStartDay);
+      // Calcular el día actual del módulo (1-30)
+      const todayDate = new Date();
+      const moduleStartDate = new Date(startDate);
+      moduleStartDate.setDate(1); // Primer día del mes del módulo
       
-      // Encontrar el lunes de la semana actual basado en el día del módulo
-      const currentDayNumber = Math.min(moduleStartDay + (today.getDate() - 1), days.length);
-      const dayOfWeek = new Date().getDay(); // 0 = Domingo, 1 = Lunes, etc.
+      // Calcular qué día del módulo es hoy (basado en días transcurridos desde el inicio del módulo)
+      const daysSinceModuleStart = Math.floor((todayDate.getTime() - moduleStartDate.getTime()) / (1000 * 60 * 60 * 24));
+      const currentDayInModule = Math.min(Math.max(1, daysSinceModuleStart + 1), 30);
+      
+      // Encontrar el lunes de la semana actual
+      const dayOfWeek = todayDate.getDay(); // 0 = Domingo, 1 = Lunes, etc.
       const mondayOffset = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Convertir a lunes = 0
       
-      // Calcular el primer día de la semana (lunes)
-      const weekStartDay = Math.max(1, currentDayNumber - mondayOffset);
+      // Calcular el primer día de la semana (lunes) en términos del día del módulo
+      const weekStartDayInModule = Math.max(1, currentDayInModule - mondayOffset);
       
       // Mostrar los 7 días de la semana
       for (let i = 0; i < 7; i++) {
-        const dayNumber = weekStartDay + i;
+        const dayNumberInModule = weekStartDayInModule + i;
         
-        // Verificar que el día esté dentro del rango del módulo (1-30 días por módulo)
-        if (dayNumber >= 1 && dayNumber <= days.length) {
-          const dayDate = new Date();
-          dayDate.setDate(dayDate.getDate() + (dayNumber - currentDayNumber));
-          const isToday = dayNumber === currentDayNumber;
-          calendarDays.push({ day: dayNumber, isToday });
+        // Verificar que el día esté dentro del rango del módulo (1-30 días)
+        if (dayNumberInModule >= 1 && dayNumberInModule <= 30) {
+          // Buscar el día correspondiente en el array de días
+          const dayContent = days.find(d => d.dayNumber === dayNumberInModule);
+          if (dayContent) {
+            const isToday = dayNumberInModule === currentDayInModule;
+            calendarDays.push({ day: dayNumberInModule, isToday });
+          } else {
+            calendarDays.push({ day: null, isToday: false });
+          }
         } else {
           calendarDays.push({ day: null, isToday: false });
         }
@@ -600,12 +608,17 @@ const MonthlyCalendarView: React.FC<MonthlyCalendarViewProps> = ({
         calendarDays.push({ day: null, isToday: false });
       }
       
-      // Días del mes (limitados a los días disponibles en el módulo)
-      const maxDays = Math.min(daysInMonth, days.length - ((monthNumber - 1) * 30));
+      // Días del mes (mostrar días 1-30 del módulo)
+      const maxDays = Math.min(30, days.length - ((monthNumber - 1) * 30));
       for (let day = 1; day <= maxDays; day++) {
         const dayNumber = ((monthNumber - 1) * 30) + day;
-        const isToday = isCurrentMonth && day === today.getDate() && dayNumber <= days.length;
-        calendarDays.push({ day: dayNumber, isToday });
+        const dayContent = days.find(d => d.dayNumber === dayNumber);
+        if (dayContent) {
+          const isToday = isCurrentMonth && day === today.getDate() && dayNumber <= days.length;
+          calendarDays.push({ day: dayNumber, isToday });
+        } else {
+          calendarDays.push({ day: null, isToday: false });
+        }
       }
       
       return calendarDays;
