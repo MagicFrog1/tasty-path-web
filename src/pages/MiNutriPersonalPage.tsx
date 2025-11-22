@@ -325,16 +325,36 @@ const MiNutriPersonalPage: React.FC = () => {
     }
   }, []);
 
-  const loadModuleContent = async (roadmap: any, module: Module, day: number) => {
-    setIsLoadingContent(true);
+  const loadModuleContent = async (roadmap: any, module: Module, day: number, showLoading: boolean = false) => {
+    if (showLoading) {
+      setIsGeneratingPlan(true);
+      setLoadingStep(1);
+      setLoadingStatus('Iniciando generación de plan mensal...');
+    } else {
+      setIsLoadingContent(true);
+    }
+    
     try {
       // Verificar si ya existe contenido guardado
       const savedContent = localStorage.getItem(`minutri_content_${module.id}`);
       let content;
       
-      if (savedContent) {
+      if (savedContent && !showLoading) {
+        // Si hay contenido guardado y no se está regenerando, usarlo
         content = JSON.parse(savedContent);
       } else {
+        // Generar nuevo contenido con pantalla de carga
+        if (showLoading) {
+          setLoadingStep(2);
+          setLoadingStatus('Calculando objetivos nutricionales...');
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+        
+        if (showLoading) {
+          setLoadingStep(3);
+          setLoadingStatus('Generando menús personalizados con IA (esto puede tomar unos minutos)...');
+        }
+        
         // Generar contenido completo del módulo
         content = await generateModuleContent(
           module.id,
@@ -345,17 +365,36 @@ const MiNutriPersonalPage: React.FC = () => {
             timeframe: roadmap.timeframe,
           },
           {
-            weight: profile.weight,
-            height: profile.height,
-            age: profile.age,
-            gender: profile.gender,
-            activityLevel: profile.activityLevel,
-            allergies: profile.allergies || [],
-            dietaryPreferences: profile.dietaryPreferences || [],
+            weight: profile?.weight,
+            height: profile?.height,
+            age: profile?.age,
+            gender: profile?.gender,
+            activityLevel: profile?.activityLevel,
+            allergies: (profile as any)?.allergies || [],
+            dietaryPreferences: (profile as any)?.dietaryPreferences || [],
           }
         );
+        
+        if (showLoading) {
+          setLoadingStep(4);
+          setLoadingStatus('Generando planes de ejercicio...');
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+        
+        if (showLoading) {
+          setLoadingStep(5);
+          setLoadingStatus('Generando listas de compras...');
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+        
         // Guardar contenido generado
         localStorage.setItem(`minutri_content_${module.id}`, JSON.stringify(content));
+        
+        if (showLoading) {
+          setLoadingStep(6);
+          setLoadingStatus('¡Plan generado exitosamente!');
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
       }
       
       setModuleContent(content);
@@ -365,8 +404,18 @@ const MiNutriPersonalPage: React.FC = () => {
       setDailyContent(todayContent);
     } catch (error) {
       console.error('Error cargando contenido del módulo:', error);
+      if (showLoading) {
+        setLoadingStatus('Error al generar el plan. Por favor, intenta de nuevo.');
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
     } finally {
-      setIsLoadingContent(false);
+      if (showLoading) {
+        setIsGeneratingPlan(false);
+        setLoadingStep(0);
+        setLoadingStatus('');
+      } else {
+        setIsLoadingContent(false);
+      }
     }
   };
 
