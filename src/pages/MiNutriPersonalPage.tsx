@@ -5,6 +5,10 @@ import { theme } from '../styles/theme';
 import { useSubscription } from '../context/SubscriptionContext';
 import { useUserProfile } from '../context/UserProfileContext';
 import OnboardingStep from '../components/minutri/OnboardingStep';
+import RoadmapView from '../components/minutri/RoadmapView';
+import ActiveModuleTracker from '../components/minutri/ActiveModuleTracker';
+import NutriChat from '../components/minutri/NutriChat';
+import { minutriService, Module, DayTracking } from '../services/minutriService';
 
 // Animaciones
 const fadeInUp = keyframes`
@@ -143,16 +147,50 @@ const MiNutriPersonalPage: React.FC = () => {
   const { profile } = useUserProfile();
   const [hasRoadmap, setHasRoadmap] = useState(false);
   const [isOnboarding, setIsOnboarding] = useState(true);
+  const [modules, setModules] = useState<Module[]>([]);
+  const [activeModule, setActiveModule] = useState<Module | null>(null);
+  const [trackingDays, setTrackingDays] = useState<DayTracking[]>([]);
+  const [currentDay, setCurrentDay] = useState(1);
+  const [adherence, setAdherence] = useState(0);
 
   // Verificar si el usuario es premium
   const isPremium = currentPlan && currentPlan.plan !== 'free' && currentPlan.isActive;
 
   useEffect(() => {
     // Verificar si ya tiene un roadmap configurado
-    const roadmapData = localStorage.getItem('minutri_roadmap');
+    const roadmapData = minutriService.getRoadmap();
     if (roadmapData) {
       setHasRoadmap(true);
       setIsOnboarding(false);
+      
+      // Cargar módulos
+      let savedModules = minutriService.getModules();
+      if (!savedModules) {
+        savedModules = minutriService.generateModules(roadmapData);
+        minutriService.saveModules(savedModules);
+      }
+      setModules(savedModules);
+      
+      // Encontrar módulo activo
+      const active = savedModules.find(m => m.isActive);
+      if (active) {
+        setActiveModule(active);
+        
+        // Cargar tracking
+        let tracking = minutriService.getTracking(active.id);
+        if (!tracking) {
+          const startDate = new Date(roadmapData.createdAt);
+          startDate.setDate(startDate.getDate() + ((active.id - 1) * 30));
+          tracking = minutriService.initializeTracking(active.id, startDate);
+          minutriService.saveTracking(active.id, tracking);
+        }
+        setTrackingDays(tracking);
+        
+        // Calcular día actual y adherencia
+        const day = minutriService.getCurrentDay(active.startDate);
+        setCurrentDay(day);
+        setAdherence(minutriService.calculateAdherence(tracking));
+      }
     }
   }, []);
 
@@ -236,7 +274,23 @@ const MiNutriPersonalPage: React.FC = () => {
                   createdAt: new Date().toISOString(),
                   modules: Math.ceil(data.timeframe * 30 / 30), // Número de módulos de 30 días
                 };
-                localStorage.setItem('minutri_roadmap', JSON.stringify(roadmapData));
+                minutriService.saveRoadmap(roadmapData);
+                
+                // Generar módulos
+                const generatedModules = minutriService.generateModules(roadmapData);
+                minutriService.saveModules(generatedModules);
+                setModules(generatedModules);
+                
+                // Inicializar tracking del primer módulo
+                const startDate = new Date();
+                const firstModule = generatedModules[0];
+                const tracking = minutriService.initializeTracking(firstModule.id, startDate);
+                minutriService.saveTracking(firstModule.id, tracking);
+                
+                setActiveModule(firstModule);
+                setTrackingDays(tracking);
+                setCurrentDay(1);
+                setAdherence(0);
                 setHasRoadmap(true);
                 setIsOnboarding(false);
               }}
@@ -247,65 +301,67 @@ const MiNutriPersonalPage: React.FC = () => {
                 <h2 style={{ margin: '0 0 24px 0', fontSize: '24px', fontWeight: 700, color: theme.colors.primaryDark }}>
                   Roadmap Dinámico
                 </h2>
-                <p style={{ margin: '0 0 24px 0', color: theme.colors.textSecondary, lineHeight: '1.6' }}>
-                  Visualiza tu progreso a largo plazo con módulos de 30 días
-                </p>
-                <div style={{ 
-                  padding: '24px', 
-                  borderRadius: '16px', 
-                  background: 'linear-gradient(135deg, rgba(46, 139, 87, 0.08) 0%, rgba(34, 197, 94, 0.05) 100%)',
-                  border: '1.5px solid rgba(46, 139, 87, 0.2)',
-                  textAlign: 'center'
-                }}>
-                  <p style={{ margin: '0', color: theme.colors.textSecondary, fontSize: '15px' }}>
-                    El componente de Roadmap se implementará en el siguiente paso
-                  </p>
-                </div>
+                {modules.length > 0 && (
+                  <RoadmapView
+                    modules={modules}
+                    currentValue={minutriService.getRoadmap()?.currentValue || 0}
+                    targetValue={minutriService.getRoadmap()?.targetValue || 0}
+                    timeframe={minutriService.getRoadmap()?.timeframe || 0}
+                  />
+                )}
               </Card>
 
-              <Card>
-                <h2 style={{ margin: '0 0 24px 0', fontSize: '24px', fontWeight: 700, color: theme.colors.primaryDark }}>
-                  Módulo Activo (30 Días)
-                </h2>
-                <p style={{ margin: '0 0 24px 0', color: theme.colors.textSecondary, lineHeight: '1.6' }}>
-                  Seguimiento detallado de tu módulo actual
-                </p>
-                <div style={{ 
-                  padding: '24px', 
-                  borderRadius: '16px', 
-                  background: 'linear-gradient(135deg, rgba(46, 139, 87, 0.08) 0%, rgba(34, 197, 94, 0.05) 100%)',
-                  border: '1.5px solid rgba(46, 139, 87, 0.2)',
-                  textAlign: 'center'
-                }}>
-                  <p style={{ margin: '0', color: theme.colors.textSecondary, fontSize: '15px' }}>
-                    El componente de seguimiento se implementará en el siguiente paso
-                  </p>
-                </div>
-              </Card>
+              {activeModule && (
+                <Card>
+                  <h2 style={{ margin: '0 0 24px 0', fontSize: '24px', fontWeight: 700, color: theme.colors.primaryDark }}>
+                    Módulo Activo (30 Días)
+                  </h2>
+                  <ActiveModuleTracker
+                    moduleTitle={activeModule.title}
+                    currentDay={currentDay}
+                    totalDays={30}
+                    adherence={adherence}
+                    days={trackingDays}
+                    onUpdate={(day, type, checked) => {
+                      const updated = trackingDays.map(d => {
+                        if (d.day === day) {
+                          if (type === 'exercise') {
+                            return { ...d, exercise: checked };
+                          } else {
+                            return { ...d, meals: { ...d.meals, [type]: checked } };
+                          }
+                        }
+                        return d;
+                      });
+                      setTrackingDays(updated);
+                      minutriService.saveTracking(activeModule.id, updated);
+                      setAdherence(minutriService.calculateAdherence(updated));
+                    }}
+                  />
+                </Card>
+              )}
             </>
           )}
         </MainContent>
 
         <Sidebar>
-          <Card>
-            <h3 style={{ margin: '0 0 20px 0', fontSize: '20px', fontWeight: 700, color: theme.colors.primaryDark, display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <FiMessageCircle />
-              NutriChat IA
-            </h3>
-            <p style={{ margin: '0 0 24px 0', color: theme.colors.textSecondary, lineHeight: '1.6', fontSize: '15px' }}>
-              Tu asistente virtual de nutrición. Haz preguntas sobre tu roadmap, plan de ejercicios o ingredientes.
-            </p>
-            <div style={{ 
-              padding: '24px', 
-              borderRadius: '16px', 
-              background: 'linear-gradient(135deg, rgba(46, 139, 87, 0.08) 0%, rgba(34, 197, 94, 0.05) 100%)',
-              border: '1.5px solid rgba(46, 139, 87, 0.2)',
-              textAlign: 'center'
-            }}>
-              <p style={{ margin: '0', color: theme.colors.textSecondary, fontSize: '14px' }}>
-                El chatbot se implementará en el siguiente paso
+          <Card style={{ padding: '0', overflow: 'hidden' }}>
+            <div style={{ padding: '24px 24px 0 24px' }}>
+              <h3 style={{ margin: '0 0 12px 0', fontSize: '20px', fontWeight: 700, color: theme.colors.primaryDark, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <FiMessageCircle />
+                NutriChat IA
+              </h3>
+              <p style={{ margin: '0 0 0 0', color: theme.colors.textSecondary, lineHeight: '1.6', fontSize: '14px' }}>
+                Tu asistente virtual de nutrición
               </p>
             </div>
+            {!isOnboarding && (
+              <NutriChat
+                adherence={adherence}
+                currentDay={currentDay}
+                totalDays={30}
+              />
+            )}
           </Card>
 
           <Card>
