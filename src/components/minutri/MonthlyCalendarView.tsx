@@ -560,22 +560,31 @@ const MonthlyCalendarView: React.FC<MonthlyCalendarViewProps> = ({
 
   const renderCalendarDays = () => {
     if (viewMode === 'week') {
-      // Vista semanal: mostrar solo los 7 días de la semana actual
+      // Vista semanal: mostrar solo los 7 días de la semana actual del módulo
       const calendarDays: Array<{ day: number | null; isToday: boolean }> = [];
-      const todayDate = new Date();
-      const currentWeekStart = new Date(todayDate);
-      currentWeekStart.setDate(todayDate.getDate() - todayDate.getDay() + 1); // Lunes de esta semana
       
-      // Calcular el día del mes para cada día de la semana
+      // Calcular el primer día del módulo (día 1 del módulo actual)
+      const moduleStartDay = ((monthNumber - 1) * 30) + 1;
+      const currentDayInModule = today.getDate() - (new Date().getDate() - moduleStartDay);
+      
+      // Encontrar el lunes de la semana actual basado en el día del módulo
+      const currentDayNumber = Math.min(moduleStartDay + (today.getDate() - 1), days.length);
+      const dayOfWeek = new Date().getDay(); // 0 = Domingo, 1 = Lunes, etc.
+      const mondayOffset = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Convertir a lunes = 0
+      
+      // Calcular el primer día de la semana (lunes)
+      const weekStartDay = Math.max(1, currentDayNumber - mondayOffset);
+      
+      // Mostrar los 7 días de la semana
       for (let i = 0; i < 7; i++) {
-        const weekDay = new Date(currentWeekStart);
-        weekDay.setDate(currentWeekStart.getDate() + i);
+        const dayNumber = weekStartDay + i;
         
-        // Solo mostrar días que estén en el mes actual del módulo
-        if (weekDay.getMonth() === currentMonth && weekDay.getFullYear() === currentYear) {
-          const day = weekDay.getDate();
-          const isToday = isCurrentMonth && day === today.getDate() && weekDay.getMonth() === today.getMonth();
-          calendarDays.push({ day, isToday });
+        // Verificar que el día esté dentro del rango del módulo (1-30 días por módulo)
+        if (dayNumber >= 1 && dayNumber <= days.length) {
+          const dayDate = new Date();
+          dayDate.setDate(dayDate.getDate() + (dayNumber - currentDayNumber));
+          const isToday = dayNumber === currentDayNumber;
+          calendarDays.push({ day: dayNumber, isToday });
         } else {
           calendarDays.push({ day: null, isToday: false });
         }
@@ -591,10 +600,12 @@ const MonthlyCalendarView: React.FC<MonthlyCalendarViewProps> = ({
         calendarDays.push({ day: null, isToday: false });
       }
       
-      // Días del mes
-      for (let day = 1; day <= daysInMonth; day++) {
-        const isToday = isCurrentMonth && day === today.getDate();
-        calendarDays.push({ day, isToday });
+      // Días del mes (limitados a los días disponibles en el módulo)
+      const maxDays = Math.min(daysInMonth, days.length - ((monthNumber - 1) * 30));
+      for (let day = 1; day <= maxDays; day++) {
+        const dayNumber = ((monthNumber - 1) * 30) + day;
+        const isToday = isCurrentMonth && day === today.getDate() && dayNumber <= days.length;
+        calendarDays.push({ day: dayNumber, isToday });
       }
       
       return calendarDays;
