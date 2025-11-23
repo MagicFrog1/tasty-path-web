@@ -146,7 +146,6 @@ const OnboardingStep: React.FC<OnboardingStepProps> = ({ onComplete }) => {
   const [finalGoal, setFinalGoal] = useState<'weight_loss' | 'weight_gain' | 'muscle_gain' | 'maintenance'>('weight_loss');
   const [targetValue, setTargetValue] = useState<string>('');
   const [currentValue, setCurrentValue] = useState<string>('');
-  const [timeframe, setTimeframe] = useState<string>('3');
   const [age, setAge] = useState<string>('');
   const [validation, setValidation] = useState<{
     type: 'success' | 'warning' | 'error';
@@ -157,7 +156,7 @@ const OnboardingStep: React.FC<OnboardingStepProps> = ({ onComplete }) => {
   const [isValidating, setIsValidating] = useState(false);
 
   const handleValidate = async () => {
-    if (!targetValue || !currentValue || !timeframe || !age) {
+    if (!targetValue || !currentValue || !age) {
       alert('Por favor, completa todos los campos');
       return;
     }
@@ -165,10 +164,11 @@ const OnboardingStep: React.FC<OnboardingStepProps> = ({ onComplete }) => {
     setIsValidating(true);
 
     // Simular validación por IA (en producción, esto sería una llamada a la API)
+    // Los planes mensuales siempre son de 1 mes
     setTimeout(() => {
       const target = parseFloat(targetValue);
       const current = parseFloat(currentValue);
-      const months = parseFloat(timeframe);
+      const months = 1; // Siempre 1 mes para planes mensuales
       const difference = Math.abs(target - current);
       const weeklyChange = difference / (months * 4.33);
       
@@ -192,13 +192,13 @@ const OnboardingStep: React.FC<OnboardingStepProps> = ({ onComplete }) => {
           validationResult = {
             type: 'success',
             title: 'Objetivo Realista',
-            message: `Tu objetivo es alcanzable. Requiere adherencia del 85-90% y seguimiento constante. El sistema generará ${Math.ceil(months * 30 / 30)} módulos de 30 días para alcanzar tu meta.`,
+            message: `Tu objetivo es alcanzable. Requiere adherencia del 85-90% y seguimiento constante. El sistema generará un plan mensual de 30 días para alcanzar tu meta.`,
           };
         } else {
           validationResult = {
             type: 'success',
             title: 'Objetivo Realista',
-            message: `Tu objetivo es alcanzable con adherencia del 90-95%. El sistema generará ${Math.ceil(months * 30 / 30)} módulos de 30 días para alcanzar tu meta.`,
+            message: `Tu objetivo es alcanzable con adherencia del 90-95%. El sistema generará un plan mensual de 30 días para alcanzar tu meta.`,
           };
         }
       } else {
@@ -218,7 +218,7 @@ const OnboardingStep: React.FC<OnboardingStepProps> = ({ onComplete }) => {
           validationResult = {
             type: 'success',
             title: 'Objetivo Realista',
-            message: `Tu objetivo es alcanzable. El sistema generará ${Math.ceil(months * 30 / 30)} módulos de 30 días.`,
+            message: `Tu objetivo es alcanzable. El sistema generará un plan mensual de 30 días con ejercicios personalizados.`,
           };
         }
       }
@@ -234,13 +234,13 @@ const OnboardingStep: React.FC<OnboardingStepProps> = ({ onComplete }) => {
       return;
     }
 
-    const adjusted = validation.adjustedGoal || { value: parseFloat(targetValue), timeframe: parseFloat(timeframe) };
+    const adjusted = validation.adjustedGoal || { value: parseFloat(targetValue), timeframe: 1 };
 
     onComplete({
       finalGoal,
       targetValue: adjusted.value,
       currentValue: parseFloat(currentValue),
-      timeframe: adjusted.timeframe,
+      timeframe: 1, // Siempre 1 mes para planes mensuales
       age: parseFloat(age),
       validated: true,
       adjustedGoal: validation.adjustedGoal,
@@ -287,17 +287,6 @@ const OnboardingStep: React.FC<OnboardingStepProps> = ({ onComplete }) => {
           />
         </FormGroup>
 
-        <FormGroup>
-          <Label>Plazo Total (meses)</Label>
-          <Select value={timeframe} onChange={(e) => setTimeframe(e.target.value)}>
-            <option value="1">1 mes</option>
-            <option value="2">2 meses</option>
-            <option value="3">3 meses</option>
-            <option value="4">4 meses</option>
-            <option value="5">5 meses</option>
-            <option value="6">6 meses</option>
-          </Select>
-        </FormGroup>
 
         <FormGroup>
           <Label>Edad</Label>
@@ -328,7 +317,6 @@ const OnboardingStep: React.FC<OnboardingStepProps> = ({ onComplete }) => {
                 <Button
                   onClick={() => {
                     setTargetValue(validation.adjustedGoal!.value.toString());
-                    setTimeframe(validation.adjustedGoal!.timeframe.toString());
                     setValidation(null);
                   }}
                   style={{ marginTop: '12px' }}

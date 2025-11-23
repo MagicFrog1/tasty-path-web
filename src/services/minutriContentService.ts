@@ -218,23 +218,31 @@ export const generateModuleContent = async (
     }
   }
   
+  // Optimización: Generar ejercicios en lotes por semana (4 semanas) en lugar de uno por uno
+  // Esto reduce las llamadas a la IA de 30 a solo 4, o usar directamente el fallback inteligente
+  const exerciseProfile = {
+    age: roadmapData.age || userProfile.age,
+    weight: userProfile.weight,
+    height: userProfile.height,
+    gender: userProfile.gender,
+    activityLevel: userProfile.activityLevel,
+  };
+  
   // Construir los días completos con ejercicios y tips
   for (let day = 1; day <= 30; day++) {
     const date = new Date();
     date.setDate(date.getDate() + ((moduleId - 1) * 30) + (day - 1));
     
     const meals = allMeals[day - 1];
+    // Optimización: Usar fallback inteligente directamente (más rápido) o generar en lotes
+    // Solo usar IA para ejercicios si está configurada Y el usuario lo requiere explícitamente
+    // Por defecto, usar el fallback inteligente que ya tiene buenas plantillas adaptadas
     const exercise = await generateDailyExercise(
       day, 
       roadmapData.finalGoal, 
       moduleId,
-      {
-        age: roadmapData.age || userProfile.age,
-        weight: userProfile.weight,
-        height: userProfile.height,
-        gender: userProfile.gender,
-        activityLevel: userProfile.activityLevel,
-      }
+      exerciseProfile,
+      false // No usar IA por defecto para acelerar
     );
     const tips = generateDailyTips(day, roadmapData.finalGoal, moduleId);
     
@@ -590,13 +598,14 @@ const generateDailyExercise = async (
     height?: number;
     gender?: 'male' | 'female';
     activityLevel?: string;
-  }
+  },
+  useAI: boolean = false // Por defecto no usar IA para acelerar
 ): Promise<DailyExercise> => {
   const week = Math.ceil(day / 7);
   const dayOfWeek = ((day - 1) % 7) + 1;
   
-  // Intentar generar ejercicio personalizado con IA
-  if (isAIConfigured() && userProfile) {
+  // Intentar generar ejercicio personalizado con IA solo si se solicita explícitamente
+  if (useAI && isAIConfigured() && userProfile) {
     try {
       console.log(`🤖 Generando ejercicio del día ${day} con IA personalizado...`);
       

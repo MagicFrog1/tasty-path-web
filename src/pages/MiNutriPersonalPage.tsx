@@ -405,11 +405,11 @@ const MiNutriPersonalPage: React.FC = () => {
     setLoadingStep(1);
     setLoadingStatus('Iniciando generación de plan mensal...');
     
-    // Timeout de seguridad: 5 minutos
+    // Timeout de seguridad: 3 minutos (reducido para planes de 1 mes optimizados)
     const timeoutPromise = new Promise((_, reject) => {
       setTimeout(() => {
         reject(new Error('Timeout: La generación del plan está tomando demasiado tiempo. Por favor, intenta de nuevo.'));
-      }, 300000);
+      }, 180000); // 3 minutos
     });
     
     try {
@@ -424,11 +424,11 @@ const MiNutriPersonalPage: React.FC = () => {
       };
       
       setLoadingStep(3);
-      setLoadingStatus('Generando menús personalizados con IA (esto puede tomar 1-2 minutos)...');
+      setLoadingStatus('Generando menús personalizados con IA (esto puede tomar 30-60 segundos)...');
       
       setLoadingStep(4);
       setLoadingStatus('Generando ejercicios físicos personalizados adaptados a tu edad y objetivos...');
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 300));
       
       // Generar contenido del primer módulo (30 días)
       const content = await Promise.race([

@@ -69,6 +69,145 @@ export function extractIngredientsFromPlan(plan: WeeklyPlan): ShoppingListItem[]
   return Array.from(ingredientMap.values());
 }
 
+// Función para normalizar cantidades a formatos realistas de compra
+function normalizeToRealisticQuantity(name: string, totalQuantity: number, unit: string): { quantity: string; unit: string } {
+  const lowerName = name.toLowerCase();
+  
+  // Carnes: convertir a paquetes
+  if (lowerName.includes('ternera') || lowerName.includes('solomillo') || lowerName.includes('cordero') || 
+      lowerName.includes('cerdo') || lowerName.includes('costillas') || lowerName.includes('conejo')) {
+    // Si hay más de 200g, considerar un paquete (típicamente 400-500g)
+    if (totalQuantity >= 200 || unit === 'g' || unit === 'gramos') {
+      return { quantity: '1', unit: 'paquete' };
+    }
+    return { quantity: '1', unit: 'paquete' };
+  }
+  
+  if (lowerName.includes('pollo') || lowerName.includes('pavo') || lowerName.includes('pato')) {
+    // Pollo típicamente se compra en paquetes de ~1kg
+    if (totalQuantity >= 500 || unit === 'g' || unit === 'gramos') {
+      return { quantity: '1', unit: 'paquete' };
+    }
+    return { quantity: '1', unit: 'paquete' };
+  }
+  
+  // Pescados: convertir a paquetes o piezas
+  if (lowerName.includes('salmón') || lowerName.includes('dorada') || lowerName.includes('lubina') || 
+      lowerName.includes('merluza') || lowerName.includes('bacalao') || lowerName.includes('trucha')) {
+    if (totalQuantity >= 200 || unit === 'g' || unit === 'gramos') {
+      return { quantity: '1', unit: 'paquete' };
+    }
+    return { quantity: '1', unit: 'pieza' };
+  }
+  
+  if (lowerName.includes('atún')) {
+    // Atún normalmente se compra en latas
+    return { quantity: '1', unit: 'lata' };
+  }
+  
+  // Mariscos
+  if (lowerName.includes('langostinos') || lowerName.includes('gambas')) {
+    return { quantity: '1', unit: 'paquete' };
+  }
+  
+  if (lowerName.includes('mejillones')) {
+    return { quantity: '1', unit: 'bolsa' };
+  }
+  
+  if (lowerName.includes('almejas')) {
+    return { quantity: '1', unit: 'bolsa' };
+  }
+  
+  // Lácteos
+  if (lowerName.includes('queso')) {
+    return { quantity: '1', unit: 'paquete' };
+  }
+  
+  if (lowerName.includes('mantequilla')) {
+    return { quantity: '1', unit: 'paquete' };
+  }
+  
+  if (lowerName.includes('leche')) {
+    return { quantity: '1', unit: 'brick' };
+  }
+  
+  if (lowerName.includes('yogur')) {
+    // Si hay 4 o más yogures, considerar un pack
+    if (totalQuantity >= 4) {
+      return { quantity: '1', unit: 'pack' };
+    }
+    return { quantity: totalQuantity.toString(), unit: 'unidad' };
+  }
+  
+  if (lowerName.includes('huevo')) {
+    // Si hay 6 o más huevos, considerar una docena o media docena
+    if (totalQuantity >= 12) {
+      return { quantity: '1', unit: 'docena' };
+    } else if (totalQuantity >= 6) {
+      return { quantity: '1', unit: 'media docena' };
+    }
+    return { quantity: totalQuantity.toString(), unit: 'unidad' };
+  }
+  
+  // Granos y cereales: siempre en paquetes
+  if (lowerName.includes('arroz') || lowerName.includes('pasta') || lowerName.includes('quinoa') || 
+      lowerName.includes('avena') || lowerName.includes('lentejas') || lowerName.includes('garbanzos') ||
+      lowerName.includes('harina') || lowerName.includes('azúcar') || lowerName.includes('sal')) {
+    return { quantity: '1', unit: 'paquete' };
+  }
+  
+  // Frutas: si hay varias, considerar pack
+  if (lowerName.includes('fresas') || lowerName.includes('arándanos') || lowerName.includes('frambuesa') ||
+      lowerName.includes('mora')) {
+    return { quantity: '1', unit: 'bandeja' };
+  }
+  
+  if (lowerName.includes('manzana') || lowerName.includes('naranja') || lowerName.includes('mandarina') ||
+      lowerName.includes('plátano')) {
+    if (totalQuantity >= 4) {
+      return { quantity: '1', unit: 'pack' };
+    }
+    return { quantity: totalQuantity.toString(), unit: 'unidad' };
+  }
+  
+  // Verduras en bolsas
+  if (lowerName.includes('espinacas') || lowerName.includes('lechuga') || lowerName.includes('rúcula') ||
+      lowerName.includes('canónigos') || lowerName.includes('kale')) {
+    return { quantity: '1', unit: 'bolsa' };
+  }
+  
+  if (lowerName.includes('zanahoria') || lowerName.includes('cebolla') || lowerName.includes('patata')) {
+    if (totalQuantity >= 3) {
+      return { quantity: '1', unit: 'malla' };
+    }
+    return { quantity: totalQuantity.toString(), unit: 'unidad' };
+  }
+  
+  if (lowerName.includes('champiñones') || lowerName.includes('setas')) {
+    return { quantity: '1', unit: 'bandeja' };
+  }
+  
+  if (lowerName.includes('tomate')) {
+    if (totalQuantity >= 4) {
+      return { quantity: '1', unit: 'pack' };
+    }
+    return { quantity: totalQuantity.toString(), unit: 'unidad' };
+  }
+  
+  // Aceites
+  if (lowerName.includes('aceite')) {
+    return { quantity: '1', unit: 'botella' };
+  }
+  
+  // Pan
+  if (lowerName.includes('pan')) {
+    return { quantity: '1', unit: 'unidad' };
+  }
+  
+  // Si no se puede normalizar, mantener la cantidad original pero mejorar la unidad
+  return { quantity: totalQuantity.toString(), unit: unit || getInferredUnit(name) };
+}
+
 // Función auxiliar para agregar ingredientes al mapa
 function addIngredientToMap(ingredientMap: Map<string, ShoppingListItem>, ingredient: string) {
   const parsed = parseIngredient(ingredient);
@@ -77,12 +216,13 @@ function addIngredientToMap(ingredientMap: Map<string, ShoppingListItem>, ingred
     // Si no se pudo analizar, añadir como un ingrediente sin cantidad
     const ingredientKey = ingredient.toLowerCase().trim();
     if (!ingredientMap.has(ingredientKey)) {
+      const normalized = normalizeToRealisticQuantity(ingredient, 1, 'unidad');
       ingredientMap.set(ingredientKey, {
         id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
         name: ingredient,
         category: categorizeIngredient(ingredient),
-        quantity: '1',
-        unit: 'unidad',
+        quantity: normalized.quantity,
+        unit: normalized.unit,
         estimatedPrice: getEstimatedPrice(ingredient),
         isChecked: false,
       });
@@ -97,30 +237,25 @@ function addIngredientToMap(ingredientMap: Map<string, ShoppingListItem>, ingred
   if (ingredientMap.has(ingredientKey)) {
     const existing = ingredientMap.get(ingredientKey)!;
     
-    // Convertir a número para sumar, manejar casos de 'unidades'
+    // Convertir a número para sumar
     const currentQuantity = parseFloat(existing.quantity) || 0;
     const newQuantity = quantity || 0;
+    const totalQuantity = currentQuantity + newQuantity;
     
-    // Si la unidad es la misma, sumar. Si no, podrías añadir lógica de conversión
-    if (existing.unit === unit || (existing.unit === 'unidades' && unit === 'unidad') || (existing.unit === 'unidad' && unit === 'unidades')) {
-      existing.quantity = (currentQuantity + newQuantity).toString();
-    }
-    // Si las unidades son diferentes y no es un simple plural, podrías decidir mantenerlas separadas o convertir
-    // Por simplicidad aquí, si la unidad es diferente, se podría optar por no sumar y añadir como nuevo.
-    // O como en este caso, se suma igual asumiendo que el plan es consistente.
-    else {
-      existing.quantity = (currentQuantity + newQuantity).toString();
-      // Opcionalmente, podrías cambiar la unidad si la nueva es más genérica.
-    }
+    // Normalizar a formato realista de compra
+    const normalized = normalizeToRealisticQuantity(name, totalQuantity, unit || existing.unit);
+    existing.quantity = normalized.quantity;
+    existing.unit = normalized.unit;
     
   } else {
-    // Si no existe, crear un nuevo ingrediente
+    // Si no existe, crear un nuevo ingrediente normalizado
+    const normalized = normalizeToRealisticQuantity(name, quantity || 1, unit);
     const newItem: ShoppingListItem = {
       id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
       name: name,
       category: categorizeIngredient(name),
-      quantity: quantity.toString(),
-      unit: unit,
+      quantity: normalized.quantity,
+      unit: normalized.unit,
       estimatedPrice: getEstimatedPrice(name),
       isChecked: false
     };
@@ -137,26 +272,58 @@ export function getInferredUnit(name: string): string {
         return 'botella';
     }
     
-    // Litros
-    if (lowerName.includes('leche') || lowerName.includes('zumo') || lowerName.includes('caldo') || lowerName.includes('agua')) {
+    // Litros/Bricks
+    if (lowerName.includes('leche')) {
+        return 'brick';
+    }
+    if (lowerName.includes('zumo') || lowerName.includes('caldo') || lowerName.includes('agua')) {
         return 'l';
     }
 
-    // Paquetes
-    if (lowerName.includes('pasta') || lowerName.includes('arroz') || lowerName.includes('lentejas') || lowerName.includes('garbanzos') || lowerName.includes('patatas fritas') || lowerName.includes('pan de molde') || lowerName.includes('galletas') || lowerName.includes('sal') || lowerName.includes('azúcar') || lowerName.includes('harina')) {
+    // Paquetes (carnes, pescados, granos, lácteos)
+    if (lowerName.includes('ternera') || lowerName.includes('pollo') || lowerName.includes('cerdo') || 
+        lowerName.includes('cordero') || lowerName.includes('salmón') || lowerName.includes('langostinos') ||
+        lowerName.includes('queso') || lowerName.includes('mantequilla') ||
+        lowerName.includes('pasta') || lowerName.includes('arroz') || lowerName.includes('lentejas') || 
+        lowerName.includes('garbanzos') || lowerName.includes('quinoa') || lowerName.includes('avena') ||
+        lowerName.includes('patatas fritas') || lowerName.includes('pan de molde') || lowerName.includes('galletas') || 
+        lowerName.includes('sal') || lowerName.includes('azúcar') || lowerName.includes('harina')) {
         return 'paquete';
     }
     
-    // Bolsas
-    if (lowerName.includes('espinacas') || lowerName.includes('lechuga') || lowerName.includes('rúcula') || lowerName.includes('canónigos')) {
+    // Bolsas (verduras de hoja, mariscos)
+    if (lowerName.includes('espinacas') || lowerName.includes('lechuga') || lowerName.includes('rúcula') || 
+        lowerName.includes('canónigos') || lowerName.includes('kale') || lowerName.includes('mejillones') ||
+        lowerName.includes('almejas')) {
         return 'bolsa';
     }
-
-    // Para ingredientes que normalmente se cuentan individualmente, no mostrar unidad
-    if (lowerName.includes('huevo') || lowerName.includes('manzana') || lowerName.includes('plátano') || 
-        lowerName.includes('naranja') || lowerName.includes('limón') || lowerName.includes('tomate') ||
-        lowerName.includes('cebolla') || lowerName.includes('patata') || lowerName.includes('aguacate')) {
-        return '';
+    
+    // Bandejas (frutas pequeñas, setas)
+    if (lowerName.includes('fresas') || lowerName.includes('arándanos') || lowerName.includes('frambuesa') ||
+        lowerName.includes('mora') || lowerName.includes('champiñones') || lowerName.includes('setas')) {
+        return 'bandeja';
+    }
+    
+    // Latas
+    if (lowerName.includes('atún')) {
+        return 'lata';
+    }
+    
+    // Packs (frutas múltiples)
+    if (lowerName.includes('manzana') || lowerName.includes('naranja') || lowerName.includes('mandarina') ||
+        lowerName.includes('plátano') || lowerName.includes('tomate')) {
+        return 'pack';
+    }
+    
+    // Mallas (verduras a granel)
+    if (lowerName.includes('zanahoria') || lowerName.includes('cebolla') || lowerName.includes('patata')) {
+        return 'malla';
+    }
+    
+    // Unidades individuales
+    if (lowerName.includes('huevo') || lowerName.includes('limón') || lowerName.includes('aguacate') ||
+        lowerName.includes('pan') || lowerName.includes('yogur')) {
+        return 'unidad';
     }
 
     // Por defecto, no mostrar unidad
