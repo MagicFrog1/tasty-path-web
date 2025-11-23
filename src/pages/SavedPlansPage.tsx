@@ -541,9 +541,7 @@ const SavedPlansPage: React.FC = () => {
               )}
               <PlanHeader>
                 <span>
-                  {plan.config?.type === 'monthly' 
-                    ? (isActive || plan.status === 'active' ? 'Plan mensual activo' : plan.status === 'completed' ? 'Mes completado' : 'Plan mensual guardado')
-                    : (isActive || plan.status === 'active' ? 'Plan activo' : plan.status === 'completed' ? 'Semana completada' : 'Plan guardado')}
+                  {isActive || plan.status === 'active' ? 'Plan activo' : plan.status === 'completed' ? 'Semana completada' : 'Plan guardado'}
                 </span>
                 {isEditing ? (
                   <>
@@ -596,15 +594,15 @@ const SavedPlansPage: React.FC = () => {
                 </MetaRow>
                 <MetaRow>
                   <FiClock />
-                  {plan.totalMeals} comidas · {plan.estimatedCalories || plan.totalCalories} kcal/{plan.config?.type === 'monthly' ? 'mes' : 'semana'}
-                  {plan.config?.type === 'monthly' && ' · 30 ejercicios personalizados'}
+                  {plan.totalMeals} comidas · {plan.estimatedCalories || plan.totalCalories} kcal/semana
+                  {plan.config?.hasExercises && ' · Ejercicios personalizados'}
                 </MetaRow>
                 <MetaRow>
                   <FiTrendingUp />
                   Objetivo: {plan.config?.goal || 'Personalizado'}
-                  {plan.config?.type === 'monthly' && (
+                  {plan.config?.hasExercises && (
                     <span style={{ marginLeft: '8px', padding: '2px 8px', borderRadius: '6px', background: 'rgba(46, 139, 87, 0.1)', color: theme.colors.primary, fontSize: '11px', fontWeight: 600 }}>
-                      MiNutri Personal
+                      Con Ejercicios
                     </span>
                   )}
                 </MetaRow>

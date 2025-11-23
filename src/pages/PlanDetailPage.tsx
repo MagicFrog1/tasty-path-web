@@ -1759,7 +1759,6 @@ const normalizedMeals = (plan: any) => {
   if (!raw) return [];
   const days = Array.isArray(raw) ? raw : Object.values(raw);
   if (!Array.isArray(days)) return [];
-  const isMonthly = plan?.config?.type === 'monthly';
 
   return days.map((day: any, index: number) => {
     const label = day?.day || day?.title || day?.date || `Día ${day?.dayNumber || index + 1}`;
@@ -1805,8 +1804,8 @@ const normalizedMeals = (plan: any) => {
             }))
       : [];
 
-    // Incluir ejercicio si es plan mensual
-    const exercise = isMonthly && day?.exercise ? {
+    // Incluir ejercicio si existe
+    const exercise = day?.exercise ? {
       name: day.exercise.name || 'Ejercicio del día',
       type: day.exercise.type || 'mixed',
       duration: day.exercise.duration || 45,
@@ -1814,6 +1813,7 @@ const normalizedMeals = (plan: any) => {
       instructions: Array.isArray(day.exercise.instructions) ? day.exercise.instructions : [],
       equipment: Array.isArray(day.exercise.equipment) ? day.exercise.equipment : [],
       recommendations: Array.isArray(day.exercise.recommendations) ? day.exercise.recommendations : [],
+      location: day.exercise.location,
     } : null;
 
     return {
@@ -1822,7 +1822,7 @@ const normalizedMeals = (plan: any) => {
       summary: desc,
       meals: normalizedEntries,
       exercise,
-      tips: isMonthly && day?.tips ? (Array.isArray(day.tips) ? day.tips : []) : null,
+      tips: day?.tips ? (Array.isArray(day.tips) ? day.tips : []) : null,
     };
   });
 };
@@ -1839,6 +1839,7 @@ const PlanDetailPage: React.FC = () => {
   const [selectedDayKey, setSelectedDayKey] = useState<string | null>(null);
 
   const mealsByDay = useMemo(() => (plan ? normalizedMeals(plan) : []), [plan]);
+  const hasExercises = plan?.config?.hasExercises || false;
 
   // Cargar check-ins guardados
   React.useEffect(() => {
@@ -2009,8 +2010,8 @@ const PlanDetailPage: React.FC = () => {
         <h1>{plan.name}</h1>
         <p>
           {plan.description ||
-            (plan.config?.type === 'monthly' 
-              ? 'Plan mensual completo con ejercicios personalizados adaptados a tu edad y objetivos para ayudarte a alcanzar tus metas más rápido.'
+            (hasExercises
+              ? 'Plan semanal con ejercicios personalizados adaptados a tu edad y objetivos para ayudarte a alcanzar tus metas más rápido.'
               : 'Consulta tu menú semanal: todas las comidas respetan tus alergias, preferencias y objetivos nutricionales.')}
         </p>
       </Header>
@@ -2019,7 +2020,7 @@ const PlanDetailPage: React.FC = () => {
         <SummaryCard>
           <SummaryLabel>
             <FiCalendar />
-            {plan.config?.type === 'monthly' ? 'Período del plan' : 'Semana planificada'}
+            Semana planificada
           </SummaryLabel>
           <SummaryValue>
             {formatDate(plan.weekStart)} · {formatDate(plan.weekEnd)}
@@ -2046,11 +2047,11 @@ const PlanDetailPage: React.FC = () => {
             Total estimado
           </SummaryLabel>
           <SummaryValue>
-            {plan.estimatedCalories || plan.totalCalories} kcal / {plan.config?.type === 'monthly' ? 'mes' : 'semana'}
+            {plan.estimatedCalories || plan.totalCalories} kcal / semana
           </SummaryValue>
           <span>
             {plan.totalMeals} comidas programadas
-            {plan.config?.type === 'monthly' && ' + 30 ejercicios personalizados'}
+            {hasExercises && ' + ejercicios personalizados'}
           </span>
         </SummaryCard>
 
@@ -2213,7 +2214,7 @@ const PlanDetailPage: React.FC = () => {
                         })}
                       </MealList>
 
-                      {/* Sección de ejercicios para planes mensuales */}
+                      {/* Sección de ejercicios personalizados */}
                       {day.exercise && (
                         <ExerciseSection>
                           <ExerciseHeader>
@@ -2221,11 +2222,28 @@ const PlanDetailPage: React.FC = () => {
                               <FiActivity />
                               Ejercicio del Día
                             </h4>
-                            <ExerciseTypeBadge type={day.exercise.type}>
-                              {day.exercise.type === 'cardio' ? 'Cardio' : 
-                               day.exercise.type === 'strength' ? 'Fuerza' : 
-                               day.exercise.type === 'flexibility' ? 'Flexibilidad' : 'Mixto'}
-                            </ExerciseTypeBadge>
+                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                              {day.exercise.location && (
+                                <span style={{ 
+                                  padding: '4px 10px', 
+                                  borderRadius: '6px', 
+                                  background: 'rgba(46, 139, 87, 0.1)', 
+                                  color: theme.colors.primary, 
+                                  fontSize: '11px', 
+                                  fontWeight: 600,
+                                  textTransform: 'uppercase'
+                                }}>
+                                  {day.exercise.location === 'gym' ? '🏋️ Gimnasio' : 
+                                   day.exercise.location === 'park' ? '🌳 Parque' : 
+                                   '🏠 Casa'}
+                                </span>
+                              )}
+                              <ExerciseTypeBadge type={day.exercise.type}>
+                                {day.exercise.type === 'cardio' ? 'Cardio' : 
+                                 day.exercise.type === 'strength' ? 'Fuerza' : 
+                                 day.exercise.type === 'flexibility' ? 'Flexibilidad' : 'Mixto'}
+                              </ExerciseTypeBadge>
+                            </div>
                           </ExerciseHeader>
                           
                           <ExerciseDescription>
@@ -2287,7 +2305,7 @@ const PlanDetailPage: React.FC = () => {
                         </ExerciseSection>
                       )}
 
-                      {/* Sección de tips para planes mensuales */}
+                      {/* Sección de tips */}
                       {day.tips && day.tips.length > 0 && (
                         <TipsSection>
                           <h5>
