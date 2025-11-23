@@ -368,8 +368,9 @@ const MiNutriPersonalPage: React.FC = () => {
       );
 
       // Agregar ejercicios al plan
-      const updatedMeals = plan.meals?.map((day: any) => {
-        const dayNumber = day?.dayNumber || day?.day || 0;
+      const mealsArray = Array.isArray(plan.meals) ? plan.meals : Object.values(plan.meals || {});
+      const updatedMeals = mealsArray.map((day: any, index: number) => {
+        const dayNumber = index + 1; // Usar índice basado en 1
         const dayExercise = exercises.find((ex: any) => ex.dayNumber === dayNumber);
         if (dayExercise) {
           return {
@@ -388,7 +389,7 @@ const MiNutriPersonalPage: React.FC = () => {
           };
         }
         return day;
-      }) || [];
+      });
       
       const updatedPlan = {
         ...plan,
@@ -405,8 +406,8 @@ const MiNutriPersonalPage: React.FC = () => {
       setShowSuccess(true);
       setTimeout(() => {
         setShowSuccess(false);
-        navigate(`/planes/${selectedPlanId}`);
-      }, 3000);
+        navigate(`/plan/${selectedPlanId}`);
+      }, 2000);
 
     } catch (error: any) {
       console.error('Error generando ejercicios:', error);

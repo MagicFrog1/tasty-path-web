@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import styled from 'styled-components';
 import { Link } from 'react-router-dom';
-import { FiCalendar, FiClock, FiTrendingUp, FiChevronRight, FiTrash2, FiPlay, FiEdit, FiCheck, FiX, FiAward } from 'react-icons/fi';
+import { FiCalendar, FiClock, FiTrendingUp, FiChevronRight, FiTrash2, FiPlay, FiEdit, FiCheck, FiX, FiAward, FiActivity } from 'react-icons/fi';
 import { TbCrown } from 'react-icons/tb';
 import { useWeeklyPlan } from '../context/WeeklyPlanContext';
 import { theme } from '../styles/theme';
@@ -657,9 +657,41 @@ const SavedPlansPage: React.FC = () => {
               </PlanActions>
 
               <Footer>
-                <PlanLink to={`/plan/${plan.id}`}>
-                  Ver menú completo <FiChevronRight />
-                </PlanLink>
+                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
+                  <PlanLink to={`/plan/${plan.id}`}>
+                    Ver menú completo <FiChevronRight />
+                  </PlanLink>
+                  {plan.config?.hasExercises && (
+                    <PlanLink 
+                      to={`/plan/${plan.id}`}
+                      style={{ 
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        padding: '8px 16px',
+                        borderRadius: '10px',
+                        background: 'linear-gradient(135deg, rgba(46, 139, 87, 0.1) 0%, rgba(34, 197, 94, 0.08) 100%)',
+                        border: '1.5px solid rgba(46, 139, 87, 0.3)',
+                        color: theme.colors.primary,
+                        fontWeight: 600,
+                        fontSize: '14px',
+                        textDecoration: 'none',
+                        transition: 'all 0.2s ease'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'translateY(-2px)';
+                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(46, 139, 87, 0.2)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = 'none';
+                      }}
+                    >
+                      <FiActivity />
+                      Ver ejercicios
+                    </PlanLink>
+                  )}
+                </div>
               </Footer>
             </PlanCard>
           );
