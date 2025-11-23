@@ -2027,19 +2027,36 @@ const PlanDetailPage: React.FC = () => {
           </SummaryValue>
         </SummaryCard>
 
-        <SummaryCard>
-          <SummaryLabel>
-            <FiTarget />
-            Objetivo nutricional
-          </SummaryLabel>
-          <SummaryValue>{plan.config?.goal || 'Personalizado'}</SummaryValue>
-          <MealMeta>
-            <span>Proteínas: {plan.nutritionGoals?.protein ?? 0}%</span>
-            <span>Carbohidratos: {plan.nutritionGoals?.carbs ?? 0}%</span>
-            <span>Grasas: {plan.nutritionGoals?.fat ?? 0}%</span>
-            <span>Fibra: {plan.nutritionGoals?.fiber ?? 0}%</span>
-          </MealMeta>
-        </SummaryCard>
+        {hasExercises ? (
+          <SummaryCard>
+            <SummaryLabel>
+              <FiActivity />
+              Ejercicios personalizados
+            </SummaryLabel>
+            <SummaryValue>
+              {mealsByDay.filter(day => day.exercise).length} ejercicios
+            </SummaryValue>
+            <MealMeta>
+              <span>Adaptados a tu edad</span>
+              <span>Según tu objetivo</span>
+              <span>{plan.config?.goal || 'Personalizado'}</span>
+            </MealMeta>
+          </SummaryCard>
+        ) : (
+          <SummaryCard>
+            <SummaryLabel>
+              <FiTarget />
+              Objetivo nutricional
+            </SummaryLabel>
+            <SummaryValue>{plan.config?.goal || 'Personalizado'}</SummaryValue>
+            <MealMeta>
+              <span>Proteínas: {plan.nutritionGoals?.protein ?? 0}%</span>
+              <span>Carbohidratos: {plan.nutritionGoals?.carbs ?? 0}%</span>
+              <span>Grasas: {plan.nutritionGoals?.fat ?? 0}%</span>
+              <span>Fibra: {plan.nutritionGoals?.fiber ?? 0}%</span>
+            </MealMeta>
+          </SummaryCard>
+        )}
 
         <SummaryCard>
           <SummaryLabel>
