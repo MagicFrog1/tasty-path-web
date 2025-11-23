@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import styled from 'styled-components';
-import { FiDownloadCloud, FiFilter, FiRefreshCw, FiShoppingCart, FiTag, FiCalendar } from 'react-icons/fi';
+import { FiDownloadCloud, FiFilter, FiRefreshCw, FiShoppingCart, FiTag, FiCalendar, FiLock } from 'react-icons/fi';
 import jsPDF from 'jspdf';
 import { useNavigate } from 'react-router-dom';
 import { useShoppingList } from '../context/ShoppingListContext';
@@ -270,6 +270,68 @@ const ItemNotes = styled.div`
   color: ${theme.colors.textSecondary};
 `;
 
+const PremiumLock = styled.div`
+  text-align: center;
+  padding: 48px 24px;
+  background: ${theme.colors.white};
+  border-radius: 24px;
+  box-shadow: ${theme.shadows.md};
+  border: 1px solid rgba(46, 139, 87, 0.1);
+  
+  svg {
+    font-size: 64px;
+    color: ${theme.colors.primary};
+    margin-bottom: 24px;
+  }
+  
+  h3 {
+    margin: 0 0 16px 0;
+    font-size: 24px;
+    font-weight: 700;
+    color: ${theme.colors.primaryDark};
+  }
+  
+  p {
+    margin: 0 0 24px 0;
+    color: ${theme.colors.textSecondary};
+    line-height: 1.6;
+    max-width: 500px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  
+  button {
+    padding: 14px 28px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, ${theme.colors.primary} 0%, rgba(34, 197, 94, 0.9) 100%);
+    color: white;
+    font-weight: 600;
+    font-size: 16px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(46, 139, 87, 0.3);
+    }
+  }
+`;
+
+const PremiumBadge = styled.div`
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(46, 139, 87, 0.1) 0%, rgba(34, 197, 94, 0.08) 100%);
+  border: 1.5px solid rgba(46, 139, 87, 0.3);
+  color: ${theme.colors.primary};
+  font-weight: 600;
+  font-size: 12px;
+  margin-bottom: 16px;
+`;
+
 const EmptyState = styled.div`
   padding: 60px;
   border-radius: 30px;
@@ -293,23 +355,7 @@ const ShoppingListPage: React.FC = () => {
   const [selectedPlan, setSelectedPlan] = useState<string>('todos');
 
   // Verificar si el usuario tiene plan premium
-  const isPremium = currentPlan && ['weekly', 'monthly', 'annual'].includes(currentPlan.plan);
-
-  // Si no es premium, redirigir a suscripción
-  if (!isPremium) {
-    return (
-      <PageWrapper>
-        <EmptyState>
-          <h3>Lista de Compras Premium</h3>
-          <p>La lista de compras inteligente está disponible solo para usuarios Premium.</p>
-          <p>Actualiza tu plan para acceder a esta funcionalidad.</p>
-          <EmptyStateButton onClick={() => navigate('/suscripcion')} style={{ marginTop: '20px' }}>
-            Ver Planes Premium
-          </EmptyStateButton>
-        </EmptyState>
-      </PageWrapper>
-    );
-  }
+  const isPremium = currentPlan && currentPlan.plan !== 'free' && currentPlan.isActive;
 
   const filteredItems = useMemo(
     () =>
@@ -505,8 +551,28 @@ const ShoppingListPage: React.FC = () => {
       <Header>
         <h1>Lista de Compras</h1>
         <p>Consulta los ingredientes organizados por categoría y marca los que ya tengas. Descarga la lista en PDF para llevarla contigo.</p>
+        {isPremium && (
+          <PremiumBadge>
+            <FiLock />
+            Función Premium Activa
+          </PremiumBadge>
+        )}
       </Header>
 
+      {!isPremium ? (
+        <PremiumLock>
+          <FiLock />
+          <h3>Función Premium</h3>
+          <p>
+            La lista de compras inteligente es una función exclusiva para usuarios Premium. 
+            Suscríbete para acceder a listas organizadas automáticamente por categorías.
+          </p>
+          <button onClick={() => navigate('/suscripcion')}>
+            Ver Planes Premium
+          </button>
+        </PremiumLock>
+      ) : (
+        <>
       <SummaryBar>
         <SummaryCard>
           <span>Total de ingredientes</span>
@@ -636,6 +702,8 @@ const ShoppingListPage: React.FC = () => {
             </div>
           ))}
         </CategoryColumn>
+      )}
+        </>
       )}
     </PageWrapper>
   );

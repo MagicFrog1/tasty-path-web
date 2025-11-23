@@ -1,6 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
-import { FiMessageCircle } from 'react-icons/fi';
+import { FiMessageCircle, FiLock, FiAlertCircle } from 'react-icons/fi';
+import { useNavigate } from 'react-router-dom';
 import { theme } from '../styles/theme';
 import { useSubscription } from '../context/SubscriptionContext';
 import { useUserProfile } from '../context/UserProfileContext';
@@ -63,9 +64,71 @@ const Card = styled.div`
   }
 `;
 
+const PremiumLock = styled.div`
+  text-align: center;
+  padding: 48px 24px;
+  
+  svg {
+    font-size: 64px;
+    color: ${theme.colors.primary};
+    margin-bottom: 24px;
+  }
+  
+  h3 {
+    margin: 0 0 16px 0;
+    font-size: 24px;
+    font-weight: 700;
+    color: ${theme.colors.primaryDark};
+  }
+  
+  p {
+    margin: 0 0 24px 0;
+    color: ${theme.colors.textSecondary};
+    line-height: 1.6;
+    max-width: 500px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  
+  button {
+    padding: 14px 28px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, ${theme.colors.primary} 0%, rgba(34, 197, 94, 0.9) 100%);
+    color: white;
+    font-weight: 600;
+    font-size: 16px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(46, 139, 87, 0.3);
+    }
+  }
+`;
+
+const PremiumBadge = styled.div`
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(46, 139, 87, 0.1) 0%, rgba(34, 197, 94, 0.08) 100%);
+  border: 1.5px solid rgba(46, 139, 87, 0.3);
+  color: ${theme.colors.primary};
+  font-weight: 600;
+  font-size: 12px;
+  margin-bottom: 16px;
+`;
+
 const NutriChatPage: React.FC = () => {
   const { currentPlan } = useSubscription();
   const { profile } = useUserProfile();
+  const navigate = useNavigate();
+
+  // Verificar si el usuario tiene plan premium
+  const isPremium = currentPlan && currentPlan.plan !== 'free' && currentPlan.isActive;
 
   // Obtener información del roadmap si existe
   const roadmap = minutriService.getRoadmap();
@@ -95,14 +158,34 @@ const NutriChatPage: React.FC = () => {
           Tu asistente virtual especializado en alimentación y nutrición. 
           Basado en fuentes médicas verificadas y evidencia científica.
         </Subtitle>
+        {isPremium && (
+          <PremiumBadge>
+            <FiLock />
+            Función Premium Activa
+          </PremiumBadge>
+        )}
       </Header>
 
       <Card>
-        <NutriChat
-          adherence={adherence}
-          currentDay={currentDay}
-          totalDays={activeModule ? 30 : 1}
-        />
+        {isPremium ? (
+          <NutriChat
+            adherence={adherence}
+            currentDay={currentDay}
+            totalDays={activeModule ? 30 : 1}
+          />
+        ) : (
+          <PremiumLock>
+            <FiLock />
+            <h3>Función Premium</h3>
+            <p>
+              NutriChat es una función exclusiva para usuarios Premium. 
+              Suscríbete para acceder a tu asistente virtual especializado en nutrición y alimentación.
+            </p>
+            <button onClick={() => navigate('/suscripcion')}>
+              Ver Planes Premium
+            </button>
+          </PremiumLock>
+        )}
       </Card>
     </PageWrapper>
   );
