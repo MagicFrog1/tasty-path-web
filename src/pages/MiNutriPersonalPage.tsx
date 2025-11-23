@@ -329,9 +329,6 @@ const MiNutriPersonalPage: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
 
-  // Verificar si el usuario tiene plan premium
-  const isPremium = currentPlan && currentPlan.plan !== 'free' && currentPlan.isActive;
-
   // Filtrar solo planes semanales (no mensuales)
   const weeklyPlansOnly = weeklyPlans.filter(plan => plan.config?.type !== 'monthly');
 
@@ -419,36 +416,6 @@ const MiNutriPersonalPage: React.FC = () => {
     }
   };
 
-  if (!isPremium) {
-    return (
-      <PageWrapper>
-        <Header>
-          <Title>
-            <FiTarget style={{ marginRight: '12px', display: 'inline-block' }} />
-            MiNutri Personal
-          </Title>
-          <Subtitle>
-            Complementa tus planes semanales con ejercicios personalizados adaptados a gimnasio, parques y casa
-          </Subtitle>
-        </Header>
-
-        <Card>
-          <PremiumRequired>
-            <FiAlertCircle style={{ fontSize: '48px', color: theme.colors.primary, marginBottom: '16px' }} />
-            <h3>Función Premium</h3>
-            <p>
-              MiNutri Personal es una función exclusiva para usuarios Premium. 
-              Suscríbete para acceder a ejercicios personalizados que complementan tus planes semanales.
-            </p>
-            <button onClick={() => navigate('/suscripcion')}>
-              Ver Planes Premium
-            </button>
-          </PremiumRequired>
-        </Card>
-      </PageWrapper>
-    );
-  }
-
   if (weeklyPlansOnly.length === 0) {
     return (
       <PageWrapper>
@@ -501,10 +468,6 @@ const MiNutriPersonalPage: React.FC = () => {
           </Subtitle>
         </Header>
 
-        <PremiumBadge>
-          <FiCheckCircle />
-          Función Premium - Ejercicios Personalizados
-        </PremiumBadge>
 
         <Card>
           <PlanSelector>

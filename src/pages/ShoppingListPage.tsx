@@ -559,20 +559,6 @@ const ShoppingListPage: React.FC = () => {
         )}
       </Header>
 
-      {!isPremium ? (
-        <PremiumLock>
-          <FiLock />
-          <h3>Función Premium</h3>
-          <p>
-            La lista de compras inteligente es una función exclusiva para usuarios Premium. 
-            Suscríbete para acceder a listas organizadas automáticamente por categorías.
-          </p>
-          <button onClick={() => navigate('/suscripcion')}>
-            Ver Planes Premium
-          </button>
-        </PremiumLock>
-      ) : (
-        <>
       <SummaryBar>
         <SummaryCard>
           <span>Total de ingredientes</span>
@@ -702,8 +688,6 @@ const ShoppingListPage: React.FC = () => {
             </div>
           ))}
         </CategoryColumn>
-      )}
-        </>
       )}
     </PageWrapper>
   );

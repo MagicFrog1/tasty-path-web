@@ -167,25 +167,11 @@ const NutriChatPage: React.FC = () => {
       </Header>
 
       <Card>
-        {isPremium ? (
-          <NutriChat
-            adherence={adherence}
-            currentDay={currentDay}
-            totalDays={activeModule ? 30 : 1}
-          />
-        ) : (
-          <PremiumLock>
-            <FiLock />
-            <h3>Función Premium</h3>
-            <p>
-              NutriChat es una función exclusiva para usuarios Premium. 
-              Suscríbete para acceder a tu asistente virtual especializado en nutrición y alimentación.
-            </p>
-            <button onClick={() => navigate('/suscripcion')}>
-              Ver Planes Premium
-            </button>
-          </PremiumLock>
-        )}
+        <NutriChat
+          adherence={adherence}
+          currentDay={currentDay}
+          totalDays={activeModule ? 30 : 1}
+        />
       </Card>
     </PageWrapper>
   );
