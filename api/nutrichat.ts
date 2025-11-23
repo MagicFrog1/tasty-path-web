@@ -6,19 +6,19 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
  * y mantener la API key segura en el servidor
  */
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // Solo permitir métodos POST
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
   // Configurar CORS headers para permitir requests desde el frontend
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  // Manejar preflight requests
+  // Manejar preflight requests (OPTIONS)
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
+  }
+
+  // Solo permitir métodos POST después de manejar OPTIONS
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
