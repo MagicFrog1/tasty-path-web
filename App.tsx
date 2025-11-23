@@ -14,6 +14,7 @@ const ProfilePage = React.lazy(() => import('./src/pages/ProfilePage'));
 const SubscriptionPage = React.lazy(() => import('./src/pages/SubscriptionPage'));
 const SavedPlansPage = React.lazy(() => import('./src/pages/SavedPlansPage'));
 const PlanDetailPage = React.lazy(() => import('./src/pages/PlanDetailPage'));
+const ExercisePlanPage = React.lazy(() => import('./src/pages/ExercisePlanPage'));
 const MedicalSourcesPage = React.lazy(() => import('./src/pages/MedicalSourcesPage'));
 const MiNutriPersonalPage = React.lazy(() => import('./src/pages/MiNutriPersonalPage'));
 const NutriChatPage = React.lazy(() => import('./src/pages/NutriChatPage'));
@@ -63,6 +64,7 @@ const AppRoutes: React.FC = () => {
           <Route path="/suscripcion" element={<SubscriptionPage />} />
           <Route path="/planes" element={<SavedPlansPage />} />
           <Route path="/plan/:planId" element={<PlanDetailPage />} />
+          <Route path="/plan/:planId/ejercicios" element={<ExercisePlanPage />} />
           <Route path="/fuentes-medicas" element={<MedicalSourcesPage />} />
           <Route path="/terminos" element={<TermsPage />} />
           <Route path="/privacidad" element={<PrivacyPage />} />

@@ -663,7 +663,7 @@ const SavedPlansPage: React.FC = () => {
                   </PlanLink>
                   {plan.config?.hasExercises && (
                     <PlanLink 
-                      to={`/plan/${plan.id}`}
+                      to={`/plan/${plan.id}/ejercicios`}
                       style={{ 
                         display: 'inline-flex',
                         alignItems: 'center',
