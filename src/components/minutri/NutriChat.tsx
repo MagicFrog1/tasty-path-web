@@ -337,29 +337,29 @@ Responde de forma natural y conversacional, como lo haría un nutricionista huma
 
       // Fallback: Respuestas básicas más naturales si la IA no está disponible
       const lowerMessage = userMessage.toLowerCase();
-      let response = '';
+      let fallbackResponse = '';
       
       // Saludos simples
       if (lowerMessage.includes('hola') || lowerMessage.includes('buenos días') || lowerMessage.includes('buenas tardes') || lowerMessage.includes('buenas noches') || lowerMessage === 'hi' || lowerMessage === 'hello') {
-        response = '¡Hola! 👋 Me alegra saludarte. ¿En qué puedo ayudarte con tu nutrición hoy?';
+        fallbackResponse = '¡Hola! 👋 Me alegra saludarte. ¿En qué puedo ayudarte con tu nutrición hoy?';
       } else if (lowerMessage.includes('gracias') || lowerMessage.includes('thanks')) {
-        response = '¡De nada! 😊 Estoy aquí para ayudarte siempre que lo necesites. ¿Hay algo más sobre nutrición en lo que pueda asistirte?';
+        fallbackResponse = '¡De nada! 😊 Estoy aquí para ayudarte siempre que lo necesites. ¿Hay algo más sobre nutrición en lo que pueda asistirte?';
       } else if (lowerMessage.includes('adiós') || lowerMessage.includes('hasta luego') || lowerMessage.includes('bye')) {
-        response = '¡Hasta luego! 👋 Recuerda que estoy aquí cuando necesites ayuda con tu nutrición. ¡Que tengas un excelente día!';
+        fallbackResponse = '¡Hasta luego! 👋 Recuerda que estoy aquí cuando necesites ayuda con tu nutrición. ¡Que tengas un excelente día!';
       } else if (lowerMessage.includes('cómo estás') || lowerMessage.includes('qué tal')) {
-        response = '¡Muy bien, gracias por preguntar! 😊 Estoy aquí para ayudarte con todo lo relacionado con nutrición. ¿En qué puedo asistirte?';
+        fallbackResponse = '¡Muy bien, gracias por preguntar! 😊 Estoy aquí para ayudarte con todo lo relacionado con nutrición. ¿En qué puedo asistirte?';
       } else if (lowerMessage.includes('comida') || lowerMessage.includes('alimento') || lowerMessage.includes('ingrediente') || lowerMessage.includes('receta')) {
-        response = 'Tu plan nutricional está diseñado específicamente para ayudarte a alcanzar tus objetivos. Cada comida está balanceada con los macronutrientes necesarios. ¿Quieres saber más sobre algún ingrediente específico o sobre cómo preparar alguna receta?';
+        fallbackResponse = 'Tu plan nutricional está diseñado específicamente para ayudarte a alcanzar tus objetivos. Cada comida está balanceada con los macronutrientes necesarios. ¿Quieres saber más sobre algún ingrediente específico o sobre cómo preparar alguna receta?';
       } else if (lowerMessage.includes('nutrición') || lowerMessage.includes('dieta') || lowerMessage.includes('calorías')) {
-        response = 'La nutrición es fundamental para alcanzar tus objetivos. Tu plan está diseñado con las calorías y macronutrientes adecuados para tu meta. ¿Hay algún aspecto específico de la nutrición que te gustaría conocer mejor?';
+        fallbackResponse = 'La nutrición es fundamental para alcanzar tus objetivos. Tu plan está diseñado con las calorías y macronutrientes adecuados para tu meta. ¿Hay algún aspecto específico de la nutrición que te gustaría conocer mejor?';
       } else if (lowerMessage.includes('adherencia') || lowerMessage.includes('progreso')) {
-        response = 'Tu adherencia actual es del ' + adherence + '%. Para mejorar, te sugiero: 1) Planificar tus comidas con anticipación, 2) Preparar ingredientes con antelación, 3) Seguir las recetas del plan. ¿Quieres que te ayude a mejorar algún aspecto específico de tu alimentación?';
+        fallbackResponse = 'Tu adherencia actual es del ' + adherence + '%. Para mejorar, te sugiero: 1) Planificar tus comidas con anticipación, 2) Preparar ingredientes con antelación, 3) Seguir las recetas del plan. ¿Quieres que te ayude a mejorar algún aspecto específico de tu alimentación?';
       } else {
         // Respuesta genérica más amigable
-        response = 'Entiendo tu pregunta. Aunque puedo ayudarte mejor con temas de nutrición y alimentación, estaré encantado de responder. ¿Podrías reformular tu pregunta relacionándola con nutrición, o tienes alguna duda específica sobre tu plan alimenticio?';
+        fallbackResponse = 'Entiendo tu pregunta. Aunque puedo ayudarte mejor con temas de nutrición y alimentación, estaré encantado de responder. ¿Podrías reformular tu pregunta relacionándola con nutrición, o tienes alguna duda específica sobre tu plan alimenticio?';
       }
 
-      setMessages(prev => [...prev, { text: response, isUser: false }]);
+      setMessages(prev => [...prev, { text: fallbackResponse, isUser: false }]);
       setIsTyping(false);
     } catch (error: any) {
       console.error('Error en NutriChat:', error);
