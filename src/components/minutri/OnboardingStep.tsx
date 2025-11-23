@@ -136,6 +136,7 @@ interface OnboardingStepProps {
     targetValue: number;
     currentValue: number;
     timeframe: number; // en meses
+    age: number;
     validated: boolean;
     adjustedGoal?: { value: number; timeframe: number };
   }) => void;
@@ -146,6 +147,7 @@ const OnboardingStep: React.FC<OnboardingStepProps> = ({ onComplete }) => {
   const [targetValue, setTargetValue] = useState<string>('');
   const [currentValue, setCurrentValue] = useState<string>('');
   const [timeframe, setTimeframe] = useState<string>('3');
+  const [age, setAge] = useState<string>('');
   const [validation, setValidation] = useState<{
     type: 'success' | 'warning' | 'error';
     title: string;
@@ -155,7 +157,7 @@ const OnboardingStep: React.FC<OnboardingStepProps> = ({ onComplete }) => {
   const [isValidating, setIsValidating] = useState(false);
 
   const handleValidate = async () => {
-    if (!targetValue || !currentValue || !timeframe) {
+    if (!targetValue || !currentValue || !timeframe || !age) {
       alert('Por favor, completa todos los campos');
       return;
     }
@@ -239,6 +241,7 @@ const OnboardingStep: React.FC<OnboardingStepProps> = ({ onComplete }) => {
       targetValue: adjusted.value,
       currentValue: parseFloat(currentValue),
       timeframe: adjusted.timeframe,
+      age: parseFloat(age),
       validated: true,
       adjustedGoal: validation.adjustedGoal,
     });
@@ -294,6 +297,18 @@ const OnboardingStep: React.FC<OnboardingStepProps> = ({ onComplete }) => {
             <option value="5">5 meses</option>
             <option value="6">6 meses</option>
           </Select>
+        </FormGroup>
+
+        <FormGroup>
+          <Label>Edad</Label>
+          <Input
+            type="number"
+            min="12"
+            max="100"
+            value={age}
+            onChange={(e) => setAge(e.target.value)}
+            placeholder="Ej: 30"
+          />
         </FormGroup>
 
         <Button onClick={handleValidate} disabled={isValidating}>

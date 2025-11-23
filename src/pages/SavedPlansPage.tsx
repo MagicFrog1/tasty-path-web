@@ -394,9 +394,9 @@ const SavedPlansPage: React.FC = () => {
       <PageWrapper>
         <Header>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16 }}>
-            <h1>Mis Planes Semanales</h1>
+            <h1>Mis Planes Guardados</h1>
           </div>
-          <p>Aún no has generado ningún plan semanal. Crea tu primer plan con IA para comenzar a organizar tus comidas.</p>
+          <p>Aún no has generado ningún plan. Crea tu primer plan semanal o mensual con IA para comenzar a organizar tus comidas y ejercicios.</p>
         </Header>
         <EmptyState>
           <h3>Empieza con tu primer plan</h3>
@@ -518,7 +518,7 @@ const SavedPlansPage: React.FC = () => {
             </ActionButton>
           </div>
         </div>
-        <p>Revisa tus planes semanales generados por IA, consulta el menú de cada día y mantén tus objetivos siempre visibles.</p>
+        <p>Revisa tus planes generados por IA (semanales y mensuales), consulta el menú de cada día, ejercicios personalizados y mantén tus objetivos siempre visibles.</p>
       </Header>
 
       <PlanGrid>
@@ -540,7 +540,11 @@ const SavedPlansPage: React.FC = () => {
                 </div>
               )}
               <PlanHeader>
-                <span>{isActive || plan.status === 'active' ? 'Plan activo' : plan.status === 'completed' ? 'Semana completada' : 'Plan guardado'}</span>
+                <span>
+                  {plan.config?.type === 'monthly' 
+                    ? (isActive || plan.status === 'active' ? 'Plan mensual activo' : plan.status === 'completed' ? 'Mes completado' : 'Plan mensual guardado')
+                    : (isActive || plan.status === 'active' ? 'Plan activo' : plan.status === 'completed' ? 'Semana completada' : 'Plan guardado')}
+                </span>
                 {isEditing ? (
                   <>
                     <RenameForm
@@ -592,11 +596,17 @@ const SavedPlansPage: React.FC = () => {
                 </MetaRow>
                 <MetaRow>
                   <FiClock />
-                  {plan.totalMeals} comidas · {plan.estimatedCalories || plan.totalCalories} kcal/semana
+                  {plan.totalMeals} comidas · {plan.estimatedCalories || plan.totalCalories} kcal/{plan.config?.type === 'monthly' ? 'mes' : 'semana'}
+                  {plan.config?.type === 'monthly' && ' · 30 ejercicios personalizados'}
                 </MetaRow>
                 <MetaRow>
                   <FiTrendingUp />
                   Objetivo: {plan.config?.goal || 'Personalizado'}
+                  {plan.config?.type === 'monthly' && (
+                    <span style={{ marginLeft: '8px', padding: '2px 8px', borderRadius: '6px', background: 'rgba(46, 139, 87, 0.1)', color: theme.colors.primary, fontSize: '11px', fontWeight: 600 }}>
+                      MiNutri Personal
+                    </span>
+                  )}
                 </MetaRow>
               </Meta>
 

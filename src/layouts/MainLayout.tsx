@@ -450,7 +450,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ title, subtitle }) => {
   const menuItems = [
     { to: '/dashboard', label: 'Panel Principal', icon: <FiHome /> },
     { to: '/planes', label: 'Planes Guardados', icon: <FiCalendar /> },
-    { to: '/generador', label: 'Generador IA', icon: <FaKitchenSet /> },
+    { to: '/generador', label: 'Generador Semanal', icon: <FaKitchenSet /> },
     ...(isPremium ? [{ to: '/lista-compra', label: 'Lista de Compras', icon: <FiShoppingCart /> }] : []),
       { to: '/minutri-personal', label: 'MiNutri Personal', icon: <FiTarget /> },
       { to: '/nutrichat', label: 'NutriChat', icon: <FiMessageCircle /> },

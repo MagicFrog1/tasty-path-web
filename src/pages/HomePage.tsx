@@ -905,7 +905,7 @@ const HomePage: React.FC = () => {
   };
 
   const entries = [
-    { to: '/generador', title: 'Generar Plan Semanal', subtitle: 'Crea menús con IA' },
+    { to: '/generador', title: 'Generador Semanal', subtitle: 'Crea menús con IA' },
     { to: '/planes', title: 'Mis Planes', subtitle: 'Revisa, edita y reutiliza' },
     { to: '/lista-compra', title: 'Lista de Compras', subtitle: 'Ordena tu compra automáticamente' },
     { to: '/suscripcion', title: 'Suscripción', subtitle: 'Desbloquea funciones premium' },

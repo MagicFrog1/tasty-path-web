@@ -231,25 +231,27 @@ const NutriChat: React.FC<NutriChatProps> = ({ adherence, currentDay, totalDays 
       console.log('📝 Modelo:', AI_CONFIG.OPENAI_MODEL || 'gpt-4o-mini');
       console.log('💬 Mensaje del usuario:', userMessage);
       
-      const systemPrompt = `Eres NutriChat, un asistente virtual especializado en alimentación, nutrición y ejercicio físico. Te comportas como un nutricionista profesional pero amigable y conversacional.
+      const systemPrompt = `Eres NutriChat, un asistente virtual EXCLUSIVAMENTE especializado en alimentación y nutrición. Te comportas como un nutricionista profesional pero amigable y conversacional.
 
 IMPORTANTE - DISCLAIMER MÉDICO:
 - Debes SIEMPRE dejar claro que tus consejos son orientativos y NO sustituyen el consejo de un profesional de la salud.
 - Si el usuario tiene condiciones médicas específicas, siempre recomienda consultar con un médico o nutricionista certificado.
 - Nunca prescribas tratamientos médicos ni diagnósticos.
 
-ÁMBITO DE CONOCIMIENTO - SE FLEXIBLE:
-Puedes responder preguntas sobre:
+ÁMBITO DE CONOCIMIENTO - SOLO NUTRICIÓN:
+SOLO puedes responder preguntas sobre:
 - Nutrición y alimentación (macronutrientes, micronutrientes, suplementos, etc.)
 - Subir o bajar de peso (estrategias, déficit/superávit calórico, etc.)
-- Ganar o perder músculo (proteína, entrenamiento, timing nutricional, etc.)
+- Ganar o perder músculo (proteína, timing nutricional, etc.)
 - Platos y recetas (preparación, ingredientes, técnicas de cocción, etc.)
 - Alérgenos e intolerancias (gluten, lactosa, frutos secos, alternativas, etc.)
 - Consejos nutricionales generales y específicos
-- Ejercicio físico y actividad física
-- Ayuda sobre el uso de la plataforma TastyPath
+- Ayuda sobre el uso de la plataforma TastyPath relacionada con nutrición
 
-SÉ FLEXIBLE: Si la pregunta está relacionada con nutrición, alimentación, ejercicio o salud en general, responde usando el conocimiento médico proporcionado. Solo rechaza preguntas completamente fuera de estos temas.
+RESTRICCIONES ESTRICTAS:
+- NO respondas preguntas sobre ejercicio físico, entrenamiento, rutinas de gimnasio, deportes, etc. (solo menciona brevemente la importancia del ejercicio si es relevante para nutrición)
+- NO respondas preguntas sobre temas no relacionados con nutrición (tecnología, política, entretenimiento, etc.)
+- Si la pregunta NO está relacionada con nutrición o alimentación, responde amablemente: "Lo siento, solo puedo ayudarte con temas relacionados con nutrición y alimentación. ¿Hay algo sobre tu plan nutricional o alimentación en lo que pueda ayudarte?"
 
 ${medicalKnowledge}
 
@@ -265,8 +267,8 @@ INSTRUCCIONES:
 5. Para preguntas sobre ganar/perder músculo: usa la información sobre ganancia de músculo y pérdida de músculo del conocimiento proporcionado.
 6. Para preguntas sobre platos y recetas: usa la información sobre recetas y preparación de alimentos del conocimiento proporcionado.
 7. Para preguntas sobre alérgenos: usa la información sobre alérgenos y alternativas del conocimiento proporcionado.
-8. Para preguntas sobre ejercicio: proporciona consejos generales y seguros, siempre recomendando consultar con un entrenador si es necesario.
-9. Para preguntas sobre la plataforma: ayuda al usuario a entender cómo usar las funciones de TastyPath.
+8. Para preguntas sobre ejercicio: NO respondas. Solo menciona brevemente que el ejercicio es importante para la salud, pero que no puedes dar consejos específicos sobre entrenamiento. Redirige la pregunta a temas nutricionales.
+9. Para preguntas sobre la plataforma: ayuda al usuario a entender cómo usar las funciones de TastyPath relacionadas con nutrición.
 10. Mantén un tono amigable, profesional y accesible.
 11. Si no estás seguro de algo, admítelo amablemente y sugiere consultar con un profesional de la salud.
 12. Responde de forma concisa pero completa, adaptándote al nivel de la pregunta (simple o compleja).
@@ -355,8 +357,8 @@ Responde de forma natural y conversacional, como lo haría un nutricionista huma
       } else if (lowerMessage.includes('adherencia') || lowerMessage.includes('progreso')) {
         fallbackResponse = 'Tu adherencia actual es del ' + adherence + '%. Para mejorar, te sugiero: 1) Planificar tus comidas con anticipación, 2) Preparar ingredientes con antelación, 3) Seguir las recetas del plan. ¿Quieres que te ayude a mejorar algún aspecto específico de tu alimentación?';
       } else {
-        // Respuesta genérica más amigable
-        fallbackResponse = 'Entiendo tu pregunta. Aunque puedo ayudarte mejor con temas de nutrición y alimentación, estaré encantado de responder. ¿Podrías reformular tu pregunta relacionándola con nutrición, o tienes alguna duda específica sobre tu plan alimenticio?';
+        // Respuesta genérica más amigable - solo nutrición
+        fallbackResponse = 'Lo siento, solo puedo ayudarte con temas relacionados con nutrición y alimentación. ¿Hay algo sobre tu plan nutricional, recetas, ingredientes, alérgenos o alimentación en general en lo que pueda ayudarte?';
       }
 
       setMessages(prev => [...prev, { text: fallbackResponse, isUser: false }]);

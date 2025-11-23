@@ -55,6 +55,7 @@ export const generateModuleContent = async (
     targetValue: number;
     currentValue: number;
     timeframe: number;
+    age?: number;
   },
   userProfile: {
     weight?: number;
@@ -93,7 +94,7 @@ export const generateModuleContent = async (
   
   // Optimización: Generar menús por semanas (4 semanas de 7 días cada una)
   // Esto reduce las llamadas a la IA de 30 a solo 4
-  if (onProgress) onProgress(1, 6, 'Generando plan mensual completo...');
+  if (onProgress) onProgress(1, 6, 'Generando plan mensual completo con ejercicios personalizados...');
   
   const weeksToGenerate = 4; // 4 semanas de 7 días = 28 días, luego agregamos 2 días más
   const allMeals: { breakfast: DailyMeal; lunch: DailyMeal; dinner: DailyMeal }[] = [];
@@ -223,7 +224,18 @@ export const generateModuleContent = async (
     date.setDate(date.getDate() + ((moduleId - 1) * 30) + (day - 1));
     
     const meals = allMeals[day - 1];
-    const exercise = generateDailyExercise(day, roadmapData.finalGoal, moduleId);
+    const exercise = await generateDailyExercise(
+      day, 
+      roadmapData.finalGoal, 
+      moduleId,
+      {
+        age: roadmapData.age || userProfile.age,
+        weight: userProfile.weight,
+        height: userProfile.height,
+        gender: userProfile.gender,
+        activityLevel: userProfile.activityLevel,
+      }
+    );
     const tips = generateDailyTips(day, roadmapData.finalGoal, moduleId);
     
     // Generar lista de compras (agregar ingredientes únicos)
@@ -567,18 +579,144 @@ Responde SOLO con la receta, sin explicaciones adicionales.`;
 Tiempo estimado: 20-30 minutos.`;
 };
 
-// Generar ejercicio diario
-const generateDailyExercise = (day: number, goal: string, moduleId: number): DailyExercise => {
+// Generar ejercicio diario con IA personalizado
+const generateDailyExercise = async (
+  day: number, 
+  goal: string, 
+  moduleId: number,
+  userProfile?: {
+    age?: number;
+    weight?: number;
+    height?: number;
+    gender?: 'male' | 'female';
+    activityLevel?: string;
+  }
+): Promise<DailyExercise> => {
   const week = Math.ceil(day / 7);
   const dayOfWeek = ((day - 1) % 7) + 1;
+  
+  // Intentar generar ejercicio personalizado con IA
+  if (isAIConfigured() && userProfile) {
+    try {
+      console.log(`🤖 Generando ejercicio del día ${day} con IA personalizado...`);
+      
+      const exercisePrompt = `Genera un ejercicio personalizado para el día ${day} de un plan de ${goal === 'weight_loss' ? 'pérdida de peso' : goal === 'weight_gain' ? 'ganancia de peso' : goal === 'muscle_gain' ? 'ganancia de músculo' : 'mantenimiento'}.
+
+PERFIL DEL USUARIO:
+- Edad: ${userProfile.age || 'No especificada'} años
+- Peso: ${userProfile.weight || 'No especificado'} kg
+- Altura: ${userProfile.height || 'No especificada'} cm
+- Género: ${userProfile.gender || 'No especificado'}
+- Nivel de actividad: ${userProfile.activityLevel || 'moderado'}
+- Objetivo: ${goal === 'weight_loss' ? 'Pérdida de peso' : goal === 'weight_gain' ? 'Ganancia de peso' : goal === 'muscle_gain' ? 'Ganancia de músculo' : 'Mantenimiento'}
+
+CONTEXTO:
+- Día ${day} del módulo ${moduleId}
+- Semana ${week}
+- Día de la semana: ${dayOfWeek === 1 ? 'Lunes' : dayOfWeek === 2 ? 'Martes' : dayOfWeek === 3 ? 'Miércoles' : dayOfWeek === 4 ? 'Jueves' : dayOfWeek === 5 ? 'Viernes' : dayOfWeek === 6 ? 'Sábado' : 'Domingo'}
+
+INSTRUCCIONES:
+1. Genera un ejercicio apropiado para la edad del usuario (${userProfile.age || 'adulto'})
+2. Ajusta la intensidad según el nivel de actividad (${userProfile.activityLevel || 'moderado'})
+3. Considera el objetivo: ${goal === 'weight_loss' ? 'Enfócate en cardio y quema de calorías' : goal === 'muscle_gain' ? 'Enfócate en fuerza y desarrollo muscular' : goal === 'weight_gain' ? 'Combina fuerza y cardio moderado' : 'Mantén un equilibrio'}
+4. Varía el tipo de ejercicio según el día de la semana para evitar monotonía
+5. Si el usuario es mayor de 60 años, prioriza ejercicios de bajo impacto
+6. Si el usuario es menor de 18 años, evita ejercicios de alta intensidad sin supervisión
+
+RESPONDE EN FORMATO JSON:
+{
+  "id": "exercise-day-${day}",
+  "name": "Nombre del ejercicio",
+  "type": "cardio" | "strength" | "flexibility" | "mixed",
+  "duration": número en minutos,
+  "description": "Descripción detallada del ejercicio y sus beneficios",
+  "instructions": ["Instrucción 1", "Instrucción 2", ...],
+  "equipment": ["Equipo necesario si aplica"],
+  "recommendations": ["Recomendación 1", "Recomendación 2", ...]
+}`;
+
+      const response = await fetch(AI_CONFIG.OPENAI_BASE_URL + '/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${AI_CONFIG.OPENAI_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: AI_CONFIG.OPENAI_MODEL || 'gpt-4o-mini',
+          messages: [
+            {
+              role: 'system',
+              content: 'Eres un entrenador personal experto. Genera ejercicios personalizados, seguros y efectivos basados en el perfil del usuario. Responde SOLO con JSON válido, sin texto adicional.',
+            },
+            {
+              role: 'user',
+              content: exercisePrompt,
+            },
+          ],
+          temperature: 0.7,
+          max_tokens: 800,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const content = data.choices?.[0]?.message?.content?.trim();
+        
+        if (content) {
+          // Intentar parsear JSON (puede venir con markdown)
+          let exerciseData;
+          try {
+            // Remover markdown code blocks si existen
+            const jsonMatch = content.match(/```json\s*([\s\S]*?)\s*```/) || content.match(/```\s*([\s\S]*?)\s*```/);
+            const jsonString = jsonMatch ? jsonMatch[1] : content;
+            exerciseData = JSON.parse(jsonString);
+            
+            if (exerciseData.name && exerciseData.type && exerciseData.instructions) {
+              console.log(`✅ Ejercicio del día ${day} generado con IA`);
+              return {
+                id: exerciseData.id || `exercise-day-${day}`,
+                name: exerciseData.name,
+                type: exerciseData.type as DailyExercise['type'],
+                duration: exerciseData.duration || 45,
+                description: exerciseData.description || '',
+                instructions: Array.isArray(exerciseData.instructions) ? exerciseData.instructions : [],
+                equipment: Array.isArray(exerciseData.equipment) ? exerciseData.equipment : [],
+                recommendations: Array.isArray(exerciseData.recommendations) ? exerciseData.recommendations : [],
+              };
+            }
+          } catch (parseError) {
+            console.error('Error parseando respuesta de IA:', parseError);
+          }
+        }
+      }
+    } catch (error) {
+      console.error(`❌ Error generando ejercicio del día ${day} con IA:`, error);
+      // Continuar con generación básica
+    }
+  }
+  
+  // Fallback: Generación básica personalizada según edad
+  // Ajustar ejercicios según edad
+  const userAge = userProfile?.age || 30;
+  const isSenior = userAge >= 60;
+  const isYoung = userAge < 18;
   
   // Diferentes tipos de ejercicio según el día
   const exerciseTypes: Array<{ type: DailyExercise['type']; name: string; description: string; instructions: string[]; recommendations: string[] }> = [
     {
       type: 'strength',
-      name: 'Entrenamiento de Fuerza - Tren Superior',
-      description: 'Sesión de entrenamiento de fuerza enfocada en el tren superior para desarrollar masa muscular y fuerza.',
-      instructions: [
+      name: isSenior ? 'Entrenamiento de Fuerza Suave - Tren Superior' : 'Entrenamiento de Fuerza - Tren Superior',
+      description: isSenior 
+        ? 'Sesión de entrenamiento de fuerza de baja intensidad enfocada en el tren superior, adaptada para adultos mayores.'
+        : 'Sesión de entrenamiento de fuerza enfocada en el tren superior para desarrollar masa muscular y fuerza.',
+      instructions: isSenior ? [
+        'Calentamiento: 10 minutos de movilidad articular suave',
+        'Press de pecho con mancuernas ligeras: 3 series de 12-15 repeticiones',
+        'Remo sentado con banda elástica: 3 series de 12-15 repeticiones',
+        'Elevaciones laterales: 3 series de 10-12 repeticiones',
+        'Curl de bíceps con mancuernas ligeras: 3 series de 12-15 repeticiones',
+        'Estiramiento: 15 minutos',
+      ] : [
         'Calentamiento: 5 minutos de movilidad articular',
         'Press de banca: 4 series de 8-10 repeticiones',
         'Remo con barra: 4 series de 8-10 repeticiones',
@@ -586,7 +724,12 @@ const generateDailyExercise = (day: number, goal: string, moduleId: number): Dai
         'Curl de bíceps: 3 series de 12-15 repeticiones',
         'Estiramiento: 10 minutos',
       ],
-      recommendations: [
+      recommendations: isSenior ? [
+        'Usa pesos ligeros y enfócate en la técnica correcta',
+        'Descansa 90-120 segundos entre series',
+        'Si sientes dolor, detente inmediatamente',
+        'Considera trabajar con un entrenador especializado en adultos mayores',
+      ] : [
         'Si no tienes acceso a gimnasio, considera apuntarte a uno cercano o usar pesas en casa',
         'Mantén la técnica correcta en cada ejercicio para evitar lesiones',
         'Descansa 60-90 segundos entre series',
@@ -594,15 +737,39 @@ const generateDailyExercise = (day: number, goal: string, moduleId: number): Dai
     },
     {
       type: 'cardio',
-      name: 'Cardio Moderado - Carrera Continua',
-      description: 'Sesión de cardio de intensidad moderada para mejorar la resistencia cardiovascular y quemar calorías.',
-      instructions: [
+      name: isSenior ? 'Caminata Activa' : isYoung ? 'Cardio Moderado - Caminata/Carrera' : 'Cardio Moderado - Carrera Continua',
+      description: isSenior
+        ? 'Caminata activa de intensidad moderada adaptada para adultos mayores, ideal para mejorar la salud cardiovascular.'
+        : isYoung
+        ? 'Sesión de cardio moderada adaptada para jóvenes, combinando caminata y carrera ligera.'
+        : 'Sesión de cardio de intensidad moderada para mejorar la resistencia cardiovascular y quemar calorías.',
+      instructions: isSenior ? [
+        'Calentamiento: 5 minutos caminando lento',
+        'Caminata activa: 30-40 minutos a ritmo constante (puedes mantener una conversación)',
+        'Enfriamiento: 5 minutos caminando lento',
+        'Estiramiento: 15 minutos',
+      ] : isYoung ? [
+        'Calentamiento: 5 minutos caminando',
+        'Alterna caminar 2 minutos y correr ligero 1 minuto: 20-25 minutos',
+        'Enfriamiento: 5 minutos caminando',
+        'Estiramiento: 10 minutos',
+      ] : [
         'Calentamiento: 5 minutos caminando rápido',
         'Carrera continua: 30 minutos a ritmo moderado (puedes mantener una conversación)',
         'Enfriamiento: 5 minutos caminando',
         'Estiramiento: 10 minutos',
       ],
-      recommendations: [
+      recommendations: isSenior ? [
+        'Camina en terreno plano y seguro',
+        'Usa zapatillas cómodas con buen soporte',
+        'Hidrátate antes y después del ejercicio',
+        'Si sientes mareos o fatiga, detente y descansa',
+      ] : isYoung ? [
+        'Sal a caminar/correr al aire libre con supervisión si es necesario',
+        'Usa zapatillas adecuadas para correr',
+        'Hidrátate antes, durante y después del ejercicio',
+        'No te esfuerces demasiado, ve a tu ritmo',
+      ] : [
         'Sal a correr al aire libre o usa una cinta en el gimnasio',
         'Si eres principiante, alterna caminar y correr',
         'Usa zapatillas adecuadas para correr',
@@ -700,14 +867,22 @@ const generateDailyExercise = (day: number, goal: string, moduleId: number): Dai
   
   const exercise = exerciseTypes[(dayOfWeek - 1) % exerciseTypes.length];
   
+  // Ajustar duración según edad
+  let duration = exercise.type === 'cardio' ? 45 : exercise.type === 'strength' ? 60 : 30;
+  if (isSenior) {
+    duration = Math.round(duration * 0.8); // Reducir 20% para adultos mayores
+  } else if (isYoung) {
+    duration = Math.round(duration * 0.9); // Reducir 10% para jóvenes
+  }
+  
   return {
     id: `exercise-day-${day}`,
     name: exercise.name,
     type: exercise.type,
-    duration: exercise.type === 'cardio' ? 45 : exercise.type === 'strength' ? 60 : 30,
+    duration,
     description: exercise.description,
     instructions: exercise.instructions,
-    equipment: exercise.type === 'strength' ? ['Pesas', 'Mancuernas', 'Barra'] : [],
+    equipment: exercise.type === 'strength' ? (isSenior ? ['Mancuernas ligeras', 'Bandas elásticas'] : ['Pesas', 'Mancuernas', 'Barra']) : [],
     recommendations: exercise.recommendations,
   };
 };

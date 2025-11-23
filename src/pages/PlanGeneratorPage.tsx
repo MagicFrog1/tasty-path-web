@@ -174,62 +174,27 @@ const SidebarCard = styled.aside`
   display: grid;
   gap: 20px;
   padding: 28px;
-  border-radius: 24px;
-  background: linear-gradient(135deg, rgba(46, 139, 87, 0.12) 0%, rgba(34, 197, 94, 0.08) 50%, rgba(16, 185, 129, 0.06) 100%);
-  border: 1.5px solid rgba(46, 139, 87, 0.2);
-  box-shadow: 
-    0 10px 40px rgba(46, 139, 87, 0.15),
-    0 4px 16px rgba(34, 197, 94, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.5);
-  backdrop-filter: blur(12px);
-  color: ${theme.colors.primaryDark};
+  border-radius: 20px;
+  background: ${theme.colors.white};
+  border: 1px solid rgba(46, 139, 87, 0.1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  color: ${theme.colors.textPrimary};
   position: relative;
-  overflow: hidden;
-
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 4px;
-    background: linear-gradient(90deg, 
-      ${theme.colors.primary} 0%, 
-      rgba(34, 197, 94, 0.9) 50%,
-      rgba(16, 185, 129, 0.8) 100%);
-    box-shadow: 0 2px 8px rgba(46, 139, 87, 0.3);
-  }
-
-  &::after {
-    content: '';
-    position: absolute;
-    top: -50%;
-    right: -50%;
-    width: 200%;
-    height: 200%;
-    background: radial-gradient(circle, rgba(34, 197, 94, 0.1) 0%, transparent 70%);
-    pointer-events: none;
-  }
 `;
 
 const SidebarTitle = styled.h4`
-  margin: 0;
-  font-size: 1.25rem;
-  font-weight: 800;
-  background: linear-gradient(135deg, ${theme.colors.primaryDark} 0%, ${theme.colors.primary} 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  letter-spacing: -0.02em;
+  margin: 0 0 20px 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: ${theme.colors.primaryDark};
+  letter-spacing: -0.01em;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   position: relative;
-  z-index: 1;
 
   svg {
     color: ${theme.colors.primary};
-    filter: drop-shadow(0 2px 4px rgba(46, 139, 87, 0.3));
     flex-shrink: 0;
   }
 `;
@@ -239,113 +204,42 @@ const SidebarList = styled.ul`
   padding: 0;
   list-style: none;
   display: grid;
-  gap: 16px;
-  min-height: 200px;
+  gap: 12px;
   position: relative;
 
   li {
     position: relative;
-    padding: 16px 18px 16px 56px;
-    font-size: 0.95rem;
-    color: rgba(33, 37, 41, 0.9);
-    line-height: 1.65;
-    font-weight: 500;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.85) 100%);
-    border-radius: 16px;
-    border-left: 5px solid;
-    border-image: linear-gradient(135deg, ${theme.colors.primary} 0%, rgba(34, 197, 94, 0.9) 100%) 1;
-    box-shadow: 
-      0 4px 12px rgba(46, 139, 87, 0.12),
-      0 2px 6px rgba(34, 197, 94, 0.08),
-      inset 0 1px 0 rgba(255, 255, 255, 0.8);
-    transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-    animation: tipEnter 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-    opacity: 0;
-    transform: translateY(20px) scale(0.95);
-    cursor: default;
-  }
-
-  li:nth-child(1) {
-    animation-delay: 0.1s;
-  }
-  li:nth-child(2) {
-    animation-delay: 0.2s;
-  }
-  li:nth-child(3) {
-    animation-delay: 0.3s;
-  }
-  li:nth-child(4) {
-    animation-delay: 0.4s;
+    padding: 14px 16px 14px 44px;
+    font-size: 0.9rem;
+    color: ${theme.colors.textPrimary};
+    line-height: 1.6;
+    font-weight: 400;
+    background: ${theme.colors.white};
+    border-radius: 12px;
+    border: 1px solid rgba(46, 139, 87, 0.12);
+    transition: all 0.2s ease;
+    opacity: 1;
+    transform: translateY(0);
   }
 
   li:hover {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0.95) 100%);
-    box-shadow: 
-      0 8px 24px rgba(46, 139, 87, 0.2),
-      0 4px 12px rgba(34, 197, 94, 0.15),
-      inset 0 1px 0 rgba(255, 255, 255, 1),
-      0 0 0 2px rgba(46, 139, 87, 0.1);
-    transform: translateX(6px) translateY(-3px) scale(1.03);
-    border-left-width: 6px;
+    border-color: rgba(46, 139, 87, 0.25);
+    box-shadow: 0 2px 8px rgba(46, 139, 87, 0.08);
   }
 
   li .check-icon {
     position: absolute;
-    left: 16px;
+    left: 14px;
     top: 50%;
     transform: translateY(-50%);
     color: ${theme.colors.primary};
-    font-size: 1.25rem;
+    font-size: 16px;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 28px;
-    height: 28px;
-    background: linear-gradient(135deg, rgba(46, 139, 87, 0.15) 0%, rgba(34, 197, 94, 0.12) 100%);
-    border-radius: 50%;
-    box-shadow: 
-      0 2px 8px rgba(46, 139, 87, 0.2),
-      inset 0 1px 0 rgba(255, 255, 255, 0.5);
-    animation: iconPulse 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-    opacity: 0;
-    transform: translateY(-50%) scale(0) rotate(-180deg);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  li:hover .check-icon {
-    background: linear-gradient(135deg, rgba(46, 139, 87, 0.25) 0%, rgba(34, 197, 94, 0.2) 100%);
-    box-shadow: 
-      0 4px 12px rgba(46, 139, 87, 0.3),
-      inset 0 1px 0 rgba(255, 255, 255, 0.6);
-    transform: translateY(-50%) scale(1.1) rotate(0deg);
-  }
-
-  @keyframes tipEnter {
-    0% {
-      opacity: 0;
-      transform: translateY(25px) scale(0.92) rotateX(-12deg);
-    }
-    50% {
-      transform: translateY(-6px) scale(1.03) rotateX(3deg);
-    }
-    100% {
-      opacity: 1;
-      transform: translateY(0) scale(1) rotateX(0deg);
-    }
-  }
-
-  @keyframes iconPulse {
-    0% {
-      opacity: 0;
-      transform: translateY(-50%) scale(0) rotate(-180deg);
-    }
-    60% {
-      transform: translateY(-50%) scale(1.25) rotate(15deg);
-    }
-    100% {
-      opacity: 1;
-      transform: translateY(-50%) scale(1) rotate(0deg);
-    }
+    width: 20px;
+    height: 20px;
+    opacity: 1;
   }
 `;
 
@@ -1382,7 +1276,7 @@ const PlanGeneratorPage: React.FC = () => {
     return (
       <PageWrapper>
         <Header>
-          <h1>Generador de Plan</h1>
+          <h1>Generador Semanal</h1>
           <p>Cargando tu perfil...</p>
         </Header>
       </PageWrapper>

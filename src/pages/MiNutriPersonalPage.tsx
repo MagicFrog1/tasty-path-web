@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
-import { FiTarget, FiCheckCircle, FiTrendingUp, FiCalendar, FiActivity, FiMessageCircle } from 'react-icons/fi';
+import { FiTarget, FiCheckCircle, FiAlertCircle, FiX } from 'react-icons/fi';
 import { theme } from '../styles/theme';
 import { useSubscription } from '../context/SubscriptionContext';
 import { useUserProfile } from '../context/UserProfileContext';
 import OnboardingStep from '../components/minutri/OnboardingStep';
-import MonthlyCalendarView from '../components/minutri/MonthlyCalendarView';
-import { minutriService, Module, DayTracking } from '../services/minutriService';
+import PreferencesQuestionnaire from '../components/minutri/PreferencesQuestionnaire';
+import { minutriService } from '../services/minutriService';
 import { generateModuleContent, DailyContent } from '../services/minutriContentService';
+import { useWeeklyPlan } from '../context/WeeklyPlanContext';
+import { useNavigate } from 'react-router-dom';
 
 // Animaciones
 const fadeInUp = keyframes`
@@ -252,21 +254,105 @@ const LoadingStep = styled.div<{ active: boolean; completed: boolean }>`
   }
 `;
 
+// Diálogo de confirmación
+const ConfirmDialog = styled.div<{ show: boolean }>`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: 10000;
+  display: ${({ show }) => (show ? 'flex' : 'none')};
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+`;
+
+const DialogContent = styled.div`
+  background: white;
+  border-radius: 20px;
+  padding: 32px;
+  max-width: 500px;
+  width: 100%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+`;
+
+const DialogTitle = styled.h3`
+  margin: 0 0 16px 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: ${theme.colors.primaryDark};
+  display: flex;
+  align-items: center;
+  gap: 12px;
+`;
+
+const DialogMessage = styled.p`
+  margin: 0 0 24px 0;
+  color: ${theme.colors.textSecondary};
+  line-height: 1.6;
+  font-size: 16px;
+`;
+
+const DialogButtons = styled.div`
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+`;
+
+const DialogButton = styled.button<{ primary?: boolean }>`
+  padding: 12px 24px;
+  border-radius: 12px;
+  border: none;
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: ${({ primary }) => 
+    primary 
+      ? `linear-gradient(135deg, ${theme.colors.primary} 0%, rgba(34, 197, 94, 0.9) 100%)`
+      : 'rgba(46, 139, 87, 0.1)'};
+  color: ${({ primary }) => (primary ? 'white' : theme.colors.primaryDark)};
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: ${({ primary }) => 
+      primary 
+        ? '0 8px 20px rgba(46, 139, 87, 0.3)'
+        : '0 4px 12px rgba(46, 139, 87, 0.2)'};
+  }
+`;
+
+const SuccessNotification = styled.div<{ show: boolean }>`
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: white;
+  border-radius: 16px;
+  padding: 20px 24px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  border: 2px solid ${theme.colors.primary};
+  z-index: 10001;
+  display: ${({ show }) => (show ? 'flex' : 'none')};
+  align-items: center;
+  gap: 12px;
+  max-width: 400px;
+  animation: ${fadeInUp} 0.3s ease;
+`;
+
 const MiNutriPersonalPage: React.FC = () => {
   const { currentPlan } = useSubscription();
   const { profile } = useUserProfile();
-  const [hasRoadmap, setHasRoadmap] = useState(false);
+  const { addWeeklyPlan, weeklyPlans, deleteWeeklyPlan } = useWeeklyPlan();
+  const navigate = useNavigate();
   const [isOnboarding, setIsOnboarding] = useState(true);
-  const [modules, setModules] = useState<Module[]>([]);
-  const [activeModule, setActiveModule] = useState<Module | null>(null);
-  const [trackingDays, setTrackingDays] = useState<DayTracking[]>([]);
-  const [currentDay, setCurrentDay] = useState(1);
-  const [adherence, setAdherence] = useState(0);
-  const [dailyContent, setDailyContent] = useState<DailyContent | null>(null);
-  const [moduleContent, setModuleContent] = useState<any>(null);
-  const [isLoadingContent, setIsLoadingContent] = useState(false);
-  const [currentMonth, setCurrentMonth] = useState(1);
-  const [dayCompletions, setDayCompletions] = useState<{ [dayNumber: number]: { breakfast: boolean; lunch: boolean; dinner: boolean; exercise: boolean } }>({});
+  const [showPreferences, setShowPreferences] = useState(false);
+  const [onboardingData, setOnboardingData] = useState<any>(null);
+  const [hasPreviousPlan, setHasPreviousPlan] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [showSuccessNotification, setShowSuccessNotification] = useState(false);
   
   // Estados para pantalla de carga
   const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
@@ -274,184 +360,193 @@ const MiNutriPersonalPage: React.FC = () => {
   const [loadingStatus, setLoadingStatus] = useState('');
 
   // Permitir acceso a todos los usuarios (incluyendo plan gratis)
-  // const isPremium = currentPlan && currentPlan.plan !== 'free' && currentPlan.isActive;
   const isPremium = true; // Siempre permitir acceso
 
   useEffect(() => {
-    // Verificar si ya tiene un roadmap configurado
+    // Verificar si ya tiene un plan mensual anterior
+    // Buscar en planes guardados y también en roadmap
     const roadmapData = minutriService.getRoadmap();
-    if (roadmapData) {
-      setHasRoadmap(true);
-      setIsOnboarding(false);
-      
-      // Cargar módulos
-      let savedModules = minutriService.getModules();
-      if (!savedModules) {
-        savedModules = minutriService.generateModules(roadmapData);
-        minutriService.saveModules(savedModules);
-      }
-      setModules(savedModules);
-      
-      // Encontrar módulo activo
-      const active = savedModules.find(m => m.isActive);
-      if (active) {
-        setActiveModule(active);
-        
-        // Cargar tracking
-        let tracking = minutriService.getTracking(active.id);
-        if (!tracking) {
-          const startDate = new Date(roadmapData.createdAt);
-          startDate.setDate(startDate.getDate() + ((active.id - 1) * 30));
-          tracking = minutriService.initializeTracking(active.id, startDate);
-          minutriService.saveTracking(active.id, tracking);
-        }
-        setTrackingDays(tracking);
-        
-        // Calcular día actual y adherencia
-        const day = minutriService.getCurrentDay(active.startDate);
-        setCurrentDay(day);
-        setAdherence(minutriService.calculateAdherence(tracking));
-        
-        // Cargar completions desde tracking
-        const completions: { [key: number]: { breakfast: boolean; lunch: boolean; dinner: boolean; exercise: boolean } } = {};
-        tracking.forEach(t => {
-          completions[t.day] = {
-            breakfast: t.meals.breakfast,
-            lunch: t.meals.lunch,
-            dinner: t.meals.dinner,
-            exercise: t.exercise,
-          };
-        });
-        setDayCompletions(completions);
-        
-        // Cargar o generar contenido del módulo
-        loadModuleContent(roadmapData, active, day);
-      }
-    }
-  }, []);
-
-  const loadModuleContent = async (roadmap: any, module: Module, day: number, showLoading: boolean = false) => {
-    if (showLoading) {
-      setIsGeneratingPlan(true);
-      setLoadingStep(1);
-      setLoadingStatus('Iniciando generación de plan mensal...');
-    } else {
-      setIsLoadingContent(true);
-    }
+    const monthlyPlans = weeklyPlans.filter(plan => plan.config?.type === 'monthly');
     
-    // Timeout de seguridad: 5 minutos (300 segundos) para la generación completa
+    if (roadmapData || monthlyPlans.length > 0) {
+      if (!hasPreviousPlan) {
+        setHasPreviousPlan(true);
+        setShowConfirmDialog(true);
+      }
+    } else {
+      if (hasPreviousPlan) {
+        setHasPreviousPlan(false);
+        setShowConfirmDialog(false);
+      }
+    }
+  }, [weeklyPlans, hasPreviousPlan]);
+  
+  const clearPreviousPlan = () => {
+    // Eliminar todos los planes mensuales guardados
+    const monthlyPlans = weeklyPlans.filter(plan => plan.config?.type === 'monthly');
+    monthlyPlans.forEach(plan => {
+      deleteWeeklyPlan(plan.id);
+    });
+    
+    // Eliminar todos los datos del roadmap anterior
+    localStorage.removeItem('minutri_roadmap');
+    localStorage.removeItem('minutri_modules');
+    // Eliminar todos los tracking
+    for (let i = 1; i <= 12; i++) {
+      localStorage.removeItem(`minutri_tracking_${i}`);
+      localStorage.removeItem(`minutri_content_${i}`);
+    }
+    setHasPreviousPlan(false);
+    setShowConfirmDialog(false);
+  };
+
+  const generateMonthlyPlan = async (roadmap: any) => {
+    setIsGeneratingPlan(true);
+    setLoadingStep(1);
+    setLoadingStatus('Iniciando generación de plan mensal...');
+    
+    // Timeout de seguridad: 5 minutos
     const timeoutPromise = new Promise((_, reject) => {
       setTimeout(() => {
         reject(new Error('Timeout: La generación del plan está tomando demasiado tiempo. Por favor, intenta de nuevo.'));
-      }, 300000); // 5 minutos
+      }, 300000);
     });
     
     try {
-      // Verificar si ya existe contenido guardado
-      const savedContent = localStorage.getItem(`minutri_content_${module.id}`);
-      let content;
+      setLoadingStep(2);
+      setLoadingStatus('Calculando objetivos nutricionales...');
+      await new Promise(resolve => setTimeout(resolve, 500));
       
-      if (savedContent && !showLoading) {
-        // Si hay contenido guardado y no se está regenerando, usarlo
-        content = JSON.parse(savedContent);
-      } else {
-        // Generar nuevo contenido con pantalla de carga
-        if (showLoading) {
-          setLoadingStep(2);
-          setLoadingStatus('Calculando objetivos nutricionales...');
-          await new Promise(resolve => setTimeout(resolve, 500));
-        }
-        
-        // Callback de progreso para actualizar la UI
-        const progressCallback = (step: number, total: number, message: string) => {
-          if (showLoading) {
-            setLoadingStep(step);
-            setLoadingStatus(message);
-          }
-        };
-        
-        if (showLoading) {
-          setLoadingStep(3);
-          setLoadingStatus('Generando menús personalizados con IA (esto puede tomar 1-2 minutos)...');
-        }
-        
-        // Generar contenido completo del módulo con timeout
-        const generationPromise = generateModuleContent(
-          module.id,
+      // Callback de progreso
+      const progressCallback = (step: number, total: number, message: string) => {
+        setLoadingStep(step);
+        setLoadingStatus(message);
+      };
+      
+      setLoadingStep(3);
+      setLoadingStatus('Generando menús personalizados con IA (esto puede tomar 1-2 minutos)...');
+      
+      setLoadingStep(4);
+      setLoadingStatus('Generando ejercicios físicos personalizados adaptados a tu edad y objetivos...');
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Generar contenido del primer módulo (30 días)
+      const content = await Promise.race([
+        generateModuleContent(
+          1, // Siempre módulo 1 para nuevo plan
           {
             finalGoal: roadmap.finalGoal,
             targetValue: roadmap.targetValue,
             currentValue: roadmap.currentValue,
             timeframe: roadmap.timeframe,
+            age: roadmap.age,
           },
           {
             weight: profile?.weight,
             height: profile?.height,
-            age: profile?.age,
+            age: roadmap.age || profile?.age,
             gender: profile?.gender,
             activityLevel: profile?.activityLevel,
-            allergies: (profile as any)?.allergies || [],
-            dietaryPreferences: (profile as any)?.dietaryPreferences || [],
+            allergies: roadmap.allergies || (profile as any)?.allergies || [],
+            dietaryPreferences: roadmap.dietaryPreferences || (profile as any)?.dietaryPreferences || [],
           },
           progressCallback
-        );
-        
-        // Esperar a que termine la generación o el timeout
-        content = await Promise.race([generationPromise, timeoutPromise]) as any;
-        
-        if (showLoading) {
-          setLoadingStep(6);
-          setLoadingStatus('Guardando plan generado...');
-          await new Promise(resolve => setTimeout(resolve, 500));
-        }
-        
-        // Guardar contenido generado
-        localStorage.setItem(`minutri_content_${module.id}`, JSON.stringify(content));
-        
-        if (showLoading) {
-          setLoadingStep(6);
-          setLoadingStatus('¡Plan generado exitosamente!');
-          await new Promise(resolve => setTimeout(resolve, 1000));
-        }
-      }
+        ),
+        timeoutPromise
+      ]) as any;
       
-      // Verificar que el contenido se generó correctamente
       if (!content || !content.days || content.days.length === 0) {
         throw new Error('El contenido generado está vacío o incompleto');
       }
       
-      setModuleContent(content);
+      setLoadingStep(6);
+      setLoadingStatus('Guardando plan generado...');
       
-      // Obtener contenido del día actual
-      const todayContent = content.days.find((d: DailyContent) => d.dayNumber === day) || content.days[0];
-      setDailyContent(todayContent);
+      // Guardar plan mensual en planes guardados
+      const now = new Date();
+      const planId = `minutri_monthly_${Date.now()}`;
+      const monthlyPlan = {
+        id: planId,
+        weekStart: now.toISOString(),
+        weekEnd: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        totalMeals: 90, // 30 días * 3 comidas
+        totalCalories: Math.round((roadmap.finalGoal === 'weight_loss' ? 1800 : roadmap.finalGoal === 'weight_gain' || roadmap.finalGoal === 'muscle_gain' ? 2500 : 2000) * 30),
+        totalCost: 0,
+        status: 'active' as const,
+        name: `Plan Mensual MiNutri - ${now.toLocaleDateString('es-ES')}`,
+        description: `Plan mensual con ejercicios personalizados generado para ${roadmap.finalGoal === 'weight_loss' ? 'Pérdida de Peso' : roadmap.finalGoal === 'weight_gain' ? 'Ganancia de Peso' : roadmap.finalGoal === 'muscle_gain' ? 'Ganancia de Músculo' : 'Mantenimiento'}. Incluye ejercicios físicos adaptados a tu edad (${roadmap.age || profile?.age || 'N/A'} años) y objetivos para ayudarte a alcanzar tus metas más rápido.`,
+        nutritionGoals: {
+          protein: roadmap.finalGoal === 'muscle_gain' ? 30 : roadmap.finalGoal === 'weight_loss' ? 30 : 25,
+          carbs: roadmap.finalGoal === 'weight_loss' ? 40 : 45,
+          fat: 25,
+          fiber: 30,
+        },
+        progress: { completedMeals: 0, totalMeals: 90, percentage: 0 },
+        config: {
+          goal: roadmap.finalGoal,
+          weight: profile?.weight,
+          height: profile?.height,
+          age: roadmap.age,
+          dietaryPreferences: roadmap.dietaryPreferences || [],
+          allergens: roadmap.allergies || [],
+          type: 'monthly',
+        },
+        meals: content.days.map((day: DailyContent) => ({
+          date: day.date,
+          dayNumber: day.dayNumber,
+          meals: {
+            breakfast: day.meals.breakfast,
+            lunch: day.meals.lunch,
+            dinner: day.meals.dinner,
+          },
+          exercise: day.exercise, // Incluir ejercicio personalizado diario
+          tips: day.tips, // Incluir tips diarios
+        })),
+        estimatedCalories: roadmap.finalGoal === 'weight_loss' ? 1800 : roadmap.finalGoal === 'weight_gain' || roadmap.finalGoal === 'muscle_gain' ? 2500 : 2000,
+        createdAt: now.toISOString(),
+      };
       
-      console.log('✅ Contenido del módulo cargado exitosamente:', {
-        moduleId: module.id,
-        totalDays: content.days.length,
-        currentDay: day,
-        hasMeals: todayContent?.meals ? true : false,
-        hasExercise: todayContent?.exercise ? true : false,
+      addWeeklyPlan(monthlyPlan);
+      
+      // Guardar roadmap para poder detectarlo después
+      minutriService.saveRoadmap({
+        finalGoal: roadmap.finalGoal,
+        targetValue: roadmap.targetValue,
+        currentValue: roadmap.currentValue,
+        timeframe: roadmap.timeframe,
+        createdAt: now.toISOString(),
+        modules: 1, // Solo un módulo de 30 días para planes mensuales
       });
       
+      setLoadingStep(6);
+      setLoadingStatus('¡Plan generado exitosamente!');
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Mostrar notificación de éxito
+      setIsGeneratingPlan(false);
+      setLoadingStep(0);
+      setLoadingStatus('');
+      setShowSuccessNotification(true);
+      
+      // Resetear formulario
+      setIsOnboarding(true);
+      setShowPreferences(false);
+      setOnboardingData(null);
+      
+      // Ocultar notificación después de 5 segundos
+      setTimeout(() => {
+        setShowSuccessNotification(false);
+      }, 5000);
+      
     } catch (error: any) {
-      console.error('Error cargando contenido del módulo:', error);
-      if (showLoading) {
-        const errorMessage = error?.message || 'Error al generar el plan. Por favor, intenta de nuevo.';
-        setLoadingStatus(errorMessage);
-        await new Promise(resolve => setTimeout(resolve, 3000));
-      } else {
-        // Mostrar mensaje de error al usuario
-        alert('Error al cargar el plan. Por favor, recarga la página e intenta de nuevo.');
-      }
-    } finally {
-      if (showLoading) {
-        setIsGeneratingPlan(false);
-        setLoadingStep(0);
-        setLoadingStatus('');
-      } else {
-        setIsLoadingContent(false);
-      }
+      console.error('Error generando plan mensual:', error);
+      const errorMessage = error?.message || 'Error al generar el plan. Por favor, intenta de nuevo.';
+      setLoadingStatus(errorMessage);
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      setIsGeneratingPlan(false);
+      setLoadingStep(0);
+      setLoadingStatus('');
+      alert(errorMessage);
     }
   };
 
@@ -525,7 +620,7 @@ const MiNutriPersonalPage: React.FC = () => {
               Generando menús personalizados con IA
             </LoadingStep>
             <LoadingStep active={loadingStep >= 4} completed={loadingStep > 4}>
-              Generando planes de ejercicio
+              Generando ejercicios físicos personalizados
             </LoadingStep>
             <LoadingStep active={loadingStep >= 5} completed={loadingStep > 5}>
               Generando listas de compras
@@ -554,124 +649,104 @@ const MiNutriPersonalPage: React.FC = () => {
         </PremiumBadge>
 
         <ContentGrid>
-        <MainContent>
-          {isOnboarding ? (
-            <OnboardingStep
-              onComplete={(data) => {
-                // Guardar datos del roadmap
-                const roadmapData = {
-                  finalGoal: data.finalGoal as 'weight_loss' | 'weight_gain' | 'muscle_gain' | 'maintenance',
-                  targetValue: data.targetValue,
-                  currentValue: data.currentValue,
-                  timeframe: data.timeframe,
-                  createdAt: new Date().toISOString(),
-                  modules: Math.ceil(data.timeframe * 30 / 30), // Número de módulos de 30 días
-                };
-                minutriService.saveRoadmap(roadmapData);
-                
-                // Generar módulos
-                const generatedModules = minutriService.generateModules(roadmapData);
-                minutriService.saveModules(generatedModules);
-                setModules(generatedModules);
-                
-                // Inicializar tracking del primer módulo
-                const startDate = new Date();
-                const firstModule = generatedModules[0];
-                const tracking = minutriService.initializeTracking(firstModule.id, startDate);
-                minutriService.saveTracking(firstModule.id, tracking);
-                
-                setActiveModule(firstModule);
-                setTrackingDays(tracking);
-                setCurrentDay(1);
-                setAdherence(0);
-                setHasRoadmap(true);
-                setIsOnboarding(false);
-                setCurrentMonth(1);
-                
-                // Inicializar completions
-                const completions: { [key: number]: { breakfast: boolean; lunch: boolean; dinner: boolean; exercise: boolean } } = {};
-                tracking.forEach(t => {
-                  completions[t.day] = {
-                    breakfast: t.meals.breakfast,
-                    lunch: t.meals.lunch,
-                    dinner: t.meals.dinner,
-                    exercise: t.exercise,
-                  };
-                });
-                setDayCompletions(completions);
-                
-                // Cargar contenido del módulo
-                    setTimeout(() => {
-                      loadModuleContent(roadmapData, firstModule, 1, true); // true = mostrar pantalla de carga
-                    }, 500);
+          <MainContent>
+            {isOnboarding && !showPreferences ? (
+              <Card>
+                <OnboardingStep
+                  onComplete={(data) => {
+                    setOnboardingData(data);
+                    setShowPreferences(true);
+                  }}
+                />
+              </Card>
+            ) : isOnboarding && showPreferences ? (
+              <Card>
+                <PreferencesQuestionnaire
+                  onComplete={(preferencesData) => {
+                    // Guardar datos del roadmap con preferencias
+                    const roadmapData = {
+                      finalGoal: onboardingData.finalGoal as 'weight_loss' | 'weight_gain' | 'muscle_gain' | 'maintenance',
+                      targetValue: onboardingData.targetValue,
+                      currentValue: onboardingData.currentValue,
+                      timeframe: onboardingData.timeframe,
+                      age: onboardingData.age,
+                      createdAt: new Date().toISOString(),
+                      modules: Math.ceil(onboardingData.timeframe * 30 / 30),
+                      allergies: preferencesData.allergies,
+                      dietaryPreferences: preferencesData.dietaryPreferences,
+                    };
+                    
+                    // Generar plan mensual
+                    generateMonthlyPlan(roadmapData);
+                  }}
+                />
+              </Card>
+            ) : null}
+          </MainContent>
+        </ContentGrid>
+        
+        {/* Diálogo de confirmación para plan anterior */}
+        <ConfirmDialog show={showConfirmDialog}>
+          <DialogContent>
+            <DialogTitle>
+              <FiAlertCircle />
+              ¿Ya alcanzaste tu objetivo?
+            </DialogTitle>
+            <DialogMessage>
+              Ya tienes un plan de MiNutri Personal activo. Para crear un nuevo plan, primero debes confirmar que ya alcanzaste tu objetivo en el plan anterior. Esto eliminará el plan anterior y creará uno nuevo.
+            </DialogMessage>
+            <DialogButtons>
+              <DialogButton onClick={() => setShowConfirmDialog(false)}>
+                Cancelar
+              </DialogButton>
+              <DialogButton primary onClick={() => {
+                clearPreviousPlan();
+              }}>
+                Sí, ya alcancé mi objetivo
+              </DialogButton>
+            </DialogButtons>
+          </DialogContent>
+        </ConfirmDialog>
+        
+        {/* Notificación de éxito */}
+        <SuccessNotification show={showSuccessNotification}>
+          <FiCheckCircle style={{ color: theme.colors.primary, fontSize: '24px' }} />
+          <div>
+            <div style={{ fontWeight: 600, color: theme.colors.primaryDark, marginBottom: '4px' }}>
+              ¡Plan generado exitosamente!
+            </div>
+            <div style={{ fontSize: '14px', color: theme.colors.textSecondary }}>
+              Tu plan mensual se ha guardado en "Planes Guardados"
+            </div>
+            <button
+              onClick={() => {
+                navigate('/planes');
+                setShowSuccessNotification(false);
               }}
-            />
-          ) : (
-            <>
-              {activeModule && moduleContent && (
-                <Card>
-                  {isLoadingContent ? (
-                    <div style={{ textAlign: 'center', padding: '60px', color: theme.colors.textSecondary }}>
-                      <div style={{ fontSize: '18px', marginBottom: '12px' }}>Generando tu plan mensual completo...</div>
-                      <div style={{ fontSize: '14px' }}>Esto puede tomar unos momentos</div>
-                    </div>
-                  ) : (
-                    <MonthlyCalendarView
-                      monthNumber={currentMonth}
-                      totalMonths={modules.length}
-                      days={moduleContent.days}
-                      dayCompletions={dayCompletions}
-                      onMonthChange={(month) => setCurrentMonth(month)}
-                      onDayUpdate={(dayNumber, mealType, completed) => {
-                        // Actualizar tracking
-                        const updated = trackingDays.map(d => {
-                          if (d.day === dayNumber) {
-                            if (mealType === 'exercise') {
-                              return { ...d, exercise: completed };
-                            } else {
-                              return { ...d, meals: { ...d.meals, [mealType]: completed } };
-                            }
-                          }
-                          return d;
-                        });
-                        setTrackingDays(updated);
-                        minutriService.saveTracking(activeModule.id, updated);
-                        
-                        // Actualizar completions
-                        const newCompletions = { ...dayCompletions };
-                        if (!newCompletions[dayNumber]) {
-                          newCompletions[dayNumber] = { breakfast: false, lunch: false, dinner: false, exercise: false };
-                        }
-                        if (mealType === 'exercise') {
-                          newCompletions[dayNumber].exercise = completed;
-                        } else {
-                          newCompletions[dayNumber][mealType] = completed;
-                        }
-                        setDayCompletions(newCompletions);
-                        
-                        // Recalcular adherencia
-                        const newAdherence = minutriService.calculateAdherence(updated);
-                        setAdherence(newAdherence);
-                        
-                        // Actualizar progreso del módulo
-                        const updatedModules = modules.map(m => {
-                          if (m.id === activeModule.id) {
-                            return { ...m, progress: Math.round((currentDay / 30) * 100), adherence: newAdherence };
-                          }
-                          return m;
-                        });
-                        setModules(updatedModules);
-                        minutriService.saveModules(updatedModules);
-                      }}
-                    />
-                  )}
-                </Card>
-              )}
-
-            </>
-          )}
-        </MainContent>
-      </ContentGrid>
+              style={{
+                marginTop: '8px',
+                padding: '6px 12px',
+                borderRadius: '8px',
+                background: theme.colors.primary,
+                color: 'white',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: '13px',
+                fontWeight: 600,
+              }}
+            >
+              Ver planes
+            </button>
+          </div>
+          <FiX 
+            onClick={() => setShowSuccessNotification(false)}
+            style={{ 
+              cursor: 'pointer', 
+              color: theme.colors.textSecondary,
+              marginLeft: 'auto'
+            }} 
+          />
+        </SuccessNotification>
     </PageWrapper>
     </>
   );

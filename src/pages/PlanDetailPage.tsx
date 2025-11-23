@@ -15,6 +15,7 @@ import {
   FiCheck,
   FiChevronDown,
   FiChevronUp,
+  FiActivity,
 } from 'react-icons/fi';
 import { useWeeklyPlan } from '../context/WeeklyPlanContext';
 import { theme } from '../styles/theme';
@@ -941,6 +942,190 @@ const IngredientsList = styled.ul`
   }
 `;
 
+// Componentes para ejercicios en planes mensuales
+const ExerciseSection = styled.div`
+  margin-top: 20px;
+  padding: 20px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(46, 139, 87, 0.06) 0%, rgba(34, 197, 94, 0.04) 100%);
+  border: 1px solid rgba(46, 139, 87, 0.15);
+`;
+
+const ExerciseHeader = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  
+  h4 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: ${theme.colors.primaryDark};
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  svg {
+    color: ${theme.colors.primary};
+    font-size: 20px;
+  }
+`;
+
+const ExerciseTypeBadge = styled.span<{ type: string }>`
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: ${({ type }) => {
+    if (type === 'cardio') return 'rgba(239, 68, 68, 0.1)';
+    if (type === 'strength') return 'rgba(59, 130, 246, 0.1)';
+    if (type === 'flexibility') return 'rgba(168, 85, 247, 0.1)';
+    return 'rgba(46, 139, 87, 0.1)';
+  }};
+  color: ${({ type }) => {
+    if (type === 'cardio') return '#dc2626';
+    if (type === 'strength') return '#2563eb';
+    if (type === 'flexibility') return '#9333ea';
+    return theme.colors.primary;
+  }};
+  margin-left: auto;
+`;
+
+const ExerciseDescription = styled.p`
+  margin: 0 0 16px 0;
+  color: ${theme.colors.textPrimary};
+  line-height: 1.7;
+  font-size: 14px;
+`;
+
+const ExerciseMeta = styled.div`
+  display: flex;
+  gap: 16px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  
+  span {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: ${theme.colors.textSecondary};
+    font-weight: 500;
+    
+    svg {
+      color: ${theme.colors.primary};
+      font-size: 16px;
+    }
+  }
+`;
+
+const ExerciseInstructions = styled.ol`
+  margin: 0 0 16px 0;
+  padding-left: 24px;
+  color: ${theme.colors.textPrimary};
+  font-size: 14px;
+  line-height: 1.8;
+  
+  li {
+    margin-bottom: 8px;
+    padding-left: 8px;
+  }
+`;
+
+const ExerciseEquipment = styled.div`
+  margin-bottom: 16px;
+  
+  h5 {
+    margin: 0 0 8px 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: ${theme.colors.textSecondary};
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  
+  div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  span {
+    padding: 6px 12px;
+    border-radius: 8px;
+    background: ${theme.colors.white};
+    border: 1px solid rgba(46, 139, 87, 0.2);
+    font-size: 12px;
+    font-weight: 500;
+    color: ${theme.colors.textPrimary};
+  }
+`;
+
+const ExerciseRecommendations = styled.div`
+  padding: 16px;
+  border-radius: 12px;
+  background: rgba(46, 139, 87, 0.05);
+  border-left: 3px solid ${theme.colors.primary};
+  
+  h5 {
+    margin: 0 0 12px 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: ${theme.colors.primaryDark};
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  ul {
+    margin: 0;
+    padding-left: 20px;
+    color: ${theme.colors.textSecondary};
+    font-size: 13px;
+    line-height: 1.7;
+    
+    li {
+      margin-bottom: 6px;
+    }
+  }
+`;
+
+const TipsSection = styled.div`
+  margin-top: 16px;
+  padding: 16px;
+  border-radius: 12px;
+  background: rgba(251, 191, 36, 0.05);
+  border-left: 3px solid rgba(251, 191, 36, 0.4);
+  
+  h5 {
+    margin: 0 0 12px 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: ${theme.colors.textPrimary};
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  ul {
+    margin: 0;
+    padding-left: 20px;
+    color: ${theme.colors.textSecondary};
+    font-size: 13px;
+    line-height: 1.7;
+    
+    li {
+      margin-bottom: 6px;
+    }
+  }
+`;
+
 const RecipeButton = styled.button`
   display: inline-flex;
   align-items: center;
@@ -1574,9 +1759,10 @@ const normalizedMeals = (plan: any) => {
   if (!raw) return [];
   const days = Array.isArray(raw) ? raw : Object.values(raw);
   if (!Array.isArray(days)) return [];
+  const isMonthly = plan?.config?.type === 'monthly';
 
   return days.map((day: any, index: number) => {
-    const label = day?.day || day?.title || `Día ${index + 1}`;
+    const label = day?.day || day?.title || day?.date || `Día ${day?.dayNumber || index + 1}`;
     const desc = day?.summary || day?.description || null;
     const meals = day?.meals;
 
@@ -1594,8 +1780,8 @@ const normalizedMeals = (plan: any) => {
                 `Comida ${mealIndex + 1}`,
               name: meal?.name || meal?.title || meal?.dish || 'Receta personalizada',
               description: meal?.description || meal?.notes || '',
-              calories: meal?.calories || meal?.kcal,
-              macros: meal?.macros,
+              calories: meal?.calories || meal?.nutrition?.calories || meal?.kcal,
+              macros: meal?.macros || meal?.nutrition,
               ingredients: meal?.ingredients || meal?.items || [],
               instructions: meal?.instructions || meal?.steps || meal?.preparation || [],
               prepTime: meal?.prepTime || meal?.preparationTime || 0,
@@ -1609,8 +1795,8 @@ const normalizedMeals = (plan: any) => {
               type: key.replace(/_/g, ' ').replace(/\b\w/g, letter => letter.toUpperCase()),
               name: value?.name || value?.title || value?.dish || 'Receta personalizada',
               description: value?.description || value?.notes || '',
-              calories: value?.calories || value?.kcal,
-              macros: value?.macros,
+              calories: value?.calories || value?.nutrition?.calories || value?.kcal,
+              macros: value?.macros || value?.nutrition,
               ingredients: value?.ingredients || value?.items || [],
               instructions: value?.instructions || value?.steps || value?.preparation || [],
               prepTime: value?.prepTime || value?.preparationTime || 0,
@@ -1619,11 +1805,24 @@ const normalizedMeals = (plan: any) => {
             }))
       : [];
 
+    // Incluir ejercicio si es plan mensual
+    const exercise = isMonthly && day?.exercise ? {
+      name: day.exercise.name || 'Ejercicio del día',
+      type: day.exercise.type || 'mixed',
+      duration: day.exercise.duration || 45,
+      description: day.exercise.description || '',
+      instructions: Array.isArray(day.exercise.instructions) ? day.exercise.instructions : [],
+      equipment: Array.isArray(day.exercise.equipment) ? day.exercise.equipment : [],
+      recommendations: Array.isArray(day.exercise.recommendations) ? day.exercise.recommendations : [],
+    } : null;
+
     return {
       key: day?.id || `day-${index}`,
       label,
       summary: desc,
       meals: normalizedEntries,
+      exercise,
+      tips: isMonthly && day?.tips ? (Array.isArray(day.tips) ? day.tips : []) : null,
     };
   });
 };
@@ -1803,14 +2002,16 @@ const PlanDetailPage: React.FC = () => {
     <PageWrapper>
       <BackLink to="/planes">
         <FiArrowLeft />
-        Volver a mis planes semanales
+        Volver a mis planes guardados
       </BackLink>
 
       <Header>
         <h1>{plan.name}</h1>
         <p>
           {plan.description ||
-            'Consulta tu menú semanal: todas las comidas respetan tus alergias, preferencias y objetivos nutricionales.'}
+            (plan.config?.type === 'monthly' 
+              ? 'Plan mensual completo con ejercicios personalizados adaptados a tu edad y objetivos para ayudarte a alcanzar tus metas más rápido.'
+              : 'Consulta tu menú semanal: todas las comidas respetan tus alergias, preferencias y objetivos nutricionales.')}
         </p>
       </Header>
 
@@ -1818,7 +2019,7 @@ const PlanDetailPage: React.FC = () => {
         <SummaryCard>
           <SummaryLabel>
             <FiCalendar />
-            Semana planificada
+            {plan.config?.type === 'monthly' ? 'Período del plan' : 'Semana planificada'}
           </SummaryLabel>
           <SummaryValue>
             {formatDate(plan.weekStart)} · {formatDate(plan.weekEnd)}
@@ -1844,8 +2045,13 @@ const PlanDetailPage: React.FC = () => {
             <FiClock />
             Total estimado
           </SummaryLabel>
-          <SummaryValue>{plan.estimatedCalories || plan.totalCalories} kcal / semana</SummaryValue>
-          <span>{plan.totalMeals} comidas programadas</span>
+          <SummaryValue>
+            {plan.estimatedCalories || plan.totalCalories} kcal / {plan.config?.type === 'monthly' ? 'mes' : 'semana'}
+          </SummaryValue>
+          <span>
+            {plan.totalMeals} comidas programadas
+            {plan.config?.type === 'monthly' && ' + 30 ejercicios personalizados'}
+          </span>
         </SummaryCard>
 
         <SummaryCard>
@@ -2006,6 +2212,95 @@ const PlanDetailPage: React.FC = () => {
                           );
                         })}
                       </MealList>
+
+                      {/* Sección de ejercicios para planes mensuales */}
+                      {day.exercise && (
+                        <ExerciseSection>
+                          <ExerciseHeader>
+                            <h4>
+                              <FiActivity />
+                              Ejercicio del Día
+                            </h4>
+                            <ExerciseTypeBadge type={day.exercise.type}>
+                              {day.exercise.type === 'cardio' ? 'Cardio' : 
+                               day.exercise.type === 'strength' ? 'Fuerza' : 
+                               day.exercise.type === 'flexibility' ? 'Flexibilidad' : 'Mixto'}
+                            </ExerciseTypeBadge>
+                          </ExerciseHeader>
+                          
+                          <ExerciseDescription>
+                            {day.exercise.description || day.exercise.name}
+                          </ExerciseDescription>
+                          
+                          <ExerciseMeta>
+                            <span>
+                              <FiClock />
+                              {day.exercise.duration} minutos
+                            </span>
+                            {day.exercise.type && (
+                              <span>
+                                <FiTarget />
+                                {day.exercise.type === 'cardio' ? 'Cardiovascular' : 
+                                 day.exercise.type === 'strength' ? 'Fuerza' : 
+                                 day.exercise.type === 'flexibility' ? 'Flexibilidad' : 'Mixto'}
+                              </span>
+                            )}
+                          </ExerciseMeta>
+                          
+                          {day.exercise.instructions && day.exercise.instructions.length > 0 && (
+                            <div>
+                              <h5 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: 600, color: theme.colors.primaryDark }}>
+                                Instrucciones
+                              </h5>
+                              <ExerciseInstructions>
+                                {day.exercise.instructions.map((instruction: string, idx: number) => (
+                                  <li key={idx}>{instruction}</li>
+                                ))}
+                              </ExerciseInstructions>
+                            </div>
+                          )}
+                          
+                          {day.exercise.equipment && day.exercise.equipment.length > 0 && (
+                            <ExerciseEquipment>
+                              <h5>Equipo necesario</h5>
+                              <div>
+                                {day.exercise.equipment.map((item: string, idx: number) => (
+                                  <span key={idx}>{item}</span>
+                                ))}
+                              </div>
+                            </ExerciseEquipment>
+                          )}
+                          
+                          {day.exercise.recommendations && day.exercise.recommendations.length > 0 && (
+                            <ExerciseRecommendations>
+                              <h5>
+                                <FiCheckCircle />
+                                Recomendaciones
+                              </h5>
+                              <ul>
+                                {day.exercise.recommendations.map((rec: string, idx: number) => (
+                                  <li key={idx}>{rec}</li>
+                                ))}
+                              </ul>
+                            </ExerciseRecommendations>
+                          )}
+                        </ExerciseSection>
+                      )}
+
+                      {/* Sección de tips para planes mensuales */}
+                      {day.tips && day.tips.length > 0 && (
+                        <TipsSection>
+                          <h5>
+                            <FiTarget />
+                            Consejos del Día
+                          </h5>
+                          <ul>
+                            {day.tips.map((tip: string, idx: number) => (
+                              <li key={idx}>{tip}</li>
+                            ))}
+                          </ul>
+                        </TipsSection>
+                      )}
                     </DayContent>
                   </DayCard>
                 );
