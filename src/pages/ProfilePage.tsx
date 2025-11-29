@@ -9,7 +9,7 @@ import { DatabaseService } from '../services/databaseService';
 import { theme } from '../styles/theme';
 import { redirectToBillingPortal } from '../services/stripeService';
 import { useSubscription } from '../context/SubscriptionContext';
-import { getStripeCustomerId } from '../services/subscriptionService';
+import { getUserSubscription } from '../services/subscriptionService';
 
 const PageWrapper = styled.div`
   max-width: 800px;
@@ -569,39 +569,88 @@ const ProfilePage: React.FC = () => {
       // 1. Intentar obtener el customer ID desde Supabase (prioridad)
       if (user?.id) {
         try {
-          customerId = await getStripeCustomerId(user.id);
-          if (customerId) {
-            console.log('✅ Customer ID obtenido desde Supabase');
+          console.log('🔍 Buscando customer_id en Supabase para usuario:', user.id);
+          const subscription = await getUserSubscription(user.id);
+          if (subscription?.stripe_customer_id) {
+            customerId = subscription.stripe_customer_id;
+            console.log('✅ Customer ID obtenido desde Supabase:', customerId);
+          } else {
+            console.warn('⚠️ No se encontró stripe_customer_id en la suscripción de Supabase');
+            console.log('📋 Datos de suscripción encontrados:', subscription);
           }
         } catch (error) {
-          console.error('Error obteniendo customer ID desde Supabase:', error);
+          console.error('❌ Error obteniendo customer ID desde Supabase:', error);
         }
       }
 
-      // 2. Fallback: Intentar obtenerlo del localStorage
+      // 2. Si no hay customer_id, intentar sincronizar desde Stripe
+      if (!customerId && user?.id && user?.email) {
+        try {
+          console.log('🔄 Sincronizando suscripción desde Stripe...');
+          const syncResponse = await fetch('/api/sync-subscription', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              userId: user.id,
+              userEmail: user.email,
+            }),
+          });
+
+          if (syncResponse.ok) {
+            const syncData = await syncResponse.json();
+            if (syncData.customerId) {
+              customerId = syncData.customerId;
+              console.log('✅ Customer ID obtenido después de sincronizar:', customerId);
+            } else {
+              console.warn('⚠️ Sincronización completada pero no se encontró customerId');
+            }
+          } else {
+            const errorData = await syncResponse.json();
+            console.error('❌ Error en sincronización:', errorData);
+          }
+        } catch (error) {
+          console.error('❌ Error sincronizando suscripción:', error);
+        }
+      }
+
+      // 3. Fallback: Intentar obtenerlo del localStorage
       if (!customerId) {
         const storedCustomerId = localStorage.getItem('stripe_customer_id');
         if (storedCustomerId) {
           customerId = storedCustomerId;
-          console.log('📋 Customer ID encontrado en localStorage (fallback)');
+          console.log('📋 Customer ID encontrado en localStorage (fallback):', customerId);
         }
       }
       
-      // 3. Si no se encontró el customer ID
+      // 4. Si no se encontró el customer ID
       if (!customerId) {
-        alert('No se encontró información de suscripción de Stripe. Asegúrate de tener una suscripción activa. Si acabas de suscribirte, espera unos momentos y vuelve a intentar.');
+        console.error('❌ No se pudo obtener customer_id de ninguna fuente');
+        alert('No se encontró información de suscripción de Stripe. Asegúrate de tener una suscripción activa. Si acabas de suscribirte, espera unos momentos y vuelve a intentar. Si el problema persiste, contacta al soporte.');
         setIsOpeningPortal(false);
         return;
       }
 
-      // 4. Redirigir al portal de facturación de Stripe
+      // 5. Validar que el customer_id tenga el formato correcto
+      if (!customerId.startsWith('cus_')) {
+        console.error('❌ Customer ID tiene formato incorrecto:', customerId);
+        alert('El ID de cliente de Stripe tiene un formato incorrecto. Por favor, contacta al soporte.');
+        setIsOpeningPortal(false);
+        return;
+      }
+
+      console.log('🚀 Intentando abrir portal de facturación con customer_id:', customerId);
+
+      // 6. Redirigir al portal de facturación de Stripe
       const result = await redirectToBillingPortal(customerId);
       
       if (!result.success && result.error) {
+        console.error('❌ Error al abrir portal:', result.error);
         alert(result.error || 'Error al abrir el portal de facturación. Por favor, intenta de nuevo.');
       }
     } catch (error) {
-      console.error('Error abriendo portal de facturación:', error);
+      console.error('❌ Error abriendo portal de facturación:', error);
       alert('Error al abrir el portal de facturación. Por favor, intenta de nuevo o contacta al soporte.');
     } finally {
       setIsOpeningPortal(false);

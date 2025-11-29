@@ -197,63 +197,50 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         console.log('🔑 Client reference ID:', session.client_reference_id);
 
         // Obtener la suscripción asociada
-        const subscriptionId = session.subscription as string;
+        const subscriptionId = session.subscription as string | null;
+        console.log('📋 Subscription ID de la sesión:', subscriptionId || 'NO ENCONTRADO');
         
-        if (!subscriptionId) {
-          console.error('❌ No se encontró subscription_id en la sesión');
-          console.error('📋 Datos de la sesión:', JSON.stringify(session, null, 2));
-          // Aún así intentar actualizar con la información disponible
-          if (session.customer_email) {
-            try {
-              // Buscar usuario por email usando listUsers
-              const { data: { users }, error: listError } = await supabase.auth.admin.listUsers();
-              const authUser = users?.find(u => u.email === session.customer_email);
-              if (authUser) {
-                const customerId = session.customer as string;
-                if (customerId) {
-                  const subscriptionData = {
-                    user_id: authUser.id,
-                    stripe_customer_id: customerId,
-                    plan: (session.metadata?.planId as 'trial' | 'weekly' | 'monthly' | 'annual') || 'monthly',
-                    is_premium: true,
-                    status: 'active',
-                  };
-                  const { error: upsertError } = await supabase
-                    .from('user_subscriptions')
-                    .upsert(subscriptionData, { onConflict: 'user_id' });
-                  if (!upsertError) {
-                    console.log('✅ Suscripción actualizada sin subscription_id');
-                  }
-                }
-              }
-            } catch (error) {
-              console.error('❌ Error actualizando sin subscription_id:', error);
+        // Obtener customer_id de la sesión
+        let customerId = session.customer as string | null;
+        console.log('📋 Customer ID de la sesión:', customerId || 'NO ENCONTRADO');
+        
+        // Obtener información de la suscripción desde Stripe (si existe)
+        let subscription: Stripe.Subscription | null = null;
+        
+        if (subscriptionId) {
+          try {
+            subscription = await stripe.subscriptions.retrieve(subscriptionId);
+            customerId = subscription.customer as string;
+            console.log('✅ Suscripción obtenida de Stripe:', {
+              subscriptionId,
+              customerId,
+              status: subscription.status,
+              plan: subscription.items.data[0]?.price.id,
+            });
+          } catch (error: any) {
+            console.error('❌ Error obteniendo suscripción de Stripe:', error);
+            // Continuar sin la suscripción completa
+            if (!customerId) {
+              customerId = session.customer as string;
             }
           }
-          break;
-        }
-
-        // Obtener información de la suscripción desde Stripe
-        let subscription: Stripe.Subscription | null = null;
-        let customerId: string;
-        
-        try {
-          subscription = await stripe.subscriptions.retrieve(subscriptionId);
-          customerId = subscription.customer as string;
-          console.log('✅ Suscripción obtenida de Stripe:', {
-            subscriptionId,
-            customerId,
-            status: subscription.status,
-          });
-        } catch (error: any) {
-          console.error('❌ Error obteniendo suscripción de Stripe:', error);
-          // Intentar usar el customer_id de la sesión directamente
-          customerId = session.customer as string;
+        } else {
+          console.warn('⚠️ No hay subscription_id en la sesión - esto puede ser normal para algunos tipos de checkout');
+          // Intentar obtener customer_id de la sesión
           if (!customerId) {
-            console.error('❌ No se pudo obtener customer_id ni de la suscripción ni de la sesión');
-            break;
+            customerId = session.customer as string;
           }
-          // Continuar con el customer_id aunque no tengamos la suscripción completa
+        }
+        
+        // Si aún no tenemos customer_id, no podemos continuar
+        if (!customerId) {
+          console.error('❌ No se pudo obtener customer_id de ninguna fuente');
+          console.error('📋 Datos completos de la sesión:', JSON.stringify(session, null, 2));
+          // Responder a Stripe pero loguear el error
+          return res.status(200).json({ 
+            received: true, 
+            warning: 'No customer_id found' 
+          });
         }
 
         // Buscar el usuario - PRIORIDAD: client_reference_id (más confiable)
@@ -320,13 +307,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             client_reference_id: session.client_reference_id,
             metadata: session.metadata,
           });
-          // Loguear el error pero continuar (ya respondimos a Stripe)
-          return;
+          // Responder a Stripe pero loguear el error crítico
+          return res.status(200).json({ 
+            received: true, 
+            warning: 'User not found - subscription not updated' 
+          });
         }
 
-        // Extraer el plan del price_id o metadata
+        console.log('✅ Usuario encontrado, procediendo a actualizar suscripción:', userId);
+
+        // Extraer el plan del price_id, metadata o línea de items de la sesión
         let plan: 'trial' | 'weekly' | 'monthly' | 'annual' = 'monthly';
         
+        // Prioridad 1: De la suscripción (si existe)
         if (subscription) {
           const priceId = subscription.items.data[0]?.price.id;
           const priceIds = {
@@ -336,81 +329,186 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             annual: process.env.VITE_STRIPE_PRICE_ANNUAL || process.env.NEXT_PUBLIC_STRIPE_PRICE_ANNUAL,
           };
 
+          console.log('🔍 Comparando price_id:', { priceId, priceIds });
+          
           if (priceId === priceIds.trial) plan = 'trial';
           else if (priceId === priceIds.weekly) plan = 'weekly';
+          else if (priceId === priceIds.monthly) plan = 'monthly';
           else if (priceId === priceIds.annual) plan = 'annual';
-        } else if (session.metadata?.planId) {
+          
+          console.log('📋 Plan detectado desde subscription:', plan);
+        }
+        // Prioridad 2: De metadata de la sesión
+        else if (session.metadata?.planId) {
           plan = session.metadata.planId as 'trial' | 'weekly' | 'monthly' | 'annual';
-          console.log('📋 Plan obtenido de metadata:', plan);
+          console.log('📋 Plan obtenido de metadata de sesión:', plan);
+        }
+        // Prioridad 3: De la línea de items de la sesión
+        else if (session.line_items) {
+          try {
+            // Obtener los line items de la sesión
+            const lineItems = await stripe.checkout.sessions.listLineItems(session.id);
+            if (lineItems.data && lineItems.data.length > 0) {
+              const priceId = lineItems.data[0].price?.id;
+              if (priceId) {
+                const priceIds = {
+                  trial: process.env.VITE_STRIPE_PRICE_TRIAL || process.env.NEXT_PUBLIC_STRIPE_PRICE_TRIAL || 'price_1SYlSnKHiNy1x57tiLVPXQFW',
+                  weekly: process.env.VITE_STRIPE_PRICE_WEEKLY || process.env.NEXT_PUBLIC_STRIPE_PRICE_WEEKLY,
+                  monthly: process.env.VITE_STRIPE_PRICE_MONTHLY || process.env.NEXT_PUBLIC_STRIPE_PRICE_MONTHLY,
+                  annual: process.env.VITE_STRIPE_PRICE_ANNUAL || process.env.NEXT_PUBLIC_STRIPE_PRICE_ANNUAL,
+                };
+                
+                if (priceId === priceIds.trial) plan = 'trial';
+                else if (priceId === priceIds.weekly) plan = 'weekly';
+                else if (priceId === priceIds.monthly) plan = 'monthly';
+                else if (priceId === priceIds.annual) plan = 'annual';
+                
+                console.log('📋 Plan detectado desde line_items:', plan);
+              }
+            }
+          } catch (error: any) {
+            console.warn('⚠️ Error obteniendo line_items de la sesión:', error.message);
+          }
         }
 
         // Determinar el estado de la suscripción
         const isActive = subscription 
           ? (subscription.status === 'active' || subscription.status === 'trialing')
-          : true; // Si no tenemos la suscripción, asumir activa
+          : true; // Si no tenemos la suscripción, asumir activa para checkout completado
         const status = subscription 
           ? (subscription.status === 'active' || subscription.status === 'trialing' ? 'active' : subscription.status)
-          : 'active';
+          : 'active'; // Checkout completado implica suscripción activa
+
+        console.log('📋 Estado de suscripción determinado:', { isActive, status, plan });
 
         // Insertar o actualizar la suscripción en Supabase
+        // CRÍTICO: Asegurar que TODOS los campos requeridos estén presentes
         const subscriptionData: any = {
           user_id: userId,
           stripe_customer_id: customerId,
-          stripe_subscription_id: subscriptionId,
+          stripe_subscription_id: subscriptionId || null, // Permitir null para casos sin subscription
           plan: plan,
           is_premium: isActive,
           status: status,
         };
 
-        // Agregar fechas si tenemos la suscripción completa
-        // IMPORTANTE: Usar UTC para todas las fechas para evitar problemas de zona horaria
-        if (subscription) {
-          // Stripe devuelve timestamps en Unix (segundos), convertir a ISO string en UTC
-          const periodStart = new Date((subscription as any).current_period_start * 1000);
-          const periodEnd = new Date((subscription as any).current_period_end * 1000);
+        // IMPORTANTE: SIEMPRE establecer fechas, incluso si no hay suscripción completa
+        // Usar UTC para todas las fechas para evitar problemas de zona horaria
+        let periodStart: Date;
+        let periodEnd: Date;
+        
+        if (subscription && (subscription as any).current_period_start && (subscription as any).current_period_end) {
+          // Caso 1: Tenemos suscripción completa con fechas de Stripe
+          periodStart = new Date((subscription as any).current_period_start * 1000);
+          periodEnd = new Date((subscription as any).current_period_end * 1000);
           
-          subscriptionData.current_period_start = periodStart.toISOString();
-          subscriptionData.current_period_end = periodEnd.toISOString();
-          subscriptionData.cancel_at_period_end = (subscription as any).cancel_at_period_end;
+          subscriptionData.cancel_at_period_end = (subscription as any).cancel_at_period_end || false;
           subscriptionData.canceled_at = (subscription as any).canceled_at 
             ? new Date((subscription as any).canceled_at * 1000).toISOString() 
             : null;
           
-          console.log('📅 Fechas de suscripción (UTC):', {
-            start: subscriptionData.current_period_start,
-            end: subscriptionData.current_period_end,
+          console.log('📅 Fechas obtenidas de Stripe subscription (UTC):', {
+            start: periodStart.toISOString(),
+            end: periodEnd.toISOString(),
             serverTime: new Date().toISOString(),
           });
+        } else {
+          // Caso 2: No hay suscripción completa o no tiene fechas - calcular basado en el plan
+          const now = new Date();
+          periodStart = new Date(now);
+          periodEnd = new Date(now);
+          
+          // Calcular fecha de fin según el plan
+          if (plan === 'trial') {
+            periodEnd.setDate(periodEnd.getDate() + 7);
+            console.log('📅 Plan TRIAL: Estableciendo período de 7 días');
+          } else if (plan === 'weekly') {
+            periodEnd.setDate(periodEnd.getDate() + 7);
+            console.log('📅 Plan WEEKLY: Estableciendo período de 7 días');
+          } else if (plan === 'monthly') {
+            periodEnd.setMonth(periodEnd.getMonth() + 1);
+            console.log('📅 Plan MONTHLY: Estableciendo período de 1 mes');
+          } else if (plan === 'annual') {
+            periodEnd.setFullYear(periodEnd.getFullYear() + 1);
+            console.log('📅 Plan ANNUAL: Estableciendo período de 1 año');
+          } else {
+            // Fallback: 1 mes por defecto
+            periodEnd.setMonth(periodEnd.getMonth() + 1);
+            console.warn('⚠️ Plan desconocido, usando período de 1 mes por defecto');
+          }
+          
+          subscriptionData.cancel_at_period_end = false;
+          subscriptionData.canceled_at = null;
+          
+          console.log('📅 Fechas calculadas por plan (UTC):', {
+            start: periodStart.toISOString(),
+            end: periodEnd.toISOString(),
+            plan: plan,
+            daysDifference: Math.round((periodEnd.getTime() - periodStart.getTime()) / (1000 * 60 * 60 * 24)),
+          });
+        }
+        
+        // SIEMPRE establecer las fechas (nunca dejar NULL)
+        subscriptionData.current_period_start = periodStart.toISOString();
+        subscriptionData.current_period_end = periodEnd.toISOString();
+        
+        // Verificación final: asegurar que las fechas no sean NULL
+        if (!subscriptionData.current_period_start || !subscriptionData.current_period_end) {
+          console.error('❌ ERROR CRÍTICO: Las fechas no se establecieron correctamente');
+          console.error('📋 subscriptionData:', JSON.stringify(subscriptionData, null, 2));
+          // Establecer fechas de emergencia
+          const now = new Date();
+          subscriptionData.current_period_start = now.toISOString();
+          subscriptionData.current_period_end = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString(); // 30 días
+          console.warn('⚠️ Usando fechas de emergencia (30 días)');
         }
 
-        console.log('💾 Actualizando suscripción en Supabase:', JSON.stringify(subscriptionData, null, 2));
+        console.log('💾 Preparando para actualizar suscripción en Supabase:');
+        console.log('📋 Datos completos:', JSON.stringify(subscriptionData, null, 2));
 
-        const { error: upsertError, data: upsertData } = await supabase
-          .from('user_subscriptions')
-          .upsert(subscriptionData, {
-            onConflict: 'user_id',
+        try {
+          const { error: upsertError, data: upsertData } = await supabase
+            .from('user_subscriptions')
+            .upsert(subscriptionData, {
+              onConflict: 'user_id',
+            });
+
+          if (upsertError) {
+            console.error('❌ ERROR CRÍTICO actualizando suscripción en Supabase:');
+            console.error('📋 Código de error:', upsertError.code);
+            console.error('📋 Mensaje de error:', upsertError.message);
+            console.error('📋 Detalles:', upsertError.details);
+            console.error('📋 Hint:', upsertError.hint);
+            console.error('📋 Datos que intentamos guardar:', JSON.stringify(subscriptionData, null, 2));
+            
+            // Responder a Stripe con advertencia pero no fallar
+            return res.status(200).json({ 
+              received: true, 
+              error: 'Database update failed',
+              details: upsertError.message
+            });
+          }
+
+          console.log('✅✅✅ SUSCRIPCIÓN ACTUALIZADA EXITOSAMENTE EN SUPABASE ✅✅✅');
+          console.log('📋 Detalles:', {
+            userId,
+            customerId,
+            subscriptionId: subscriptionId || 'N/A',
+            isPremium: subscriptionData.is_premium,
+            plan: subscriptionData.plan,
+            status: subscriptionData.status,
+            data: upsertData,
           });
 
-        if (upsertError) {
-          console.error('❌ Error actualizando suscripción en Supabase:', upsertError);
-          console.error('📋 Código de error:', upsertError.code);
-          console.error('📋 Mensaje de error:', upsertError.message);
-          console.error('📋 Detalles:', upsertError.details);
-          console.error('📋 Hint:', upsertError.hint);
-          console.error('📋 Datos que intentamos guardar:', JSON.stringify(subscriptionData, null, 2));
-          // Loguear el error pero continuar (ya respondimos a Stripe)
-          return;
+        } catch (error: any) {
+          console.error('❌ EXCEPCIÓN al actualizar suscripción en Supabase:', error);
+          console.error('📋 Stack trace:', error.stack);
+          return res.status(200).json({ 
+            received: true, 
+            error: 'Exception during database update',
+            details: error.message
+          });
         }
-
-        console.log('✅ Suscripción actualizada exitosamente en Supabase:', {
-          userId,
-          customerId,
-          subscriptionId,
-          isPremium: subscriptionData.is_premium,
-          plan: subscriptionData.plan,
-          status: subscriptionData.status,
-          data: upsertData,
-        });
 
         break;
       }
