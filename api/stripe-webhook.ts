@@ -1,5 +1,6 @@
 import Stripe from 'stripe';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { Readable } from 'stream';
 
 /**
  * Webhook de Stripe para manejar eventos de suscripción
@@ -38,22 +39,46 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   // Obtener el body raw para la verificación de la firma
-  // En Vercel, cuando bodyParser: false, req.body viene como Buffer o string
-  let rawBody: string | Buffer;
+  // CRÍTICO: En Vercel, cuando bodyParser: false, req.body debería ser un Buffer
+  // Pero a veces puede venir parseado, así que necesitamos manejarlo correctamente
+  let rawBody: Buffer;
   
-  if (Buffer.isBuffer(req.body)) {
-    rawBody = req.body;
-  } else if (typeof req.body === 'string') {
-    rawBody = req.body;
-  } else {
-    // Si viene parseado (no debería pasar con bodyParser: false), convertirlo
-    rawBody = JSON.stringify(req.body);
+  try {
+    // En Vercel con bodyParser: false, el body debería venir como Buffer
+    if (Buffer.isBuffer(req.body)) {
+      rawBody = req.body;
+      console.log('✅ Body recibido como Buffer, tamaño:', rawBody.length);
+    } else if (typeof req.body === 'string') {
+      // Si es string, convertirlo a Buffer
+      // Esto puede pasar si Vercel lo convierte automáticamente
+      rawBody = Buffer.from(req.body, 'utf8');
+      console.log('⚠️ Body recibido como string, convertido a Buffer, tamaño:', rawBody.length);
+    } else {
+      // Si viene parseado como objeto, esto es un problema grave
+      // La verificación de firma fallará porque el JSON puede tener diferencias de formato
+      console.error('❌ Body recibido como objeto parseado. Esto causará fallo en verificación de firma.');
+      console.error('📋 Tipo de body:', typeof req.body);
+      console.error('📋 Body:', JSON.stringify(req.body).substring(0, 200));
+      
+      // Intentar reconstruirlo, pero esto probablemente fallará
+      const bodyString = JSON.stringify(req.body);
+      rawBody = Buffer.from(bodyString, 'utf8');
+      console.warn('⚠️ Intentando reconstruir body desde objeto parseado. La verificación puede fallar.');
+    }
+    
+    if (!rawBody || rawBody.length === 0) {
+      return res.status(400).json({ error: 'No body found in request' });
+    }
+  } catch (error: any) {
+    console.error('❌ Error procesando body:', error);
+    return res.status(400).json({ error: 'Error processing request body' });
   }
 
   let event: Stripe.Event;
 
   try {
-    // Verificar la firma del webhook usando el body raw
+    // Verificar la firma del webhook usando el body raw como Buffer
+    // CRÍTICO: El body debe ser exactamente como Stripe lo envió
     event = stripe.webhooks.constructEvent(
       rawBody,
       signature,
@@ -62,8 +87,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.log('✅ Webhook verificado:', event.type);
   } catch (err: any) {
     console.error('❌ Error verificando webhook:', err.message);
-    console.error('📋 Tipo de body:', typeof req.body);
+    console.error('📋 Tipo de body original:', typeof req.body);
     console.error('📋 Es Buffer:', Buffer.isBuffer(req.body));
+    console.error('📋 Tamaño del rawBody:', rawBody.length);
+    console.error('📋 Primeros 200 caracteres del body:', rawBody.toString('utf8').substring(0, 200));
+    console.error('📋 Signature recibida:', signature.substring(0, 50) + '...');
     return res.status(400).json({ error: `Webhook Error: ${err.message}` });
   }
 
@@ -88,6 +116,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         console.log('💳 Checkout completado:', session.id);
         console.log('📧 Email del cliente:', session.customer_email);
         console.log('👤 Customer ID de la sesión:', session.customer);
+        console.log('🔑 Client reference ID:', session.client_reference_id);
 
         // Obtener la suscripción asociada
         const subscriptionId = session.subscription as string;
@@ -214,7 +243,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             metadata: session.metadata,
           });
           // Loguear el error pero continuar (ya respondimos a Stripe)
-          // Esto es crítico - sin userId no podemos actualizar Supabase
           return;
         }
 
@@ -409,9 +437,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 }
 
 // Configuración para manejar el body raw
+// CRÍTICO: bodyParser debe ser false para que Stripe pueda verificar la firma
 export const config = {
   api: {
     bodyParser: false,
   },
 };
-
