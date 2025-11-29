@@ -76,10 +76,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // URLs de redirección
-    const origin = req.headers.origin || req.headers.referer?.split('/').slice(0, 3).join('/') || 'http://localhost:5173';
+    // Obtener el dominio correcto
+    let origin = req.headers.origin || req.headers.referer?.split('/').slice(0, 3).join('/');
+    
+    // Si no hay origin, usar variables de entorno o valores por defecto
+    if (!origin) {
+      origin = process.env.NEXT_PUBLIC_SITE_URL || 
+               process.env.VITE_SITE_URL || 
+               process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 
+               'https://mytastypath.com';
+    }
+    
+    // Asegurarse de que la URL no tenga doble barra
+    origin = origin.replace(/\/$/, '');
+    
     // Incluir {CHECKOUT_SESSION_ID} en la URL para poder obtenerlo después
     const successUrl = `${origin}/suscripcion?success=true&plan=${planId}&session_id={CHECKOUT_SESSION_ID}`;
     const cancelUrl = `${origin}/suscripcion?canceled=true`;
+    
+    console.log('🔗 URLs de redirección:', {
+      origin,
+      successUrl,
+      cancelUrl,
+    });
 
     console.log('🔄 Creando sesión de checkout de Stripe...');
     console.log('📋 Plan:', planId);
