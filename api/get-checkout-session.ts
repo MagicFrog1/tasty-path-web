@@ -2,6 +2,17 @@ import Stripe from 'stripe';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 /**
+ * Tipo extendido para Subscription con propiedades adicionales
+ * Estas propiedades existen en tiempo de ejecución pero no están en los tipos de Stripe
+ */
+interface SubscriptionWithPeriods extends Stripe.Subscription {
+  current_period_start: number;
+  current_period_end: number;
+  cancel_at_period_end?: boolean;
+  canceled_at?: number | null;
+}
+
+/**
  * Función serverless de Vercel para obtener información de una sesión de checkout de Stripe
  * Se usa para obtener el customer ID después de que el usuario completa el pago
  */
@@ -54,14 +65,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       try {
         const subscription = await stripe.subscriptions.retrieve(session.subscription as string, {
           expand: ['items.data.price']
-        });
+        }) as SubscriptionWithPeriods;
         
         subscriptionInfo = {
           id: subscription.id,
           status: subscription.status,
           plan: subscription.items.data[0]?.price.id || null,
-          current_period_start: (subscription as any).current_period_start,
-          current_period_end: (subscription as any).current_period_end,
+          current_period_start: subscription.current_period_start,
+          current_period_end: subscription.current_period_end,
         };
         
         console.log('📋 Información de suscripción obtenida:', subscriptionInfo);
