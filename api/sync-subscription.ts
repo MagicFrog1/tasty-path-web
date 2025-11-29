@@ -2,17 +2,6 @@ import Stripe from 'stripe';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 /**
- * Tipo extendido para Subscription con propiedades adicionales
- * Estas propiedades existen en tiempo de ejecución pero no están en los tipos de Stripe
- */
-interface SubscriptionWithPeriods extends Stripe.Subscription {
-  current_period_start: number;
-  current_period_end: number;
-  cancel_at_period_end?: boolean;
-  canceled_at?: number | null;
-}
-
-/**
  * Endpoint para sincronizar la suscripción desde Stripe a Supabase
  * Se usa cuando el webhook no ha actualizado Supabase o cuando el usuario necesita refrescar su estado
  */
@@ -120,8 +109,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    // Obtener la suscripción más reciente con tipo extendido
-    const subscription = subscriptions.data[0] as SubscriptionWithPeriods;
+    // Obtener la suscripción más reciente
+    const subscription = subscriptions.data[0];
     const priceId = subscription.items.data[0]?.price.id;
     
     // Determinar el plan
@@ -177,10 +166,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       is_premium: isActive,
       status: status,
       // Usar UTC para todas las fechas (Stripe devuelve timestamps en Unix segundos)
-      current_period_start: convertTimestampToISO(subscription.current_period_start),
-      current_period_end: convertTimestampToISO(subscription.current_period_end),
-      cancel_at_period_end: subscription.cancel_at_period_end || false,
-      canceled_at: convertTimestampToISO(subscription.canceled_at),
+      current_period_start: convertTimestampToISO((subscription as any).current_period_start),
+      current_period_end: convertTimestampToISO((subscription as any).current_period_end),
+      cancel_at_period_end: (subscription as any).cancel_at_period_end || false,
+      canceled_at: convertTimestampToISO((subscription as any).canceled_at),
     };
 
     const { error: upsertError } = await supabase
