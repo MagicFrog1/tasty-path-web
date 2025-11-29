@@ -149,9 +149,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       cancel_url: cancelUrl,
       customer_email: customerEmail,
       billing_address_collection: 'auto',
-      // Guardar el customer ID en los metadatos para poder recuperarlo después
+      // CRÍTICO: Usar client_reference_id para asociar el usuario de Supabase
+      // Esto permite que el webhook identifique qué usuario actualizar
+      client_reference_id: userId || undefined,
+      // Guardar información adicional en metadata
       metadata: {
         planId: planId,
+        userId: userId || '',
       },
     });
 

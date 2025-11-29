@@ -132,11 +132,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           // Continuar con el customer_id aunque no tengamos la suscripción completa
         }
 
-        // Buscar el usuario por customer_id o email
+        // Buscar el usuario - PRIORIDAD: client_reference_id (más confiable)
         let userId: string | null = null;
 
-        // Intentar buscar por customer_id en la tabla de suscripciones
-        if (customerId) {
+        // 1. PRIORIDAD: Usar client_reference_id (ID del usuario de Supabase pasado al crear la sesión)
+        if (session.client_reference_id) {
+          userId = session.client_reference_id;
+          console.log('✅ Usuario obtenido desde client_reference_id:', userId);
+        }
+
+        // 2. Si no hay client_reference_id, intentar desde metadata
+        if (!userId && session.metadata?.userId) {
+          userId = session.metadata.userId;
+          console.log('✅ Usuario obtenido desde metadata.userId:', userId);
+        }
+
+        // 3. Si aún no tenemos userId, buscar por customer_id en la tabla de suscripciones
+        if (!userId && customerId) {
           try {
             const { data: existingSubscription, error: searchError } = await supabase
               .from('user_subscriptions')
@@ -155,10 +167,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           }
         }
 
-        // Si no encontramos por customer_id, buscar por email
+        // 4. Último recurso: buscar por email
         if (!userId && session.customer_email) {
           try {
-            console.log('🔍 Buscando usuario por email:', session.customer_email);
+            console.log('🔍 Buscando usuario por email (último recurso):', session.customer_email);
             const { data: authUser, error: emailError } = await supabase.auth.admin.getUserByEmail(session.customer_email);
             if (authUser?.user) {
               userId = authUser.user.id;
@@ -177,8 +189,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           console.error('❌ No se pudo encontrar el usuario para:', {
             customerId,
             email: session.customer_email,
+            client_reference_id: session.client_reference_id,
+            metadata: session.metadata,
           });
           // Loguear el error pero continuar (ya respondimos a Stripe)
+          // Esto es crítico - sin userId no podemos actualizar Supabase
           return;
         }
 
