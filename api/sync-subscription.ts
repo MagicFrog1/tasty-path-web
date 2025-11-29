@@ -40,11 +40,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Obtener el userId si solo tenemos el email
     let finalUserId = userId;
     if (!finalUserId && userEmail) {
-      const { data: authUser } = await supabase.auth.admin.getUserByEmail(userEmail);
-      if (!authUser?.user) {
+      // Buscar usuario por email usando listUsers
+      const { data: { users }, error: listError } = await supabase.auth.admin.listUsers();
+      if (listError) {
+        return res.status(500).json({ error: 'Error buscando usuario' });
+      }
+      const authUser = users?.find(u => u.email === userEmail);
+      if (!authUser) {
         return res.status(404).json({ error: 'Usuario no encontrado' });
       }
-      finalUserId = authUser.user.id;
+      finalUserId = authUser.id;
     }
 
     // Buscar el customer_id en Supabase primero
@@ -132,11 +137,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       plan: plan,
       is_premium: isActive,
       status: status,
-      current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-      current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
-      cancel_at_period_end: subscription.cancel_at_period_end,
-      canceled_at: subscription.canceled_at 
-        ? new Date(subscription.canceled_at * 1000).toISOString() 
+      current_period_start: new Date((subscription as any).current_period_start * 1000).toISOString(),
+      current_period_end: new Date((subscription as any).current_period_end * 1000).toISOString(),
+      cancel_at_period_end: (subscription as any).cancel_at_period_end,
+      canceled_at: (subscription as any).canceled_at 
+        ? new Date((subscription as any).canceled_at * 1000).toISOString() 
         : null,
     };
 

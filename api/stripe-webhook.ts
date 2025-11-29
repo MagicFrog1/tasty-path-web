@@ -258,11 +258,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         // Agregar fechas si tenemos la suscripción completa
         if (subscription) {
-          subscriptionData.current_period_start = new Date(subscription.current_period_start * 1000).toISOString();
-          subscriptionData.current_period_end = new Date(subscription.current_period_end * 1000).toISOString();
-          subscriptionData.cancel_at_period_end = subscription.cancel_at_period_end;
-          subscriptionData.canceled_at = subscription.canceled_at 
-            ? new Date(subscription.canceled_at * 1000).toISOString() 
+          subscriptionData.current_period_start = new Date((subscription as any).current_period_start * 1000).toISOString();
+          subscriptionData.current_period_end = new Date((subscription as any).current_period_end * 1000).toISOString();
+          subscriptionData.cancel_at_period_end = (subscription as any).cancel_at_period_end;
+          subscriptionData.canceled_at = (subscription as any).canceled_at 
+            ? new Date((subscription as any).canceled_at * 1000).toISOString() 
             : null;
         }
 
@@ -341,10 +341,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             plan: plan,
             is_premium: subscription.status === 'active' || subscription.status === 'trialing',
             status: status,
-            current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-            current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
-            cancel_at_period_end: subscription.cancel_at_period_end,
-            canceled_at: subscription.canceled_at ? new Date(subscription.canceled_at * 1000).toISOString() : null,
+            current_period_start: new Date((subscription as any).current_period_start * 1000).toISOString(),
+            current_period_end: new Date((subscription as any).current_period_end * 1000).toISOString(),
+            cancel_at_period_end: (subscription as any).cancel_at_period_end,
+            canceled_at: (subscription as any).canceled_at ? new Date((subscription as any).canceled_at * 1000).toISOString() : null,
           })
           .eq('stripe_customer_id', customerId);
 
