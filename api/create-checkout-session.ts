@@ -46,6 +46,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Mapear planId a Price ID
     // Priorizar VITE_* (como están configuradas en Vercel)
     const priceIds: Record<string, string> = {
+      trial: process.env.VITE_STRIPE_PRICE_TRIAL || process.env.NEXT_PUBLIC_STRIPE_PRICE_TRIAL || process.env.STRIPE_PRICE_TRIAL || 'price_1SYlSnKHiNy1x57tiLVPXQFW',
       weekly: process.env.VITE_STRIPE_PRICE_WEEKLY || process.env.NEXT_PUBLIC_STRIPE_PRICE_WEEKLY || process.env.STRIPE_PRICE_WEEKLY || '',
       monthly: process.env.VITE_STRIPE_PRICE_MONTHLY || process.env.NEXT_PUBLIC_STRIPE_PRICE_MONTHLY || process.env.STRIPE_PRICE_MONTHLY || '',
       annual: process.env.VITE_STRIPE_PRICE_ANNUAL || process.env.NEXT_PUBLIC_STRIPE_PRICE_ANNUAL || process.env.STRIPE_PRICE_ANNUAL || '',
@@ -54,6 +55,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const priceId = priceIds[planId];
 
     console.log('🔍 Price IDs configurados:', {
+      trial: priceIds.trial ? `${priceIds.trial.substring(0, 20)}...` : 'NO ENCONTRADO',
       weekly: priceIds.weekly ? `${priceIds.weekly.substring(0, 20)}...` : 'NO ENCONTRADO',
       monthly: priceIds.monthly ? `${priceIds.monthly.substring(0, 20)}...` : 'NO ENCONTRADO',
       annual: priceIds.annual ? `${priceIds.annual.substring(0, 20)}...` : 'NO ENCONTRADO',
@@ -157,7 +159,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           const subscriptionData = {
             user_id: userId,
             stripe_customer_id: (session.customer as string) || null,
-            plan: planId as 'weekly' | 'monthly' | 'annual',
+            plan: planId as 'trial' | 'weekly' | 'monthly' | 'annual',
             is_premium: false, // Siempre false al inicio
             status: 'incomplete',
           };

@@ -6,7 +6,7 @@ export interface UserSubscription {
   user_id: string;
   stripe_customer_id: string | null;
   stripe_subscription_id: string | null;
-  plan: 'weekly' | 'monthly' | 'annual' | null;
+  plan: 'trial' | 'weekly' | 'monthly' | 'annual' | null;
   is_premium: boolean;
   status: 'active' | 'canceled' | 'past_due' | 'unpaid' | 'trialing' | 'incomplete' | 'incomplete_expired' | 'paused' | null;
   current_period_start: string | null;
@@ -66,7 +66,7 @@ export async function getStripeCustomerId(userId: string): Promise<string | null
  */
 export async function createInitialSubscription(
   userId: string,
-  plan: 'weekly' | 'monthly' | 'annual',
+  plan: 'trial' | 'weekly' | 'monthly' | 'annual',
   stripeCustomerId?: string
 ): Promise<UserSubscription | null> {
   try {

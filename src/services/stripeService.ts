@@ -6,8 +6,9 @@ import { ENV_CONFIG } from '../../env.config';
 /**
  * Obtiene el Price ID de Stripe según el plan
  */
-export const getStripePriceId = (planId: 'weekly' | 'monthly' | 'annual'): string | null => {
+export const getStripePriceId = (planId: 'trial' | 'weekly' | 'monthly' | 'annual'): string | null => {
   const priceIds = {
+    trial: ENV_CONFIG.STRIPE_PRICE_TRIAL || 'price_1SYlSnKHiNy1x57tiLVPXQFW',
     weekly: ENV_CONFIG.STRIPE_PRICE_WEEKLY,
     monthly: ENV_CONFIG.STRIPE_PRICE_MONTHLY,
     annual: ENV_CONFIG.STRIPE_PRICE_ANNUAL,
@@ -28,7 +29,7 @@ export const getStripePriceId = (planId: 'weekly' | 'monthly' | 'annual'): strin
  * Usa el nuevo flujo de Stripe: crea una sesión en el backend y redirige a la URL
  */
 export const redirectToCheckout = async (
-  planId: 'weekly' | 'monthly' | 'annual',
+  planId: 'trial' | 'weekly' | 'monthly' | 'annual',
   customerEmail?: string,
   userId?: string
 ): Promise<{ success: boolean; error?: string }> => {
@@ -42,6 +43,7 @@ export const redirectToCheckout = async (
     if (!priceId) {
       console.error('❌ Price ID no encontrado para el plan:', planId);
       console.error('🔍 Configuración actual:', {
+        trial: ENV_CONFIG.STRIPE_PRICE_TRIAL ? 'Configurado' : 'NO CONFIGURADO',
         weekly: ENV_CONFIG.STRIPE_PRICE_WEEKLY ? 'Configurado' : 'NO CONFIGURADO',
         monthly: ENV_CONFIG.STRIPE_PRICE_MONTHLY ? 'Configurado' : 'NO CONFIGURADO',
         annual: ENV_CONFIG.STRIPE_PRICE_ANNUAL ? 'Configurado' : 'NO CONFIGURADO',
@@ -130,6 +132,7 @@ export const redirectToCheckout = async (
 export const isStripeConfigured = (): boolean => {
   return !!(
     ENV_CONFIG.STRIPE_PUBLISHABLE_KEY &&
+    (ENV_CONFIG.STRIPE_PRICE_TRIAL || 'price_1SYlSnKHiNy1x57tiLVPXQFW') &&
     ENV_CONFIG.STRIPE_PRICE_WEEKLY &&
     ENV_CONFIG.STRIPE_PRICE_MONTHLY &&
     ENV_CONFIG.STRIPE_PRICE_ANNUAL

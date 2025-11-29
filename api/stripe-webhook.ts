@@ -183,20 +183,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
 
         // Extraer el plan del price_id o metadata
-        let plan: 'weekly' | 'monthly' | 'annual' = 'monthly';
+        let plan: 'trial' | 'weekly' | 'monthly' | 'annual' = 'monthly';
         
         if (subscription) {
           const priceId = subscription.items.data[0]?.price.id;
           const priceIds = {
+            trial: process.env.VITE_STRIPE_PRICE_TRIAL || process.env.NEXT_PUBLIC_STRIPE_PRICE_TRIAL || 'price_1SYlSnKHiNy1x57tiLVPXQFW',
             weekly: process.env.VITE_STRIPE_PRICE_WEEKLY || process.env.NEXT_PUBLIC_STRIPE_PRICE_WEEKLY,
             monthly: process.env.VITE_STRIPE_PRICE_MONTHLY || process.env.NEXT_PUBLIC_STRIPE_PRICE_MONTHLY,
             annual: process.env.VITE_STRIPE_PRICE_ANNUAL || process.env.NEXT_PUBLIC_STRIPE_PRICE_ANNUAL,
           };
 
-          if (priceId === priceIds.weekly) plan = 'weekly';
+          if (priceId === priceIds.trial) plan = 'trial';
+          else if (priceId === priceIds.weekly) plan = 'weekly';
           else if (priceId === priceIds.annual) plan = 'annual';
         } else if (session.metadata?.planId) {
-          plan = session.metadata.planId as 'weekly' | 'monthly' | 'annual';
+          plan = session.metadata.planId as 'trial' | 'weekly' | 'monthly' | 'annual';
           console.log('📋 Plan obtenido de metadata:', plan);
         }
 
@@ -275,15 +277,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         // Extraer el plan del price_id
         const priceId = subscription.items.data[0]?.price.id;
-        let plan: 'weekly' | 'monthly' | 'annual' = 'monthly';
+        let plan: 'trial' | 'weekly' | 'monthly' | 'annual' = 'monthly';
         
         const priceIds = {
+          trial: process.env.VITE_STRIPE_PRICE_TRIAL || process.env.NEXT_PUBLIC_STRIPE_PRICE_TRIAL || 'price_1SYlSnKHiNy1x57tiLVPXQFW',
           weekly: process.env.VITE_STRIPE_PRICE_WEEKLY || process.env.NEXT_PUBLIC_STRIPE_PRICE_WEEKLY,
           monthly: process.env.VITE_STRIPE_PRICE_MONTHLY || process.env.NEXT_PUBLIC_STRIPE_PRICE_MONTHLY,
           annual: process.env.VITE_STRIPE_PRICE_ANNUAL || process.env.NEXT_PUBLIC_STRIPE_PRICE_ANNUAL,
         };
 
-        if (priceId === priceIds.weekly) plan = 'weekly';
+        if (priceId === priceIds.trial) plan = 'trial';
+        else if (priceId === priceIds.weekly) plan = 'weekly';
         else if (priceId === priceIds.annual) plan = 'annual';
 
         const status = subscription.status === 'active' || subscription.status === 'trialing' ? 'active' : subscription.status;

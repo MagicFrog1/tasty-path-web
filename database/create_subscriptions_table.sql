@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS public.user_subscriptions (
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     stripe_customer_id TEXT UNIQUE,
     stripe_subscription_id TEXT UNIQUE,
-    plan TEXT CHECK (plan IN ('weekly', 'monthly', 'annual')) NOT NULL,
+    plan TEXT CHECK (plan IN ('trial', 'weekly', 'monthly', 'annual')) NOT NULL,
     is_premium BOOLEAN DEFAULT false NOT NULL,
     status TEXT CHECK (status IN ('active', 'canceled', 'past_due', 'unpaid', 'trialing', 'incomplete', 'incomplete_expired', 'paused')) DEFAULT 'incomplete',
     current_period_start TIMESTAMP WITH TIME ZONE,
