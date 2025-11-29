@@ -90,7 +90,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                   const subscriptionData = {
                     user_id: authUser.user.id,
                     stripe_customer_id: customerId,
-                    plan: (session.metadata?.planId as 'weekly' | 'monthly' | 'annual') || 'monthly',
+                    plan: (session.metadata?.planId as 'trial' | 'weekly' | 'monthly' | 'annual') || 'monthly',
                     is_premium: true,
                     status: 'active',
                   };

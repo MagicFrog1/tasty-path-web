@@ -6,7 +6,7 @@ import { useSubscription } from '../context/SubscriptionContext';
 import { theme } from '../styles/theme';
 import { redirectToCheckout, isStripeConfigured, redirectToBillingPortal } from '../services/stripeService';
 import { useAuth } from '../context/AuthContext';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { ENV_CONFIG } from '../../env.config';
 import { getStripeCustomerId } from '../services/subscriptionService';
 
@@ -18,6 +18,15 @@ const fadeInUp = keyframes`
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+`;
+
+const loadingBar = keyframes`
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
   }
 `;
 
@@ -37,6 +46,46 @@ const pulse = keyframes`
   50% {
     opacity: 0.8;
   }
+`;
+
+const SuccessModal = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: ${fadeInUp} 0.3s ease-out;
+`;
+
+const SuccessModalContent = styled.div`
+  background-color: #ffffff;
+  border-radius: 20px;
+  padding: 40px;
+  max-width: 500px;
+  text-align: center;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.3);
+  animation: ${fadeInUp} 0.4s ease-out;
+`;
+
+const LoadingBarContainer = styled.div`
+  width: 100%;
+  height: 4px;
+  background-color: #e2e8f0;
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 24px;
+`;
+
+const LoadingBar = styled.div`
+  width: 100%;
+  height: 100%;
+  background-color: #2e8b57;
+  animation: ${loadingBar} 2s linear;
 `;
 
 const PageWrapper = styled.div`
@@ -436,9 +485,11 @@ const SubscriptionPage: React.FC = () => {
   const { availablePlans, currentPlan, selectPlan, checkSubscriptionStatus } = useSubscription();
   const { user } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const [isProcessing, setIsProcessing] = useState(false);
   const [stripeAvailable, setStripeAvailable] = useState(false);
   const [isOpeningPortal, setIsOpeningPortal] = useState(false);
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
 
   // Actualizar estado de suscripción cuando el usuario esté disponible
   useEffect(() => {
@@ -461,8 +512,9 @@ const SubscriptionPage: React.FC = () => {
     const sessionId = params.get('session_id');
 
     if (success && plan) {
-      // El pago fue exitoso, sincronizar la suscripción desde Stripe
+      // El pago fue exitoso, mostrar mensaje de éxito
       console.log('✅ Pago exitoso, sincronizando suscripción...');
+      setShowSuccessMessage(true);
       
       // Esperar un momento para que el webhook procese
       setTimeout(async () => {
@@ -483,6 +535,13 @@ const SubscriptionPage: React.FC = () => {
             if (syncResponse.ok) {
               const syncData = await syncResponse.json();
               console.log('✅ Suscripción sincronizada:', syncData);
+              
+              // Guardar customer_id si está disponible
+              if (syncData.customerId) {
+                localStorage.setItem('stripe_customer_id', syncData.customerId);
+                console.log('✅ Customer ID guardado desde sync:', syncData.customerId);
+              }
+              
               // Actualizar el estado local
               await checkSubscriptionStatus(user.id);
             } else {
@@ -495,17 +554,16 @@ const SubscriptionPage: React.FC = () => {
 
         // Si hay un session_id, intentar obtener el customer ID
         if (sessionId) {
-          fetch(`/api/get-checkout-session?session_id=${sessionId}`)
-            .then(res => res.json())
-            .then(data => {
-              if (data.customerId) {
-                localStorage.setItem('stripe_customer_id', data.customerId);
-                console.log('✅ Customer ID guardado:', data.customerId);
-              }
-            })
-            .catch(error => {
-              console.error('Error obteniendo customer ID:', error);
-            });
+          try {
+            const sessionResponse = await fetch(`/api/get-checkout-session?session_id=${sessionId}`);
+            const sessionData = await sessionResponse.json();
+            if (sessionData.customerId) {
+              localStorage.setItem('stripe_customer_id', sessionData.customerId);
+              console.log('✅ Customer ID guardado desde sesión:', sessionData.customerId);
+            }
+          } catch (error) {
+            console.error('Error obteniendo customer ID:', error);
+          }
         }
 
         // Actualizar el plan local
@@ -513,6 +571,12 @@ const SubscriptionPage: React.FC = () => {
         
         // Limpiar la URL
         window.history.replaceState({}, '', '/suscripcion');
+        
+        // Esperar 2 segundos más para mostrar el mensaje, luego redirigir al dashboard
+        setTimeout(() => {
+          setShowSuccessMessage(false);
+          navigate('/dashboard');
+        }, 2000);
       }, 3000); // Esperar 3 segundos para que el webhook procese
     } else if (canceled) {
       // El usuario canceló el pago
@@ -662,6 +726,22 @@ const SubscriptionPage: React.FC = () => {
 
   return (
     <PageWrapper>
+      {showSuccessMessage && (
+        <SuccessModal>
+          <SuccessModalContent>
+            <FiCheckCircle style={{ fontSize: '64px', color: '#2e8b57', marginBottom: '20px' }} />
+            <h2 style={{ margin: '0 0 16px 0', fontSize: '28px', fontWeight: 700, color: '#0a0e13' }}>
+              ¡Suscripción Exitosa!
+            </h2>
+            <p style={{ margin: '0 0 24px 0', fontSize: '16px', color: '#4a5568', lineHeight: '1.6' }}>
+              Tu suscripción se ha activado correctamente. Serás redirigido al dashboard en unos momentos...
+            </p>
+            <LoadingBarContainer>
+              <LoadingBar />
+            </LoadingBarContainer>
+          </SuccessModalContent>
+        </SuccessModal>
+      )}
       <Hero>
         <h1>Upgrade to TastyPath Premium</h1>
         <p>

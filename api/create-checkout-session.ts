@@ -109,8 +109,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
     
     // Incluir {CHECKOUT_SESSION_ID} en la URL para poder obtenerlo después
+    // Usar la ruta completa con el dominio correcto
     const successUrl = `${origin}/suscripcion?success=true&plan=${planId}&session_id={CHECKOUT_SESSION_ID}`;
     const cancelUrl = `${origin}/suscripcion?canceled=true`;
+    
+    // Validar que las URLs sean válidas
+    try {
+      new URL(successUrl);
+      new URL(cancelUrl);
+    } catch (error) {
+      console.error('❌ URLs de redirección inválidas:', { successUrl, cancelUrl });
+      return res.status(500).json({ 
+        error: 'Error generando URLs de redirección. Verifica la configuración del dominio.' 
+      });
+    }
     
     console.log('🔗 URLs de redirección:', {
       origin,
