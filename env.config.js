@@ -62,15 +62,15 @@ if (typeof window !== 'undefined' && typeof import.meta !== 'undefined' && impor
 
 export const ENV_CONFIG = {
   // OpenAI API Configuration
-  // Priorizar NEXT_PUBLIC_* (Vercel) sobre VITE_* (desarrollo local)
+  // Priorizar VITE_OPENAI_API_KEY (como está configurado en Vercel) sobre NEXT_PUBLIC_*
   OPENAI_API_KEY: (() => {
-    // PRIORIDAD 1: NEXT_PUBLIC_OPENAI_API_KEY (Vercel)
-    if (typeof import.meta !== 'undefined' && import.meta.env?.NEXT_PUBLIC_OPENAI_API_KEY) {
-      return import.meta.env.NEXT_PUBLIC_OPENAI_API_KEY;
-    }
-    // PRIORIDAD 2: VITE_OPENAI_API_KEY (desarrollo local)
+    // PRIORIDAD 1: VITE_OPENAI_API_KEY (configurado en Vercel)
     if (typeof import.meta !== 'undefined' && import.meta.env?.VITE_OPENAI_API_KEY) {
       return import.meta.env.VITE_OPENAI_API_KEY;
+    }
+    // PRIORIDAD 2: NEXT_PUBLIC_OPENAI_API_KEY (alternativa)
+    if (typeof import.meta !== 'undefined' && import.meta.env?.NEXT_PUBLIC_OPENAI_API_KEY) {
+      return import.meta.env.NEXT_PUBLIC_OPENAI_API_KEY;
     }
     // PRIORIDAD 3: getEnvVar (busca en múltiples lugares)
     const fromGetEnvVar = getEnvVar('OPENAI_API_KEY');
