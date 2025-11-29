@@ -1,6 +1,5 @@
 import Stripe from 'stripe';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { Readable } from 'stream';
 
 /**
  * Webhook de Stripe para manejar eventos de suscripción
