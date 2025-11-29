@@ -184,7 +184,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // Importar el cliente de Supabase (usando service_role para bypass de RLS)
   const { createClient } = await import('@supabase/supabase-js');
-  const supabase = createClient(supabaseUrl, supabaseServiceKey);
+  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  });
+  
+  // Verificar que el cliente tenga permisos de service_role
+  console.log('🔐 Cliente de Supabase creado con service_role (bypass RLS)');
 
   try {
     // Manejar diferentes tipos de eventos
@@ -207,18 +215,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // Obtener información de la suscripción desde Stripe (si existe)
         let subscription: Stripe.Subscription | null = null;
         
+        // CRÍTICO: Siempre intentar obtener la suscripción si hay subscriptionId
         if (subscriptionId) {
           try {
-            subscription = await stripe.subscriptions.retrieve(subscriptionId);
+            console.log('🔍 Obteniendo suscripción de Stripe con ID:', subscriptionId);
+            subscription = await stripe.subscriptions.retrieve(subscriptionId, {
+              expand: ['items.data.price']
+            });
             customerId = subscription.customer as string;
             console.log('✅ Suscripción obtenida de Stripe:', {
               subscriptionId,
               customerId,
               status: subscription.status,
-              plan: subscription.items.data[0]?.price.id,
+              priceId: subscription.items.data[0]?.price.id,
+              current_period_start: (subscription as any).current_period_start,
+              current_period_end: (subscription as any).current_period_end,
             });
           } catch (error: any) {
             console.error('❌ Error obteniendo suscripción de Stripe:', error);
+            console.error('📋 Detalles del error:', {
+              message: error.message,
+              type: error.type,
+              code: error.code,
+            });
             // Continuar sin la suscripción completa
             if (!customerId) {
               customerId = session.customer as string;
@@ -465,8 +484,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         console.log('💾 Preparando para actualizar suscripción en Supabase:');
         console.log('📋 Datos completos:', JSON.stringify(subscriptionData, null, 2));
+        console.log('🔐 Verificando credenciales de Supabase:', {
+          supabaseUrl: supabaseUrl ? `${supabaseUrl.substring(0, 20)}...` : 'NO CONFIGURADO',
+          hasServiceKey: !!supabaseServiceKey,
+        });
 
         try {
+          // Verificar que el cliente de Supabase esté configurado correctamente
+          console.log('🔍 Verificando conexión con Supabase...');
+          
+          // Intentar hacer una consulta de prueba para verificar permisos
+          const { data: testData, error: testError } = await supabase
+            .from('user_subscriptions')
+            .select('id')
+            .limit(1);
+          
+          if (testError && testError.code !== 'PGRST116') { // PGRST116 = no rows returned (es normal)
+            console.error('⚠️ Error de prueba en Supabase:', testError);
+            console.error('📋 Esto podría indicar un problema con las credenciales o permisos');
+          } else {
+            console.log('✅ Conexión con Supabase verificada');
+          }
+
+          console.log('💾 Ejecutando UPSERT en Supabase...');
           const { error: upsertError, data: upsertData } = await supabase
             .from('user_subscriptions')
             .upsert(subscriptionData, {
@@ -481,11 +521,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             console.error('📋 Hint:', upsertError.hint);
             console.error('📋 Datos que intentamos guardar:', JSON.stringify(subscriptionData, null, 2));
             
+            // CRÍTICO: Intentar INSERT directo si el UPSERT falla
+            console.log('🔄 Intentando INSERT directo como fallback...');
+            const { error: insertError, data: insertData } = await supabase
+              .from('user_subscriptions')
+              .insert(subscriptionData);
+            
+            if (insertError) {
+              console.error('❌ Error en INSERT directo:', insertError);
+            } else {
+              console.log('✅ INSERT directo exitoso:', insertData);
+            }
+            
             // Responder a Stripe con advertencia pero no fallar
             return res.status(200).json({ 
               received: true, 
               error: 'Database update failed',
-              details: upsertError.message
+              details: upsertError.message,
+              fallbackInsert: insertError ? 'failed' : 'success'
             });
           }
 
@@ -497,12 +550,66 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             isPremium: subscriptionData.is_premium,
             plan: subscriptionData.plan,
             status: subscriptionData.status,
+            periodStart: subscriptionData.current_period_start,
+            periodEnd: subscriptionData.current_period_end,
             data: upsertData,
           });
+
+          // Verificar que los datos se guardaron correctamente
+          const { data: verifyData, error: verifyError } = await supabase
+            .from('user_subscriptions')
+            .select('*')
+            .eq('user_id', userId)
+            .single();
+          
+          if (verifyError) {
+            console.error('⚠️ Error verificando datos guardados:', verifyError);
+          } else {
+            console.log('✅ Verificación: Datos confirmados en Supabase:', {
+              user_id: verifyData?.user_id,
+              stripe_customer_id: verifyData?.stripe_customer_id,
+              plan: verifyData?.plan,
+              is_premium: verifyData?.is_premium,
+              status: verifyData?.status,
+            });
+          }
+
+          // CRÍTICO: Actualizar también user_profiles con el nivel de suscripción
+          // Esto permite que la aplicación detecte rápidamente los permisos sin consultar user_subscriptions
+          try {
+            console.log('🔄 Actualizando user_profiles con nivel de suscripción...');
+            
+            // Mapear el plan a subscription_plan (user_profiles solo acepta 'weekly', 'monthly', 'annual')
+            // Para 'trial', usamos null o no actualizamos (depende de tu lógica de negocio)
+            let subscriptionPlan: 'weekly' | 'monthly' | 'annual' | null = null;
+            if (plan === 'weekly') subscriptionPlan = 'weekly';
+            else if (plan === 'monthly') subscriptionPlan = 'monthly';
+            else if (plan === 'annual') subscriptionPlan = 'annual';
+            // 'trial' se deja como null (o puedes decidir mapearlo a otro valor)
+            
+            const { error: profileUpdateError } = await supabase
+              .from('user_profiles')
+              .update({
+                subscription_plan: subscriptionPlan,
+                updated_at: new Date().toISOString(),
+              })
+              .eq('id', userId);
+            
+            if (profileUpdateError) {
+              console.error('⚠️ Error actualizando user_profiles:', profileUpdateError);
+              // No fallar el webhook si esto falla, solo loguear
+            } else {
+              console.log('✅ user_profiles actualizado con subscription_plan:', subscriptionPlan);
+            }
+          } catch (error: any) {
+            console.error('⚠️ Excepción actualizando user_profiles:', error);
+            // No fallar el webhook si esto falla
+          }
 
         } catch (error: any) {
           console.error('❌ EXCEPCIÓN al actualizar suscripción en Supabase:', error);
           console.error('📋 Stack trace:', error.stack);
+          console.error('📋 Tipo de error:', error.constructor.name);
           return res.status(200).json({ 
             received: true, 
             error: 'Exception during database update',
@@ -576,6 +683,32 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           isPremium: subscription.status === 'active' || subscription.status === 'trialing',
         });
 
+        // CRÍTICO: Actualizar también user_profiles con el nivel de suscripción
+        if (existingSubscription?.user_id) {
+          try {
+            let subscriptionPlan: 'weekly' | 'monthly' | 'annual' | null = null;
+            if (plan === 'weekly') subscriptionPlan = 'weekly';
+            else if (plan === 'monthly') subscriptionPlan = 'monthly';
+            else if (plan === 'annual') subscriptionPlan = 'annual';
+            
+            const { error: profileUpdateError } = await supabase
+              .from('user_profiles')
+              .update({
+                subscription_plan: subscriptionPlan,
+                updated_at: new Date().toISOString(),
+              })
+              .eq('id', existingSubscription.user_id);
+            
+            if (profileUpdateError) {
+              console.error('⚠️ Error actualizando user_profiles:', profileUpdateError);
+            } else {
+              console.log('✅ user_profiles actualizado con subscription_plan:', subscriptionPlan);
+            }
+          } catch (error: any) {
+            console.error('⚠️ Excepción actualizando user_profiles:', error);
+          }
+        }
+
         break;
       }
 
@@ -602,6 +735,34 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
 
         console.log('✅ Suscripción cancelada en Supabase:', customerId);
+
+        // CRÍTICO: Actualizar también user_profiles cuando se cancela la suscripción
+        try {
+          const { data: canceledSubscription } = await supabase
+            .from('user_subscriptions')
+            .select('user_id')
+            .eq('stripe_customer_id', customerId)
+            .single();
+          
+          if (canceledSubscription?.user_id) {
+            const { error: profileUpdateError } = await supabase
+              .from('user_profiles')
+              .update({
+                subscription_plan: null, // Cancelar = sin plan
+                updated_at: new Date().toISOString(),
+              })
+              .eq('id', canceledSubscription.user_id);
+            
+            if (profileUpdateError) {
+              console.error('⚠️ Error actualizando user_profiles al cancelar:', profileUpdateError);
+            } else {
+              console.log('✅ user_profiles actualizado: subscription_plan = null (cancelado)');
+            }
+          }
+        } catch (error: any) {
+          console.error('⚠️ Excepción actualizando user_profiles al cancelar:', error);
+        }
+
         break;
       }
 

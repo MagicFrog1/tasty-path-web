@@ -504,6 +504,9 @@ const SubscriptionPage: React.FC = () => {
   }, []);
 
   // Manejar redirección después del pago
+  // CRÍTICO: Usar useRef para evitar múltiples ejecuciones
+  const hasProcessedSuccess = React.useRef(false);
+  
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const success = params.get('success');
@@ -511,16 +514,20 @@ const SubscriptionPage: React.FC = () => {
     const plan = params.get('plan') as 'trial' | 'weekly' | 'monthly' | 'annual' | null;
     const sessionId = params.get('session_id');
 
-    if (success && plan) {
+    // Solo procesar success una vez
+    if (success && plan && !hasProcessedSuccess.current) {
+      hasProcessedSuccess.current = true;
+      
       // El pago fue exitoso, mostrar mensaje de éxito
       console.log('✅ Pago exitoso, sincronizando suscripción...');
       setShowSuccessMessage(true);
       
-      // Esperar un momento para que el webhook procese
-      setTimeout(async () => {
+      // Función para procesar la suscripción
+      const processSubscription = async () => {
         if (user?.id && user?.email) {
           try {
             // Sincronizar desde Stripe
+            console.log('🔄 Sincronizando suscripción desde Stripe...');
             const syncResponse = await fetch('/api/sync-subscription', {
               method: 'POST',
               headers: {
@@ -545,10 +552,11 @@ const SubscriptionPage: React.FC = () => {
               // Actualizar el estado local
               await checkSubscriptionStatus(user.id);
             } else {
-              console.error('Error sincronizando suscripción:', await syncResponse.text());
+              const errorText = await syncResponse.text();
+              console.error('❌ Error sincronizando suscripción:', errorText);
             }
           } catch (error) {
-            console.error('Error en sincronización:', error);
+            console.error('❌ Error en sincronización:', error);
           }
         }
 
@@ -562,22 +570,28 @@ const SubscriptionPage: React.FC = () => {
               console.log('✅ Customer ID guardado desde sesión:', sessionData.customerId);
             }
           } catch (error) {
-            console.error('Error obteniendo customer ID:', error);
+            console.error('❌ Error obteniendo customer ID:', error);
           }
         }
 
         // Actualizar el plan local
         await selectPlan(plan);
         
-        // Limpiar la URL
+        // Limpiar la URL inmediatamente para evitar re-ejecuciones
         window.history.replaceState({}, '', '/suscripcion');
         
-        // Esperar 2 segundos más para mostrar el mensaje, luego redirigir al dashboard
+        // Esperar 3 segundos para mostrar el mensaje, luego redirigir al dashboard
+        // PERO solo si el usuario no ha navegado a otra página
         setTimeout(() => {
-          setShowSuccessMessage(false);
-          navigate('/dashboard');
-        }, 2000);
-      }, 3000); // Esperar 3 segundos para que el webhook procese
+          if (window.location.pathname === '/suscripcion') {
+            setShowSuccessMessage(false);
+            navigate('/dashboard', { replace: true });
+          }
+        }, 3000);
+      };
+
+      // Esperar un momento para que el webhook procese antes de sincronizar
+      setTimeout(processSubscription, 2000);
     } else if (canceled) {
       // El usuario canceló el pago
       console.log('Pago cancelado por el usuario');
@@ -587,7 +601,12 @@ const SubscriptionPage: React.FC = () => {
       console.log('Usuario regresó del portal de facturación');
       window.history.replaceState({}, '', '/suscripcion');
     }
-  }, [location.search, selectPlan]);
+    
+    // Resetear el flag si no hay success en la URL
+    if (!success) {
+      hasProcessedSuccess.current = false;
+    }
+  }, [location.search, user?.id, user?.email, navigate, selectPlan, checkSubscriptionStatus]);
 
   const handleSelectPlan = async (planId: 'trial' | 'weekly' | 'monthly' | 'annual' | 'free') => {
     if (planId === 'free') {
