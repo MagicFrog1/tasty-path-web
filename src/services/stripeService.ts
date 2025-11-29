@@ -36,6 +36,22 @@ export const redirectToCheckout = async (
   try {
     console.log('🔄 Iniciando redirección a Stripe Checkout...');
     console.log('📋 Plan seleccionado:', planId);
+    console.log('📋 Customer Email recibido:', customerEmail || 'NO PROPORCIONADO');
+    console.log('📋 User ID recibido:', userId || 'NO PROPORCIONADO');
+    console.log('📋 User ID Type:', typeof userId);
+    console.log('📋 User ID Length:', userId ? String(userId).length : 0);
+    console.log('📋 User ID Valid UUID?:', userId ? /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId) : false);
+    
+    // CRÍTICO: Validar que userId sea un UUID válido
+    if (!userId) {
+      console.error('❌ ERROR CRÍTICO: userId no fue proporcionado a redirectToCheckout');
+      console.error('📋 Esto causará que client_reference_id sea null en Stripe');
+      console.error('📋 El webhook no podrá identificar al usuario correctamente');
+      // No fallar aquí, solo loguear - permitir checkout sin userId (aunque no es recomendado)
+    } else if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId)) {
+      console.error('❌ ERROR: userId no es un UUID válido:', userId);
+      console.error('📋 Formato esperado: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx');
+    }
     
     // Verificar que tenemos el Price ID configurado
     const priceId = getStripePriceId(planId);
@@ -57,18 +73,28 @@ export const redirectToCheckout = async (
     console.log('💰 Price ID obtenido:', priceId ? `${priceId.substring(0, 20)}...` : 'NO ENCONTRADO');
     console.log('📧 Email del cliente:', customerEmail || 'No proporcionado');
     
+    // Preparar el body para enviar al backend
+    const requestBody = {
+      planId,
+      customerEmail,
+      userId,
+    };
+    
+    console.log('📤 Enviando request a /api/create-checkout-session:');
+    console.log('📋 Request body:', JSON.stringify(requestBody, null, 2));
+    console.log('📋 userId en body:', requestBody.userId || 'NO INCLUIDO');
+    
     // Llamar a la API del backend para crear la sesión de checkout
     const response = await fetch('/api/create-checkout-session', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        planId,
-        customerEmail,
-        userId,
-      }),
+      body: JSON.stringify(requestBody),
     });
+    
+    console.log('📥 Response status:', response.status);
+    console.log('📥 Response ok:', response.ok);
 
     if (!response.ok) {
       let errorData;

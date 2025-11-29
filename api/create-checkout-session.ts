@@ -14,7 +14,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const { planId, customerEmail, userId } = req.body;
 
-    console.log('📥 Request recibido:', { planId, customerEmail, userId });
+    console.log('📥 Request recibido:', { 
+      planId, 
+      customerEmail, 
+      userId: userId || 'NO PROPORCIONADO',
+      userIdType: typeof userId,
+      userIdLength: userId ? String(userId).length : 0
+    });
+    
+    // CRÍTICO: Validar que userId sea un UUID válido si se proporciona
+    if (userId && (typeof userId !== 'string' || userId.trim() === '')) {
+      console.error('⚠️ userId proporcionado es inválido:', userId);
+      // No fallar, solo loguear - permitir checkout sin userId (aunque no es recomendado)
+    }
 
     if (!planId) {
       return res.status(400).json({ error: 'planId is required' });
@@ -151,11 +163,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       billing_address_collection: 'auto',
       // CRÍTICO: Usar client_reference_id para asociar el usuario de Supabase
       // Esto permite que el webhook identifique qué usuario actualizar
-      client_reference_id: userId || undefined,
-      // Guardar información adicional en metadata
+      // IMPORTANTE: Si userId está vacío o no es válido, no pasarlo (undefined)
+      client_reference_id: (userId && typeof userId === 'string' && userId.trim() !== '') ? userId.trim() : undefined,
+      // Guardar información adicional en metadata (siempre incluir planId)
       metadata: {
         planId: planId,
-        userId: userId || '',
+        ...(userId && typeof userId === 'string' && userId.trim() !== '' ? { userId: userId.trim() } : {}),
       },
     });
 

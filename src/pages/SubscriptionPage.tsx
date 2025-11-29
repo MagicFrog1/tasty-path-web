@@ -616,6 +616,27 @@ const SubscriptionPage: React.FC = () => {
 
     console.log('🔘 Botón de suscripción clickeado:', planId);
     
+    // CRÍTICO: Verificar que el usuario esté autenticado y tenga ID
+    console.log('🔍 Verificando información del usuario:');
+    console.log('📋 User object:', user);
+    console.log('📋 User ID:', user?.id);
+    console.log('📋 User Email:', user?.email);
+    console.log('📋 User ID Type:', typeof user?.id);
+    console.log('📋 User ID Length:', user?.id ? String(user?.id).length : 0);
+    console.log('📋 User ID Valid UUID?:', user?.id ? /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(user.id) : false);
+    
+    if (!user?.id) {
+      console.error('❌ ERROR CRÍTICO: user?.id es undefined o null');
+      console.error('📋 Esto significa que el usuario no está autenticado o el AuthContext no está funcionando correctamente');
+      alert('Error: No se pudo obtener tu información de usuario. Por favor, cierra sesión y vuelve a iniciar sesión.');
+      return;
+    }
+    
+    if (!user?.email) {
+      console.warn('⚠️ ADVERTENCIA: user?.email es undefined o null');
+      console.warn('📋 El checkout puede funcionar pero el webhook tendrá problemas para encontrar al usuario');
+    }
+    
     if (!stripeAvailable) {
       console.warn('⚠️ Stripe no está configurado, usando modo simulado');
       const env = (import.meta as any)?.env || {};
@@ -650,11 +671,26 @@ const SubscriptionPage: React.FC = () => {
     
     try {
       console.log('🚀 Redirigiendo a Stripe Checkout para plan:', planId);
+      console.log('📋 Parámetros que se enviarán a redirectToCheckout:');
+      console.log('  - planId:', planId);
+      console.log('  - customerEmail:', user?.email || 'NO DISPONIBLE');
+      console.log('  - userId:', user?.id || 'NO DISPONIBLE');
+      
+      // Validación final antes de llamar a redirectToCheckout
+      if (!user?.id) {
+        console.error('❌ ERROR: No se puede proceder sin user.id');
+        alert('Error: No se pudo obtener tu ID de usuario. Por favor, recarga la página e intenta de nuevo.');
+        setIsProcessing(false);
+        return;
+      }
+      
       const result = await redirectToCheckout(
         planId as 'trial' | 'weekly' | 'monthly' | 'annual',
-        user?.email,
+        user?.email || undefined,
         user?.id
       );
+      
+      console.log('📋 Resultado de redirectToCheckout:', result);
 
       clearTimeout(timeoutId); // Limpiar timeout si la operación se completa
 

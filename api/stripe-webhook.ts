@@ -276,6 +276,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           userId = session.metadata.userId;
           console.log('✅ Usuario obtenido desde metadata.userId:', userId);
         }
+        
+        // 2.5: Si metadata.userId existe pero está vacío, intentar de nuevo sin validación
+        if (!userId && session.metadata?.userId && session.metadata.userId.trim() !== '') {
+          userId = session.metadata.userId.trim();
+          console.log('✅ Usuario obtenido desde metadata.userId (trimmed):', userId);
+        }
 
         // 3. Si aún no tenemos userId, buscar por customer_id en la tabla de suscripciones
         if (!userId && customerId) {
@@ -297,22 +303,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           }
         }
 
-        // 4. Último recurso: buscar por email
+        // 4. Último recurso: buscar por email en user_profiles
         if (!userId && session.customer_email) {
           try {
-            console.log('🔍 Buscando usuario por email (último recurso):', session.customer_email);
-            // Buscar usuario por email usando listUsers
-            const { data: { users }, error: listError } = await supabase.auth.admin.listUsers();
-            if (listError) {
-              console.error('❌ Error listando usuarios:', listError);
+            console.log('🔍 Buscando usuario por email en user_profiles (último recurso):', session.customer_email);
+            // Buscar usuario por email en la tabla user_profiles (más confiable que auth.admin)
+            const { data: profileData, error: profileError } = await supabase
+              .from('user_profiles')
+              .select('id')
+              .eq('email', session.customer_email)
+              .maybeSingle();
+            
+            if (profileError) {
+              console.error('⚠️ Error buscando por email en user_profiles:', profileError);
+            } else if (profileData) {
+              userId = profileData.id;
+              console.log('✅ Usuario encontrado por email en user_profiles:', userId);
             } else {
-              const authUser = users?.find(u => u.email === session.customer_email);
-              if (authUser) {
-                userId = authUser.id;
-                console.log('✅ Usuario encontrado por email:', userId);
-              } else {
-                console.warn('⚠️ Usuario no encontrado por email:', session.customer_email);
-              }
+              console.warn('⚠️ Usuario no encontrado por email:', session.customer_email);
             }
           } catch (error: any) {
             console.error('❌ Error en búsqueda por email:', error);
@@ -326,11 +334,33 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             client_reference_id: session.client_reference_id,
             metadata: session.metadata,
           });
-          // Responder a Stripe pero loguear el error crítico
-          return res.status(200).json({ 
-            received: true, 
-            warning: 'User not found - subscription not updated' 
-          });
+          
+          // ÚLTIMA OPCIÓN: Crear una suscripción temporal usando solo el customer_id
+          // Esto permitirá que el usuario tenga acceso aunque no tengamos su user_id de Supabase
+          // Más tarde podrá vincularse manualmente o mediante el evento customer.subscription.updated
+          console.warn('⚠️ Intentando guardar suscripción sin user_id (solo con customer_id)...');
+          
+          // Buscar si ya existe una suscripción con este customer_id
+          const { data: existingByCustomer } = await supabase
+            .from('user_subscriptions')
+            .select('user_id')
+            .eq('stripe_customer_id', customerId)
+            .maybeSingle();
+          
+          if (existingByCustomer && existingByCustomer.user_id) {
+            userId = existingByCustomer.user_id;
+            console.log('✅ Usuario encontrado por customer_id existente:', userId);
+          } else {
+            // No podemos crear una suscripción sin user_id porque es NOT NULL
+            console.error('❌ No se puede crear suscripción sin user_id. Se requiere client_reference_id al crear la sesión.');
+            // Responder a Stripe pero loguear el error crítico
+            return res.status(200).json({ 
+              received: true, 
+              warning: 'User not found - subscription not updated. client_reference_id is required when creating checkout session.',
+              customerId: customerId,
+              email: session.customer_email
+            });
+          }
         }
 
         console.log('✅ Usuario encontrado, procediendo a actualizar suscripción:', userId);
