@@ -3,6 +3,7 @@ import { SubscriptionPlan, SubscriptionDetails, PlanOption } from '../types';
 import PaymentService, { PaymentResponse } from '../services/PaymentService';
 import { storage } from '../utils/storage';
 import { getUserSubscription } from '../services/subscriptionService';
+import { supabase } from '../services/supabase';
 
 interface SubscriptionContextType {
   currentPlan: SubscriptionDetails | null;
@@ -124,33 +125,43 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
       // Si tenemos userId, intentar obtener la suscripción desde Supabase
       if (userId) {
         try {
-          const dbSubscription = await getUserSubscription(userId);
-          
-          if (dbSubscription) {
-            console.log('✅ Suscripción encontrada en Supabase:', dbSubscription);
-            
-            // Convertir la suscripción de Supabase al formato SubscriptionDetails
-            const subscriptionDetails: SubscriptionDetails = {
-              plan: dbSubscription.plan || 'free',
-              startDate: dbSubscription.current_period_start || new Date().toISOString(),
-              endDate: dbSubscription.current_period_end || new Date().toISOString(),
-              isActive: dbSubscription.is_premium && dbSubscription.status === 'active',
-              autoRenew: !dbSubscription.cancel_at_period_end,
-              price: 0, // Se puede obtener desde Stripe si es necesario
-              currency: 'EUR',
-              trialDays: 0,
-              subscriptionId: dbSubscription.stripe_subscription_id || undefined,
-            };
-            
-            setCurrentPlan(subscriptionDetails);
-            // También guardar en localStorage como respaldo
-            storage.set(SUBSCRIPTION_STORAGE_KEY, subscriptionDetails);
-            return;
+          // Verificar que el usuario esté autenticado antes de consultar
+          const { data: { session } } = await supabase.auth.getSession();
+          if (!session) {
+            console.warn('⚠️ Usuario no autenticado, usando localStorage como fallback');
           } else {
-            console.log('ℹ️ No se encontró suscripción en Supabase para el usuario');
+            const dbSubscription = await getUserSubscription(userId);
+            
+            if (dbSubscription) {
+              console.log('✅ Suscripción encontrada en Supabase:', dbSubscription);
+              
+              // Convertir la suscripción de Supabase al formato SubscriptionDetails
+              const subscriptionDetails: SubscriptionDetails = {
+                plan: dbSubscription.plan || 'free',
+                startDate: dbSubscription.current_period_start || new Date().toISOString(),
+                endDate: dbSubscription.current_period_end || new Date().toISOString(),
+                isActive: dbSubscription.is_premium && (dbSubscription.status === 'active' || dbSubscription.status === 'trialing'),
+                autoRenew: !dbSubscription.cancel_at_period_end,
+                price: 0, // Se puede obtener desde Stripe si es necesario
+                currency: 'EUR',
+                trialDays: 0,
+                subscriptionId: dbSubscription.stripe_subscription_id || undefined,
+              };
+              
+              setCurrentPlan(subscriptionDetails);
+              // También guardar en localStorage como respaldo
+              storage.set(SUBSCRIPTION_STORAGE_KEY, subscriptionDetails);
+              return;
+            } else {
+              console.log('ℹ️ No se encontró suscripción en Supabase para el usuario');
+            }
           }
-        } catch (error) {
-          console.error('⚠️ Error obteniendo suscripción de Supabase:', error);
+        } catch (error: any) {
+          console.error('⚠️ Error obteniendo suscripción de Supabase:', {
+            message: error?.message,
+            status: error?.status,
+            code: error?.code,
+          });
           // Continuar con el flujo de localStorage como fallback
         }
       }

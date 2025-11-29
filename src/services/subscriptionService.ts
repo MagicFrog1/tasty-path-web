@@ -22,24 +22,43 @@ export interface UserSubscription {
  */
 export async function getUserSubscription(userId: string): Promise<UserSubscription | null> {
   try {
+    // Verificar que el usuario esté autenticado
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      console.warn('⚠️ Usuario no autenticado, no se puede obtener suscripción');
+      return null;
+    }
+
     const { data, error } = await supabase
       .from('user_subscriptions')
       .select('*')
       .eq('user_id', userId)
-      .single();
+      .maybeSingle(); // Usar maybeSingle en lugar de single para evitar errores cuando no hay resultados
 
     if (error) {
-      if (error.code === 'PGRST116') {
-        // No se encontró ninguna suscripción
+      // Error 406 (Not Acceptable) puede ocurrir por problemas de headers o RLS
+      if (error.code === 'PGRST116' || error.status === 406) {
+        // No se encontró ninguna suscripción o problema de acceso
+        console.log('ℹ️ No se encontró suscripción o problema de acceso:', error.message);
         return null;
       }
-      console.error('Error obteniendo suscripción:', error);
+      console.error('❌ Error obteniendo suscripción:', {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        status: error.status,
+      });
       return null;
     }
 
-    return data as UserSubscription;
-  } catch (error) {
-    console.error('Error obteniendo suscripción:', error);
+    return data as UserSubscription | null;
+  } catch (error: any) {
+    console.error('❌ Error obteniendo suscripción (catch):', {
+      message: error?.message,
+      status: error?.status,
+      code: error?.code,
+    });
     return null;
   }
 }

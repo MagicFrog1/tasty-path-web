@@ -622,6 +622,13 @@ const SubscriptionPage: React.FC = () => {
     }
 
     setIsProcessing(true);
+    
+    // Timeout de seguridad: resetear después de 10 segundos si no hay respuesta
+    const timeoutId = setTimeout(() => {
+      console.warn('⚠️ Timeout: reseteando estado de procesamiento');
+      setIsProcessing(false);
+    }, 10000);
+    
     try {
       console.log('🚀 Redirigiendo a Stripe Checkout para plan:', planId);
       const result = await redirectToCheckout(
@@ -630,16 +637,19 @@ const SubscriptionPage: React.FC = () => {
         user?.id
       );
 
+      clearTimeout(timeoutId); // Limpiar timeout si la operación se completa
+
       if (!result.success) {
         console.error('❌ Error en redirectToCheckout:', result.error);
-        alert(result.error || 'Error al procesar el pago. Por favor, verifica la configuración de Stripe.');
         setIsProcessing(false);
+        alert(result.error || 'Error al procesar el pago. Por favor, verifica la configuración de Stripe.');
       } else {
         console.log('✅ Redirección a Stripe iniciada, el usuario será redirigido...');
         // No establecer isProcessing a false aquí porque el usuario será redirigido
         // Si hay un error, se manejará en el catch
       }
     } catch (error) {
+      clearTimeout(timeoutId); // Limpiar timeout en caso de error
       console.error('❌ Error seleccionando plan:', error);
       setIsProcessing(false);
       alert('Error al procesar el pago. Por favor, intenta de nuevo. Si el problema persiste, contacta con soporte.');
