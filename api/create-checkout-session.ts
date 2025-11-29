@@ -85,7 +85,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Si no hay en variables de entorno, usar headers
     if (!origin) {
       origin = req.headers.origin || 
-               (req.headers.referer ? new URL(req.headers.referer).origin : null);
+               (req.headers.referer ? new URL(req.headers.referer).origin : undefined);
     }
     
     // Si aún no hay, usar VERCEL_URL o dominio por defecto

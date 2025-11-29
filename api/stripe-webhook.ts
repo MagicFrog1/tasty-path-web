@@ -37,18 +37,33 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: 'No signature found' });
   }
 
+  // Obtener el body raw para la verificación de la firma
+  // En Vercel, cuando bodyParser: false, req.body viene como Buffer o string
+  let rawBody: string | Buffer;
+  
+  if (Buffer.isBuffer(req.body)) {
+    rawBody = req.body;
+  } else if (typeof req.body === 'string') {
+    rawBody = req.body;
+  } else {
+    // Si viene parseado (no debería pasar con bodyParser: false), convertirlo
+    rawBody = JSON.stringify(req.body);
+  }
+
   let event: Stripe.Event;
 
   try {
-    // Verificar la firma del webhook
+    // Verificar la firma del webhook usando el body raw
     event = stripe.webhooks.constructEvent(
-      req.body,
+      rawBody,
       signature,
       webhookSecret
     );
     console.log('✅ Webhook verificado:', event.type);
   } catch (err: any) {
     console.error('❌ Error verificando webhook:', err.message);
+    console.error('📋 Tipo de body:', typeof req.body);
+    console.error('📋 Es Buffer:', Buffer.isBuffer(req.body));
     return res.status(400).json({ error: `Webhook Error: ${err.message}` });
   }
 
@@ -83,12 +98,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           // Aún así intentar actualizar con la información disponible
           if (session.customer_email) {
             try {
-              const { data: authUser } = await supabase.auth.admin.getUserByEmail(session.customer_email);
-              if (authUser?.user) {
+              // Buscar usuario por email usando listUsers
+              const { data: { users }, error: listError } = await supabase.auth.admin.listUsers();
+              const authUser = users?.find(u => u.email === session.customer_email);
+              if (authUser) {
                 const customerId = session.customer as string;
                 if (customerId) {
                   const subscriptionData = {
-                    user_id: authUser.user.id,
+                    user_id: authUser.id,
                     stripe_customer_id: customerId,
                     plan: (session.metadata?.planId as 'trial' | 'weekly' | 'monthly' | 'annual') || 'monthly',
                     is_premium: true,
@@ -110,7 +127,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
 
         // Obtener información de la suscripción desde Stripe
-        let subscription: Stripe.Subscription;
+        let subscription: Stripe.Subscription | null = null;
         let customerId: string;
         
         try {
@@ -171,14 +188,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         if (!userId && session.customer_email) {
           try {
             console.log('🔍 Buscando usuario por email (último recurso):', session.customer_email);
-            const { data: authUser, error: emailError } = await supabase.auth.admin.getUserByEmail(session.customer_email);
-            if (authUser?.user) {
-              userId = authUser.user.id;
-              console.log('✅ Usuario encontrado por email:', userId);
-            } else if (emailError) {
-              console.error('❌ Error buscando usuario por email:', emailError);
+            // Buscar usuario por email usando listUsers
+            const { data: { users }, error: listError } = await supabase.auth.admin.listUsers();
+            if (listError) {
+              console.error('❌ Error listando usuarios:', listError);
             } else {
-              console.warn('⚠️ Usuario no encontrado por email:', session.customer_email);
+              const authUser = users?.find(u => u.email === session.customer_email);
+              if (authUser) {
+                userId = authUser.id;
+                console.log('✅ Usuario encontrado por email:', userId);
+              } else {
+                console.warn('⚠️ Usuario no encontrado por email:', session.customer_email);
+              }
             }
           } catch (error: any) {
             console.error('❌ Error en búsqueda por email:', error);
@@ -245,7 +266,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             : null;
         }
 
-        console.log('💾 Actualizando suscripción en Supabase:', subscriptionData);
+        console.log('💾 Actualizando suscripción en Supabase:', JSON.stringify(subscriptionData, null, 2));
 
         const { error: upsertError, data: upsertData } = await supabase
           .from('user_subscriptions')
@@ -255,6 +276,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         if (upsertError) {
           console.error('❌ Error actualizando suscripción en Supabase:', upsertError);
+          console.error('📋 Código de error:', upsertError.code);
+          console.error('📋 Mensaje de error:', upsertError.message);
+          console.error('📋 Detalles:', upsertError.details);
+          console.error('📋 Hint:', upsertError.hint);
           console.error('📋 Datos que intentamos guardar:', JSON.stringify(subscriptionData, null, 2));
           // Loguear el error pero continuar (ya respondimos a Stripe)
           return;
@@ -267,6 +292,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           isPremium: subscriptionData.is_premium,
           plan: subscriptionData.plan,
           status: subscriptionData.status,
+          data: upsertData,
         });
 
         break;
