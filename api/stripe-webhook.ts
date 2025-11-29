@@ -665,22 +665,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             method: upsertError ? 'fallback' : 'upsert',
           });
 
-          // Verificar que los datos se guardaron correctamente
+          // Verificar que los datos se guardaron correctamente (usar maybeSingle para evitar errores)
           const { data: verifyData, error: verifyError } = await supabase
             .from('user_subscriptions')
-            .select('*')
+            .select('user_id, stripe_customer_id, stripe_subscription_id, plan, is_premium, status, current_period_start, current_period_end')
             .eq('user_id', userId)
-            .single();
+            .maybeSingle();
           
           if (verifyError) {
             console.error('⚠️ Error verificando datos guardados:', verifyError);
+          } else if (!verifyData) {
+            console.warn('⚠️ No se pudo verificar los datos guardados (la suscripción podría no existir aún)');
           } else {
             console.log('✅ Verificación: Datos confirmados en Supabase:', {
-              user_id: verifyData?.user_id,
-              stripe_customer_id: verifyData?.stripe_customer_id,
-              plan: verifyData?.plan,
-              is_premium: verifyData?.is_premium,
-              status: verifyData?.status,
+              user_id: verifyData.user_id,
+              stripe_customer_id: verifyData.stripe_customer_id,
+              stripe_subscription_id: verifyData.stripe_subscription_id,
+              plan: verifyData.plan,
+              is_premium: verifyData.is_premium,
+              status: verifyData.status,
+              period_start: verifyData.current_period_start,
+              period_end: verifyData.current_period_end,
             });
           }
 
