@@ -58,3 +58,4 @@ Mover el webhook a una Edge Function de Supabase que maneja mejor el body raw.
 - [Stripe Webhook Signing](https://docs.stripe.com/webhooks/signature)
 - [Vercel Serverless Functions](https://vercel.com/docs/functions/serverless-functions)
 
+

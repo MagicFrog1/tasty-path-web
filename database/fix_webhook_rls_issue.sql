@@ -174,3 +174,4 @@ WHERE proname = 'insert_user_subscription';
 -- 3. La función insert_user_subscription puede usarse como alternativa
 -- 4. Verificar que SUPABASE_SERVICE_ROLE_KEY esté configurada correctamente en Vercel
 
+

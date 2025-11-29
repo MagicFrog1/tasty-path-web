@@ -105,3 +105,4 @@ Después de agregar las variables, verifica que tengas:
 - 🔒 `SUPABASE_SERVICE_ROLE_KEY` tiene permisos completos de administrador, úsala con cuidado
 - 🧪 Para testing, usa claves de test (`sk_test_...`) en lugar de producción
 
+

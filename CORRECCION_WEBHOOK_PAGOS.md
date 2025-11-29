@@ -174,3 +174,4 @@ El webhook ahora responde **inmediatamente** a Stripe (para evitar timeouts) y p
 - ✅ Los errores se loguean pero no bloquean la respuesta a Stripe
 - ⚠️ Si hay un error, revisa los logs en Vercel para ver los detalles
 
+

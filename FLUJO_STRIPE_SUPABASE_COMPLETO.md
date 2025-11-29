@@ -206,3 +206,4 @@ if (subscription?.is_premium && subscription?.status === 'active') {
 - [x] Verificación post-guardado de datos
 - [x] Manejo de eventos: `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`
 
+

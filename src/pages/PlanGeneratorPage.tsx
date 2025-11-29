@@ -10,6 +10,7 @@ import AIMenuService, { AIMenuRequest } from '../services/AIMenuService';
 import { useSubscriptionRestrictions, FREE_PLAN_OPTIONS, PREMIUM_PLAN_OPTIONS } from '../hooks/useSubscriptionRestrictions';
 import { useSubscription } from '../context/SubscriptionContext';
 import { useNavigate } from 'react-router-dom';
+import MonthlyLimitBlock from '../components/MonthlyLimitBlock';
 
 const PageWrapper = styled.div`
   display: grid;
@@ -1286,6 +1287,11 @@ const PlanGeneratorPage: React.FC = () => {
         </Header>
       </PageWrapper>
     );
+  }
+
+  // Verificar límite mensual para usuarios no premium
+  if (!restrictions.isPremium && !restrictions.canGenerateThisMonth && restrictions.nextGenerationDate) {
+    return <MonthlyLimitBlock nextGenerationDate={restrictions.nextGenerationDate} />;
   }
 
   const loadingSteps = [

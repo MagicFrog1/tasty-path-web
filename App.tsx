@@ -4,6 +4,7 @@ import { MainLayout } from './src/layouts/MainLayout';
 import { AuthLayout } from './src/layouts/AuthLayout';
 import { FullScreenLoader } from './src/components/common/FullScreenLoader';
 import { useAuth } from './src/context/AuthContext';
+import PremiumRoute from './src/components/PremiumRoute';
 
 // Páginas mínimas web
 const LandingPage = React.lazy(() => import('./src/pages/LandingPage'));
@@ -55,10 +56,29 @@ const AppRoutes: React.FC = () => {
         <Route path="/" element={<LandingPage />} />
         <Route element={<MainLayout />}>
           <Route path="/dashboard" element={<HomePage />} />
-          <Route path="/generador" element={<PlanGeneratorPage />} />
-          <Route path="/lista-compra" element={<ShoppingListPage />} />
-          <Route path="/minutri-personal" element={<MiNutriPersonalPage />} />
-          <Route path="/nutrichat" element={<NutriChatPage />} />
+          {/* Generador con límite mensual para usuarios no premium */}
+          <Route path="/generador" element={
+            <PremiumRoute allowFree>
+              <PlanGeneratorPage />
+            </PremiumRoute>
+          } />
+          {/* Rutas que requieren suscripción premium activa */}
+          <Route path="/lista-compra" element={
+            <PremiumRoute>
+              <ShoppingListPage />
+            </PremiumRoute>
+          } />
+          <Route path="/minutri-personal" element={
+            <PremiumRoute>
+              <MiNutriPersonalPage />
+            </PremiumRoute>
+          } />
+          <Route path="/nutrichat" element={
+            <PremiumRoute>
+              <NutriChatPage />
+            </PremiumRoute>
+          } />
+          {/* Rutas públicas */}
           <Route path="/perfil" element={<ProfilePage />} />
           <Route path="/suscripcion" element={<SubscriptionPage />} />
           <Route path="/planes" element={<SavedPlansPage />} />

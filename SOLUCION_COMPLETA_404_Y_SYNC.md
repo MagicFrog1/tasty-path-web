@@ -214,3 +214,4 @@ El sistema ahora tiene **doble protección**:
 
 Esto asegura que **siempre** se actualice Supabase, incluso si el webhook tiene problemas.
 
+

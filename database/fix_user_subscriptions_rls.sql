@@ -68,3 +68,4 @@ ORDER BY cmd;
 -- Estas políticas solo aplican cuando los usuarios acceden directamente desde el cliente
 -- El webhook puede INSERT/UPDATE sin restricciones gracias a service_role
 
+

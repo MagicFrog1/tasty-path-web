@@ -89,3 +89,4 @@ El plan 'trial' aparecerá en la página de suscripciones junto con los otros pl
 3. **Probar el plan** haciendo una suscripción de prueba
 4. **Verificar** que el webhook actualiza correctamente Supabase con el plan 'trial'
 
+

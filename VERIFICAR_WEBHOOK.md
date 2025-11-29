@@ -148,3 +148,4 @@ Si después de seguir estos pasos el problema persiste, comparte:
 2. El estado del evento en Stripe Dashboard
 3. El resultado de la consulta SQL en Supabase
 
+

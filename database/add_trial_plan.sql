@@ -21,3 +21,4 @@ FROM pg_constraint
 WHERE conrelid = 'public.user_subscriptions'::regclass
 AND conname = 'user_subscriptions_plan_check';
 
+

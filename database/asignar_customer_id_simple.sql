@@ -42,3 +42,4 @@ JOIN auth.users u ON us.user_id = u.id
 WHERE u.email = 'angeldcchp94@gmail.com';
 
 
+

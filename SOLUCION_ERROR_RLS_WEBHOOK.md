@@ -267,3 +267,4 @@ GRANT EXECUTE ON FUNCTION public.insert_user_subscription TO service_role;
 **Última actualización:** 2025-11-29
 **Estado:** ✅ Solución implementada y lista para probar
 
+

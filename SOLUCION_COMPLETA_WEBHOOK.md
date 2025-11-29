@@ -206,3 +206,4 @@ El uso de `client_reference_id` es **CRÍTICO** porque:
 - Se incluye automáticamente en todos los eventos
 - Permite asociar directamente el usuario sin búsquedas adicionales
 
+

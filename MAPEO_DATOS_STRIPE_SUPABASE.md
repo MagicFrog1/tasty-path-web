@@ -148,3 +148,4 @@ Para verificar que todo funciona:
    - Revisar logs para ver si el código está calculando las fechas
    - Verificar que el bloque `else` (líneas 413-439) se esté ejecutando
 
+

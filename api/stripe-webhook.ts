@@ -585,11 +585,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 
                 // Último recurso: Intentar INSERT directo
                 console.log('🔄 Último intento: INSERT directo...');
-                const { error: insertError, data: insertData } = await supabase
-                  .from('user_subscriptions')
-                  .insert(subscriptionData);
-                
-                if (insertError) {
+            const { error: insertError, data: insertData } = await supabase
+              .from('user_subscriptions')
+              .insert(subscriptionData);
+            
+            if (insertError) {
                   console.error('❌ Error en INSERT directo también:', insertError);
                   // Responder a Stripe con advertencia pero no fallar
                   return res.status(200).json({ 
@@ -602,7 +602,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     },
                     subscriptionData: subscriptionData
                   });
-                } else {
+            } else {
                   console.log('✅ INSERT directo exitoso (último recurso):', insertData);
                   subscriptionSaved = true; // Marcar como guardado exitosamente
                   // Continuar con el flujo normal
@@ -624,8 +624,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               
               if (insertError) {
                 console.error('❌ Error en INSERT directo también:', insertError);
-                return res.status(200).json({ 
-                  received: true, 
+            return res.status(200).json({ 
+              received: true, 
                   error: 'Database update failed - all methods failed',
                   details: {
                     upsert: upsertError.message,

@@ -81,3 +81,4 @@ Después de crear una nueva sesión, verifica en Stripe Dashboard:
 
 Si ambos están vacíos, el problema está en cómo se está pasando el `userId` desde el frontend.
 
+
