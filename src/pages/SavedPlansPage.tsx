@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import styled from 'styled-components';
 import { Link } from 'react-router-dom';
-import { FiCalendar, FiClock, FiTrendingUp, FiChevronRight, FiTrash2, FiPlay, FiEdit, FiCheck, FiX, FiAward, FiActivity } from 'react-icons/fi';
+import { FiCalendar, FiClock, FiTrendingUp, FiChevronRight, FiTrash2, FiPlay, FiEdit, FiCheck, FiX, FiAward } from 'react-icons/fi';
 import { TbCrown } from 'react-icons/tb';
 import { useWeeklyPlan } from '../context/WeeklyPlanContext';
 import { theme } from '../styles/theme';
@@ -394,9 +394,9 @@ const SavedPlansPage: React.FC = () => {
       <PageWrapper>
         <Header>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16 }}>
-            <h1>Mis Planes Guardados</h1>
+            <h1>Mis Planes Semanales</h1>
           </div>
-          <p>Aún no has generado ningún plan. Crea tu primer plan semanal o mensual con IA para comenzar a organizar tus comidas y ejercicios.</p>
+          <p>Aún no has generado ningún plan semanal. Crea tu primer plan con IA para comenzar a organizar tus comidas.</p>
         </Header>
         <EmptyState>
           <h3>Empieza con tu primer plan</h3>
@@ -518,7 +518,7 @@ const SavedPlansPage: React.FC = () => {
             </ActionButton>
           </div>
         </div>
-        <p>Revisa tus planes generados por IA (semanales y mensuales), consulta el menú de cada día, ejercicios personalizados y mantén tus objetivos siempre visibles.</p>
+        <p>Revisa tus planes semanales generados por IA, consulta el menú de cada día y mantén tus objetivos siempre visibles.</p>
       </Header>
 
       <PlanGrid>
@@ -540,9 +540,7 @@ const SavedPlansPage: React.FC = () => {
                 </div>
               )}
               <PlanHeader>
-                <span>
-                  {isActive || plan.status === 'active' ? 'Plan activo' : plan.status === 'completed' ? 'Semana completada' : 'Plan guardado'}
-                </span>
+                <span>{isActive || plan.status === 'active' ? 'Plan activo' : plan.status === 'completed' ? 'Semana completada' : 'Plan guardado'}</span>
                 {isEditing ? (
                   <>
                     <RenameForm
@@ -595,16 +593,10 @@ const SavedPlansPage: React.FC = () => {
                 <MetaRow>
                   <FiClock />
                   {plan.totalMeals} comidas · {plan.estimatedCalories || plan.totalCalories} kcal/semana
-                  {plan.config?.hasExercises && ' · Ejercicios personalizados'}
                 </MetaRow>
                 <MetaRow>
                   <FiTrendingUp />
                   Objetivo: {plan.config?.goal || 'Personalizado'}
-                  {plan.config?.hasExercises && (
-                    <span style={{ marginLeft: '8px', padding: '2px 8px', borderRadius: '6px', background: 'rgba(46, 139, 87, 0.1)', color: theme.colors.primary, fontSize: '11px', fontWeight: 600 }}>
-                      Con Ejercicios
-                    </span>
-                  )}
                 </MetaRow>
               </Meta>
 
@@ -657,41 +649,9 @@ const SavedPlansPage: React.FC = () => {
               </PlanActions>
 
               <Footer>
-                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
-                  <PlanLink to={`/plan/${plan.id}`}>
-                    Ver menú completo <FiChevronRight />
-                  </PlanLink>
-                  {plan.config?.hasExercises && (
-                    <PlanLink 
-                      to={`/plan/${plan.id}/ejercicios`}
-                      style={{ 
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        padding: '8px 16px',
-                        borderRadius: '10px',
-                        background: 'linear-gradient(135deg, rgba(46, 139, 87, 0.1) 0%, rgba(34, 197, 94, 0.08) 100%)',
-                        border: '1.5px solid rgba(46, 139, 87, 0.3)',
-                        color: theme.colors.primary,
-                        fontWeight: 600,
-                        fontSize: '14px',
-                        textDecoration: 'none',
-                        transition: 'all 0.2s ease'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = 'translateY(-2px)';
-                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(46, 139, 87, 0.2)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = 'translateY(0)';
-                        e.currentTarget.style.boxShadow = 'none';
-                      }}
-                    >
-                      <FiActivity />
-                      Ver ejercicios
-                    </PlanLink>
-                  )}
-                </div>
+                <PlanLink to={`/plan/${plan.id}`}>
+                  Ver menú completo <FiChevronRight />
+                </PlanLink>
               </Footer>
             </PlanCard>
           );

@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { SubscriptionPlan, SubscriptionDetails, PlanOption } from '../types';
 import PaymentService, { PaymentResponse } from '../services/PaymentService';
 import { storage } from '../utils/storage';
+import { getUserSubscription } from '../services/subscriptionService';
 
 interface SubscriptionContextType {
   currentPlan: SubscriptionDetails | null;
@@ -11,7 +12,7 @@ interface SubscriptionContextType {
   processPayment: (plan: SubscriptionPlan, paymentResult: PaymentResponse) => Promise<void>;
   cancelSubscription: () => Promise<void>;
   updateSubscription: (plan: SubscriptionPlan) => Promise<void>;
-  checkSubscriptionStatus: () => Promise<void>;
+  checkSubscriptionStatus: (userId?: string | null) => Promise<void>;
   isTrialActive: () => boolean;
   daysLeftInTrial: () => number;
 }
@@ -100,14 +101,50 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
     checkSubscriptionStatus();
   }, []);
 
-  const checkSubscriptionStatus = async () => {
+  const checkSubscriptionStatus = async (userId?: string | null) => {
     try {
       setIsLoading(true);
-      console.log('Checking subscription status...');
+      console.log('🔍 Verificando estado de suscripción...');
+      
+      // Si tenemos userId, intentar obtener la suscripción desde Supabase
+      if (userId) {
+        try {
+          const dbSubscription = await getUserSubscription(userId);
+          
+          if (dbSubscription) {
+            console.log('✅ Suscripción encontrada en Supabase:', dbSubscription);
+            
+            // Convertir la suscripción de Supabase al formato SubscriptionDetails
+            const subscriptionDetails: SubscriptionDetails = {
+              plan: dbSubscription.plan || 'free',
+              startDate: dbSubscription.current_period_start || new Date().toISOString(),
+              endDate: dbSubscription.current_period_end || new Date().toISOString(),
+              isActive: dbSubscription.is_premium && dbSubscription.status === 'active',
+              autoRenew: !dbSubscription.cancel_at_period_end,
+              price: 0, // Se puede obtener desde Stripe si es necesario
+              currency: 'EUR',
+              trialDays: 0,
+              subscriptionId: dbSubscription.stripe_subscription_id || undefined,
+            };
+            
+            setCurrentPlan(subscriptionDetails);
+            // También guardar en localStorage como respaldo
+            storage.set(SUBSCRIPTION_STORAGE_KEY, subscriptionDetails);
+            return;
+          } else {
+            console.log('ℹ️ No se encontró suscripción en Supabase para el usuario');
+          }
+        } catch (error) {
+          console.error('⚠️ Error obteniendo suscripción de Supabase:', error);
+          // Continuar con el flujo de localStorage como fallback
+        }
+      }
+      
+      // Fallback: Verificar localStorage
       const subscriptionData = storage.get<SubscriptionDetails>(SUBSCRIPTION_STORAGE_KEY);
       
       if (subscriptionData) {
-        console.log('Found existing subscription:', subscriptionData);
+        console.log('📦 Suscripción encontrada en localStorage:', subscriptionData);
         setCurrentPlan(subscriptionData);
       } else {
         // Si no hay suscripción, establecer plan gratuito por defecto
@@ -121,12 +158,12 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
           currency: 'EUR',
           trialDays: 3,
         };
-        console.log('Setting default free plan:', freePlan);
+        console.log('🆓 Estableciendo plan gratuito por defecto:', freePlan);
         setCurrentPlan(freePlan);
         storage.set(SUBSCRIPTION_STORAGE_KEY, freePlan);
       }
     } catch (error) {
-      console.error('Error checking subscription status:', error);
+      console.error('❌ Error verificando estado de suscripción:', error);
     } finally {
       setIsLoading(false);
     }

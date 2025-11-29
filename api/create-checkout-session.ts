@@ -12,9 +12,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const { planId, customerEmail } = req.body;
+    const { planId, customerEmail, userId } = req.body;
 
-    console.log('📥 Request recibido:', { planId, customerEmail });
+    console.log('📥 Request recibido:', { planId, customerEmail, userId });
 
     if (!planId) {
       return res.status(400).json({ error: 'planId is required' });
@@ -108,6 +108,44 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     console.log('✅ Sesión de checkout creada:', session.id);
     console.log('📋 Customer ID (si existe):', session.customer || 'Se creará después del pago');
+
+    // Si tenemos userId, crear registro inicial en Supabase con is_premium=false
+    if (userId) {
+      try {
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+        const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+        if (supabaseUrl && supabaseServiceKey) {
+          const { createClient } = await import('@supabase/supabase-js');
+          const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+          const subscriptionData = {
+            user_id: userId,
+            stripe_customer_id: (session.customer as string) || null,
+            plan: planId as 'weekly' | 'monthly' | 'annual',
+            is_premium: false, // Siempre false al inicio
+            status: 'incomplete',
+          };
+
+          // Upsert para crear o actualizar
+          const { error: upsertError } = await supabase
+            .from('user_subscriptions')
+            .upsert(subscriptionData, {
+              onConflict: 'user_id',
+            });
+
+          if (upsertError) {
+            console.error('⚠️ Error guardando suscripción inicial en Supabase:', upsertError);
+            // No fallar el checkout si hay error, solo loguear
+          } else {
+            console.log('✅ Suscripción inicial guardada en Supabase con is_premium=false');
+          }
+        }
+      } catch (error: any) {
+        console.error('⚠️ Error creando registro inicial en Supabase:', error);
+        // No fallar el checkout si hay error
+      }
+    }
 
     // Devolver la URL de la sesión y el customer ID si está disponible
     return res.status(200).json({ 

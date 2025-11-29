@@ -29,7 +29,8 @@ export const getStripePriceId = (planId: 'weekly' | 'monthly' | 'annual'): strin
  */
 export const redirectToCheckout = async (
   planId: 'weekly' | 'monthly' | 'annual',
-  customerEmail?: string
+  customerEmail?: string,
+  userId?: string
 ): Promise<{ success: boolean; error?: string }> => {
   try {
     console.log('🔄 Iniciando redirección a Stripe Checkout...');
@@ -63,6 +64,7 @@ export const redirectToCheckout = async (
       body: JSON.stringify({
         planId,
         customerEmail,
+        userId,
       }),
     });
 

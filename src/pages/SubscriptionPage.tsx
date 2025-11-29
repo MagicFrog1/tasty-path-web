@@ -8,6 +8,7 @@ import { redirectToCheckout, isStripeConfigured, redirectToBillingPortal } from 
 import { useAuth } from '../context/AuthContext';
 import { useLocation } from 'react-router-dom';
 import { ENV_CONFIG } from '../../env.config';
+import { getStripeCustomerId } from '../services/subscriptionService';
 
 const fadeInUp = keyframes`
   from {
@@ -524,7 +525,8 @@ const SubscriptionPage: React.FC = () => {
       console.log('🚀 Redirigiendo a Stripe Checkout para plan:', planId);
       const result = await redirectToCheckout(
         planId as 'weekly' | 'monthly' | 'annual',
-        user?.email
+        user?.email,
+        user?.id
       );
 
       if (!result.success) {
@@ -546,25 +548,41 @@ const SubscriptionPage: React.FC = () => {
   const handleOpenBillingPortal = async () => {
     setIsOpeningPortal(true);
     try {
-      // Intentar obtener el customer ID de diferentes fuentes
       let customerId: string | null = null;
 
-      // 1. Intentar obtenerlo del localStorage
-      const storedCustomerId = localStorage.getItem('stripe_customer_id');
-      if (storedCustomerId) {
-        customerId = storedCustomerId;
-        console.log('📋 Customer ID encontrado en localStorage');
+      // 1. Intentar obtener el customer ID desde Supabase (prioridad)
+      if (user?.id) {
+        try {
+          customerId = await getStripeCustomerId(user.id);
+          if (customerId) {
+            console.log('✅ Customer ID obtenido desde Supabase');
+          }
+        } catch (error) {
+          console.error('Error obteniendo customer ID desde Supabase:', error);
+        }
       }
 
+      // 2. Fallback: Intentar obtenerlo del localStorage
       if (!customerId) {
-        alert('No se encontró información de suscripción de Stripe. Si acabas de suscribirte, por favor espera unos momentos y vuelve a intentar. Si el problema persiste, contacta al soporte.');
+        const storedCustomerId = localStorage.getItem('stripe_customer_id');
+        if (storedCustomerId) {
+          customerId = storedCustomerId;
+          console.log('📋 Customer ID encontrado en localStorage (fallback)');
+        }
+      }
+      
+      // 3. Si no se encontró el customer ID
+      if (!customerId) {
+        alert('No se encontró información de suscripción de Stripe. Asegúrate de tener una suscripción activa. Si acabas de suscribirte, espera unos momentos y vuelve a intentar.');
+        setIsOpeningPortal(false);
         return;
       }
 
+      // 4. Redirigir al portal de facturación de Stripe
       const result = await redirectToBillingPortal(customerId);
       
       if (!result.success && result.error) {
-        alert(result.error);
+        alert(result.error || 'Error al abrir el portal de facturación. Por favor, intenta de nuevo.');
       }
     } catch (error) {
       console.error('Error abriendo portal de facturación:', error);
