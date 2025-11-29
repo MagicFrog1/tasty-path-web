@@ -37,7 +37,8 @@ export async function getUserSubscription(userId: string): Promise<UserSubscript
 
     if (error) {
       // Error 406 (Not Acceptable) puede ocurrir por problemas de headers o RLS
-      if (error.code === 'PGRST116' || error.status === 406) {
+      // PostgrestError no tiene 'status', solo 'code' y otros campos
+      if (error.code === 'PGRST116') {
         // No se encontró ninguna suscripción o problema de acceso
         console.log('ℹ️ No se encontró suscripción o problema de acceso:', error.message);
         return null;
@@ -47,7 +48,6 @@ export async function getUserSubscription(userId: string): Promise<UserSubscript
         message: error.message,
         details: error.details,
         hint: error.hint,
-        status: error.status,
       });
       return null;
     }
