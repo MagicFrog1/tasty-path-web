@@ -461,16 +461,44 @@ const SubscriptionPage: React.FC = () => {
     const sessionId = params.get('session_id');
 
     if (success && plan) {
-      // El pago fue exitoso, actualizar la suscripción
-      selectPlan(plan).then(() => {
+      // El pago fue exitoso, sincronizar la suscripción desde Stripe
+      console.log('✅ Pago exitoso, sincronizando suscripción...');
+      
+      // Esperar un momento para que el webhook procese
+      setTimeout(async () => {
+        if (user?.id && user?.email) {
+          try {
+            // Sincronizar desde Stripe
+            const syncResponse = await fetch('/api/sync-subscription', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                userId: user.id,
+                userEmail: user.email,
+              }),
+            });
+
+            if (syncResponse.ok) {
+              const syncData = await syncResponse.json();
+              console.log('✅ Suscripción sincronizada:', syncData);
+              // Actualizar el estado local
+              await checkSubscriptionStatus(user.id);
+            } else {
+              console.error('Error sincronizando suscripción:', await syncResponse.text());
+            }
+          } catch (error) {
+            console.error('Error en sincronización:', error);
+          }
+        }
+
         // Si hay un session_id, intentar obtener el customer ID
         if (sessionId) {
-          // Obtener el customer ID de la sesión de checkout
           fetch(`/api/get-checkout-session?session_id=${sessionId}`)
             .then(res => res.json())
             .then(data => {
               if (data.customerId) {
-                // Guardar el customer ID en localStorage para uso futuro
                 localStorage.setItem('stripe_customer_id', data.customerId);
                 console.log('✅ Customer ID guardado:', data.customerId);
               }
@@ -479,11 +507,13 @@ const SubscriptionPage: React.FC = () => {
               console.error('Error obteniendo customer ID:', error);
             });
         }
+
+        // Actualizar el plan local
+        await selectPlan(plan);
+        
         // Limpiar la URL
         window.history.replaceState({}, '', '/suscripcion');
-      }).catch(error => {
-        console.error('Error actualizando suscripción después del pago:', error);
-      });
+      }, 3000); // Esperar 3 segundos para que el webhook procese
     } else if (canceled) {
       // El usuario canceló el pago
       console.log('Pago cancelado por el usuario');
@@ -569,7 +599,38 @@ const SubscriptionPage: React.FC = () => {
         }
       }
 
-      // 2. Fallback: Intentar obtenerlo del localStorage
+      // 2. Si no hay customer_id, intentar sincronizar desde Stripe
+      if (!customerId && user?.id && user?.email) {
+        try {
+          console.log('🔄 Sincronizando suscripción desde Stripe...');
+          const syncResponse = await fetch('/api/sync-subscription', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              userId: user.id,
+              userEmail: user.email,
+            }),
+          });
+
+          if (syncResponse.ok) {
+            const syncData = await syncResponse.json();
+            if (syncData.customerId) {
+              customerId = syncData.customerId;
+              console.log('✅ Customer ID obtenido después de sincronizar:', customerId);
+              // Refrescar el estado de suscripción
+              if (user?.id) {
+                await checkSubscriptionStatus(user.id);
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Error sincronizando suscripción:', error);
+        }
+      }
+
+      // 3. Fallback: Intentar obtenerlo del localStorage
       if (!customerId) {
         const storedCustomerId = localStorage.getItem('stripe_customer_id');
         if (storedCustomerId) {
@@ -578,14 +639,14 @@ const SubscriptionPage: React.FC = () => {
         }
       }
       
-      // 3. Si no se encontró el customer ID
+      // 4. Si no se encontró el customer ID
       if (!customerId) {
         alert('No se encontró información de suscripción de Stripe. Asegúrate de tener una suscripción activa. Si acabas de suscribirte, espera unos momentos y vuelve a intentar.');
         setIsOpeningPortal(false);
         return;
       }
 
-      // 4. Redirigir al portal de facturación de Stripe
+      // 5. Redirigir al portal de facturación de Stripe
       const result = await redirectToBillingPortal(customerId);
       
       if (!result.success && result.error) {

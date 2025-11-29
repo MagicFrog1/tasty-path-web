@@ -65,24 +65,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const { createClient } = await import('@supabase/supabase-js');
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-  // Responder inmediatamente a Stripe para evitar timeouts
-  // Pero procesar el evento de forma asíncrona
-  res.status(200).json({ received: true });
-  
-  // Procesar el evento (no bloquear la respuesta)
-  processEventAsync(event, stripe, supabase).catch(error => {
-    console.error('❌ Error procesando evento de forma asíncrona:', error);
-  });
-  
-  return;
-}
-
-// Función asíncrona para procesar eventos
-async function processEventAsync(
-  event: Stripe.Event,
-  stripe: Stripe,
-  supabase: any
-) {
   try {
     // Manejar diferentes tipos de eventos
     switch (event.type) {
@@ -362,15 +344,22 @@ async function processEventAsync(
       default:
         console.log('ℹ️ Evento no manejado:', event.type);
     }
+
+    // Responder con éxito a Stripe
+    return res.status(200).json({ received: true });
   } catch (error: any) {
-    console.error('❌ Error procesando evento:', error);
+    console.error('❌ Error procesando webhook:', error);
     console.error('📋 Detalles del error:', {
       message: error.message,
       stack: error.stack,
       eventType: event.type,
       eventId: event.id,
     });
-    // No lanzar el error, solo loguearlo para que Stripe no reintente infinitamente
+    // Responder con error pero no crítico para que Stripe no reintente infinitamente
+    return res.status(200).json({ 
+      received: true, 
+      error: 'Error procesando evento pero recibido' 
+    });
   }
 }
 

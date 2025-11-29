@@ -76,19 +76,35 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // URLs de redirección
-    // Obtener el dominio correcto
-    let origin = req.headers.origin || req.headers.referer?.split('/').slice(0, 3).join('/');
+    // Obtener el dominio correcto - priorizar variables de entorno
+    let origin = process.env.NEXT_PUBLIC_SITE_URL || 
+                 process.env.VITE_SITE_URL;
     
-    // Si no hay origin, usar variables de entorno o valores por defecto
+    // Si no hay en variables de entorno, usar headers
     if (!origin) {
-      origin = process.env.NEXT_PUBLIC_SITE_URL || 
-               process.env.VITE_SITE_URL || 
-               process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 
-               'https://mytastypath.com';
+      origin = req.headers.origin || 
+               (req.headers.referer ? new URL(req.headers.referer).origin : null);
     }
     
-    // Asegurarse de que la URL no tenga doble barra
-    origin = origin.replace(/\/$/, '');
+    // Si aún no hay, usar VERCEL_URL o dominio por defecto
+    if (!origin) {
+      if (process.env.VERCEL_URL) {
+        origin = `https://${process.env.VERCEL_URL}`;
+      } else {
+        origin = 'https://mytastypath.com';
+      }
+    }
+    
+    // Asegurarse de que la URL no tenga doble barra y sea válida
+    origin = origin.replace(/\/$/, '').trim();
+    
+    // Validar que sea una URL válida
+    try {
+      new URL(origin);
+    } catch {
+      // Si no es válida, usar el dominio por defecto
+      origin = 'https://mytastypath.com';
+    }
     
     // Incluir {CHECKOUT_SESSION_ID} en la URL para poder obtenerlo después
     const successUrl = `${origin}/suscripcion?success=true&plan=${planId}&session_id={CHECKOUT_SESSION_ID}`;
