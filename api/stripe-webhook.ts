@@ -78,12 +78,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     // Verificar la firma del webhook usando el body raw como Buffer
     // CRÍTICO: El body debe ser exactamente como Stripe lo envió
+    // IMPORTANTE: Agregar tolerancia de tiempo (300 segundos = 5 minutos)
+    // Esto permite diferencias de reloj entre el servidor y Stripe
     event = stripe.webhooks.constructEvent(
       rawBody,
       signature,
-      webhookSecret
+      webhookSecret,
+      300 // Tolerancia de tiempo en segundos (5 minutos)
     );
     console.log('✅ Webhook verificado:', event.type);
+    console.log('⏰ Timestamp del evento:', new Date(event.created * 1000).toISOString());
+    console.log('⏰ Hora actual del servidor:', new Date().toISOString());
   } catch (err: any) {
     console.error('❌ Error verificando webhook:', err.message);
     console.error('📋 Tipo de body original:', typeof req.body);
@@ -91,6 +96,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.error('📋 Tamaño del rawBody:', rawBody.length);
     console.error('📋 Primeros 200 caracteres del body:', rawBody.toString('utf8').substring(0, 200));
     console.error('📋 Signature recibida:', signature.substring(0, 50) + '...');
+    console.error('⏰ Hora actual del servidor:', new Date().toISOString());
     return res.status(400).json({ error: `Webhook Error: ${err.message}` });
   }
 
@@ -284,13 +290,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         };
 
         // Agregar fechas si tenemos la suscripción completa
+        // IMPORTANTE: Usar UTC para todas las fechas para evitar problemas de zona horaria
         if (subscription) {
-          subscriptionData.current_period_start = new Date((subscription as any).current_period_start * 1000).toISOString();
-          subscriptionData.current_period_end = new Date((subscription as any).current_period_end * 1000).toISOString();
+          // Stripe devuelve timestamps en Unix (segundos), convertir a ISO string en UTC
+          const periodStart = new Date((subscription as any).current_period_start * 1000);
+          const periodEnd = new Date((subscription as any).current_period_end * 1000);
+          
+          subscriptionData.current_period_start = periodStart.toISOString();
+          subscriptionData.current_period_end = periodEnd.toISOString();
           subscriptionData.cancel_at_period_end = (subscription as any).cancel_at_period_end;
           subscriptionData.canceled_at = (subscription as any).canceled_at 
             ? new Date((subscription as any).canceled_at * 1000).toISOString() 
             : null;
+          
+          console.log('📅 Fechas de suscripción (UTC):', {
+            start: subscriptionData.current_period_start,
+            end: subscriptionData.current_period_end,
+            serverTime: new Date().toISOString(),
+          });
         }
 
         console.log('💾 Actualizando suscripción en Supabase:', JSON.stringify(subscriptionData, null, 2));
@@ -368,10 +385,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             plan: plan,
             is_premium: subscription.status === 'active' || subscription.status === 'trialing',
             status: status,
+            // Usar UTC para todas las fechas
             current_period_start: new Date((subscription as any).current_period_start * 1000).toISOString(),
             current_period_end: new Date((subscription as any).current_period_end * 1000).toISOString(),
             cancel_at_period_end: (subscription as any).cancel_at_period_end,
-            canceled_at: (subscription as any).canceled_at ? new Date((subscription as any).canceled_at * 1000).toISOString() : null,
+            canceled_at: (subscription as any).canceled_at 
+              ? new Date((subscription as any).canceled_at * 1000).toISOString() 
+              : null,
           })
           .eq('stripe_customer_id', customerId);
 
@@ -400,6 +420,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           .update({
             is_premium: false,
             status: 'canceled',
+            // Usar fecha actual en UTC
             canceled_at: new Date().toISOString(),
           })
           .eq('stripe_customer_id', customerId);

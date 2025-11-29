@@ -137,6 +137,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       plan: plan,
       is_premium: isActive,
       status: status,
+      // Usar UTC para todas las fechas (Stripe devuelve timestamps en Unix segundos)
       current_period_start: new Date((subscription as any).current_period_start * 1000).toISOString(),
       current_period_end: new Date((subscription as any).current_period_end * 1000).toISOString(),
       cancel_at_period_end: (subscription as any).cancel_at_period_end,
