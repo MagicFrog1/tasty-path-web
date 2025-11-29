@@ -166,10 +166,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       is_premium: isActive,
       status: status,
       // Usar UTC para todas las fechas (Stripe devuelve timestamps en Unix segundos)
-      current_period_start: convertTimestampToISO(subscription.current_period_start),
-      current_period_end: convertTimestampToISO(subscription.current_period_end),
-      cancel_at_period_end: subscription.cancel_at_period_end || false,
-      canceled_at: convertTimestampToISO(subscription.canceled_at),
+      current_period_start: convertTimestampToISO((subscription as any).current_period_start),
+      current_period_end: convertTimestampToISO((subscription as any).current_period_end),
+      cancel_at_period_end: (subscription as any).cancel_at_period_end || false,
+      canceled_at: convertTimestampToISO((subscription as any).canceled_at),
     };
 
     const { error: upsertError } = await supabase

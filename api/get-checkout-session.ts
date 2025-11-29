@@ -60,8 +60,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           id: subscription.id,
           status: subscription.status,
           plan: subscription.items.data[0]?.price.id || null,
-          current_period_start: subscription.current_period_start,
-          current_period_end: subscription.current_period_end,
+          current_period_start: (subscription as any).current_period_start,
+          current_period_end: (subscription as any).current_period_end,
         };
         
         console.log('📋 Información de suscripción obtenida:', subscriptionInfo);
