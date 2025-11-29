@@ -433,12 +433,19 @@ const BenefitCard = styled.article`
 `;
 
 const SubscriptionPage: React.FC = () => {
-  const { availablePlans, currentPlan, selectPlan } = useSubscription();
+  const { availablePlans, currentPlan, selectPlan, checkSubscriptionStatus } = useSubscription();
   const { user } = useAuth();
   const location = useLocation();
   const [isProcessing, setIsProcessing] = useState(false);
   const [stripeAvailable, setStripeAvailable] = useState(false);
   const [isOpeningPortal, setIsOpeningPortal] = useState(false);
+
+  // Actualizar estado de suscripción cuando el usuario esté disponible
+  useEffect(() => {
+    if (user?.id) {
+      checkSubscriptionStatus(user.id);
+    }
+  }, [user?.id, checkSubscriptionStatus]);
 
   // Verificar si Stripe está configurado
   useEffect(() => {

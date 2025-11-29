@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { Link, useNavigate } from 'react-router-dom';
 import { FiUser, FiMail, FiFileText, FiShield, FiLock, FiInfo, FiArrowRight, FiLogOut, FiTrash2, FiCreditCard, FiSettings } from 'react-icons/fi';
@@ -551,8 +551,15 @@ const ProfilePage: React.FC = () => {
     }
   };
 
-  const { currentPlan } = useSubscription();
+  const { currentPlan, checkSubscriptionStatus } = useSubscription();
   const [isOpeningPortal, setIsOpeningPortal] = useState(false);
+
+  // Actualizar estado de suscripción cuando el usuario esté disponible
+  useEffect(() => {
+    if (user?.id) {
+      checkSubscriptionStatus(user.id);
+    }
+  }, [user?.id, checkSubscriptionStatus]);
 
   const handleOpenBillingPortal = async () => {
     setIsOpeningPortal(true);
