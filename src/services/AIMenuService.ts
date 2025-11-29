@@ -107,30 +107,45 @@ class AIMenuService {
       model: ENV_CONFIG.OPENAI_MODEL || 'gpt-4o-mini'
     });
     
+    // Intentar usar IA siempre, incluso si la configuración parece incorrecta
+    // (puede que la API key esté en el servidor pero no sea detectada)
     if (!aiConfigured) {
-      console.error('❌ IA no configurada correctamente, usando fallback local...');
-      console.error('🔍 Razón: API Key no válida o no configurada');
-      console.error('💡 Verifica que NEXT_PUBLIC_OPENAI_API_KEY esté configurada en Vercel');
-      console.error('💡 O usa VITE_OPENAI_API_KEY en desarrollo local');
-      return await this.generateFallbackMenu(request);
+      console.warn('⚠️ ADVERTENCIA: La configuración de IA parece incompleta');
+      console.warn('🔍 API Key detectada:', !!this.apiKey);
+      console.warn('💡 Intentando usar IA de todas formas (puede estar configurada en el servidor)...');
+    } else {
+      console.log('✅ IA configurada correctamente, procediendo con generación...');
     }
     
-    console.log('✅ IA configurada correctamente, procediendo con generación...');
-    
     try {
+      // Intentar generar con IA - hacer múltiples intentos antes de fallar
       const result = await this.retryAIGeneration(request, 1);
+      
       if (!result.success) {
-        console.warn('⚠️ RESULTADO FINAL: FALLBACK - La generación con IA falló');
-      } else {
-        console.log('✅ RESULTADO FINAL: ÉXITO CON IA');
+        console.error('❌ RESULTADO FINAL: Todos los intentos con IA fallaron');
+        console.error('💡 Verifica que VITE_OPENAI_API_KEY esté configurada correctamente en Vercel');
+        console.error('💡 O usa NEXT_PUBLIC_OPENAI_API_KEY como alternativa');
+        // Retornar error en lugar de fallback para que el usuario sepa qué pasó
+        return {
+          success: false,
+          weeklyMenu: [],
+          message: 'Error: No se pudo generar el menú con IA después de múltiples intentos. Por favor, verifica tu conexión o contacta al soporte.'
+        };
       }
+      
+      console.log('✅✅✅ RESULTADO FINAL: ÉXITO CON IA ✅✅✅');
       return result;
     } catch (error) {
       console.error('❌ ERROR CRÍTICO en generación de menú:', error);
-      console.error('🔄 Usando fallback local debido a error crítico...');
       console.error('🔍 Tipo de error:', error instanceof Error ? error.message : String(error));
       console.error('🔍 Stack trace:', error instanceof Error ? error.stack : 'No disponible');
-      return await this.generateFallbackMenu(request);
+      
+      // En lugar de usar fallback, retornar error claro
+      return {
+        success: false,
+        weeklyMenu: [],
+        message: `Error generando menú: ${error instanceof Error ? error.message : 'Error desconocido'}. Por favor, intenta nuevamente.`
+      };
     }
   }
 
@@ -325,8 +340,8 @@ class AIMenuService {
         // Validar que el menú contenga exactamente 7 días
         const menuArray = weeklyMenu.weeklyMenu || weeklyMenu;
         if (!Array.isArray(menuArray) || menuArray.length !== 7) {
-          console.warn('⚠️ La IA no generó exactamente 7 días, usando fallback local');
-          return this.generateFallbackMenu(request);
+          console.warn(`⚠️ La IA generó ${menuArray?.length || 0} días en lugar de 7`);
+          throw new Error(`Menú inválido: se esperaban 7 días pero se recibieron ${menuArray?.length || 0}`);
         }
         
         // Validar que cada día tenga la estructura correcta
@@ -337,16 +352,16 @@ class AIMenuService {
           (day.meals.breakfast || day.meals.lunch || day.meals.dinner)
         );
         
+        if (validDays.length !== 7) {
+          console.warn(`⚠️ Solo ${validDays.length} días tienen la estructura correcta de 7`);
+          throw new Error(`Estructura inválida: solo ${validDays.length} días son válidos de 7`);
+        }
+        
         // Agregar citaciones médicas a cada día del menú
         const menuWithCitations = validDays.map(day => ({
           ...day,
           medicalRecommendations: this.generateDailyMedicalRecommendations(day, request)
         }));
-        
-        if (menuWithCitations.length !== 7) {
-          console.warn('⚠️ Algunos días no tienen la estructura correcta, usando fallback local');
-          return this.generateFallbackMenu(request);
-        }
         
         console.log('✅ Menú generado exitosamente por IA con 7 días completos y citaciones médicas');
         console.log('📅 Días generados:', menuWithCitations.map(day => day.dayName).join(', '));
@@ -384,34 +399,67 @@ class AIMenuService {
       }
   }
 
-  // Método para reintentar generación con IA si falla - Optimizado para velocidad
+  // Método para reintentar generación con IA si falla - Optimizado para asegurar éxito
   private async retryAIGeneration(request: AIMenuRequest, attempt: number = 1): Promise<AIMenuResponse> {
-    const maxRetries = 2; // Solo 2 intentos para dar más espacio al prompt
+    const maxRetries = 5; // 5 intentos para maximizar las posibilidades de éxito
     
     if (attempt > maxRetries) {
-      console.log('🔄 Máximo de reintentos alcanzado, usando fallback local...');
-      console.log('🔍 Razón: Todos los intentos con IA fallaron');
-      return await this.generateFallbackMenu(request);
+      console.error('❌ Máximo de reintentos alcanzado después de 5 intentos');
+      console.error('🔍 Razón: Todos los intentos con IA fallaron');
+      console.error('💡 Posibles causas:');
+      console.error('   1. API Key no configurada o inválida');
+      console.error('   2. Problemas de conectividad con OpenAI');
+      console.error('   3. Límites de rate limit alcanzados');
+      console.error('   4. Errores en la respuesta de la IA');
+      
+      // NO usar fallback - retornar error para que se intente más tarde
+      return {
+        success: false,
+        weeklyMenu: [],
+        message: 'Error: No se pudo generar el menú después de 5 intentos. Por favor, intenta nuevamente más tarde.'
+      };
     }
     
     try {
       console.log(`🔄 INTENTO ${attempt}/${maxRetries} de generación con IA...`);
       
-      // Espera mínima entre reintentos para velocidad
+      // Espera progresiva entre reintentos (backoff exponencial)
       if (attempt > 1) {
-        console.log(`⏳ Esperando 1 segundo antes del intento ${attempt}...`);
-        await new Promise(resolve => setTimeout(resolve, 1000)); // Solo 1 segundo de espera
+        const waitTime = Math.min(1000 * Math.pow(2, attempt - 2), 5000); // 1s, 2s, 4s, 5s max
+        console.log(`⏳ Esperando ${waitTime}ms antes del intento ${attempt}...`);
+        await new Promise(resolve => setTimeout(resolve, waitTime));
       }
       
       let result: AIMenuResponse;
       
-      // Estrategia optimizada por intento
+      // Estrategia optimizada por intento - diferentes enfoques para maximizar éxito
       if (attempt === 1) {
         console.log('🎯 Intento 1: Usando prompt optimizado completo...');
         result = await this.attemptAIGeneration(request);
-      } else {
+      } else if (attempt === 2) {
         console.log('🎯 Intento 2: Usando prompt simplificado...');
         result = await this.generateWithSimplePrompt(request);
+      } else if (attempt === 3) {
+        console.log('🎯 Intento 3: Reintentando con prompt optimizado (intento 2)...');
+        result = await this.attemptAIGeneration(request);
+      } else if (attempt === 4) {
+        console.log('🎯 Intento 4: Reintentando con prompt simplificado (intento 2)...');
+        result = await this.generateWithSimplePrompt(request);
+      } else {
+        console.log('🎯 Intento 5: Último intento con prompt optimizado...');
+        result = await this.attemptAIGeneration(request);
+      }
+      
+      // Si el resultado es exitoso, devolverlo
+      if (result.success) {
+        console.log(`✅ INTENTO ${attempt} EXITOSO CON IA`);
+        return result;
+      }
+      
+      // Si no es exitoso pero no es fallback, continuar con siguiente intento
+      if (!result.success && attempt < maxRetries) {
+        console.warn(`⚠️ Intento ${attempt} no exitoso, continuando con siguiente intento...`);
+        return await this.retryAIGeneration(request, attempt + 1);
       }
       
       console.log(`✅ INTENTO ${attempt} EXITOSO:`, result.success ? 'CON IA' : 'FALLBACK');
@@ -478,7 +526,8 @@ class AIMenuService {
       };
     } catch (error) {
       console.error('❌ Error generando menú local:', error);
-      return this.generateFallbackMenu(request);
+      // No usar fallback - lanzar error para que se reintente con IA
+      throw error;
     }
   }
 
@@ -2273,10 +2322,124 @@ class AIMenuService {
     return this.generateSnack(dayIndex, targetCalories, {});
   }
 
-  // Funciones de generación con prompts simplificados
+  // Funciones de generación con prompts simplificados - SIEMPRE usa IA
   private async generateWithSimplePrompt(request: AIMenuRequest): Promise<AIMenuResponse> {
-    console.log('🚀 Generando con prompt simplificado...');
-    return await this.generateFallbackMenu(request);
+    console.log('🚀 Generando con prompt simplificado usando IA...');
+    
+    try {
+      // Construir un prompt más simple pero aún usando IA
+      const simplePrompt = this.buildSimplePrompt(request);
+      
+      // Generar un seed único
+      const timestamp = Date.now();
+      const randomComponent = Math.random() * 1000000;
+      const userHash = this.hashString(JSON.stringify(request));
+      const generationSeed = timestamp + randomComponent + userHash;
+      
+      console.log('🤖 Llamando a OpenAI con prompt simplificado...');
+      
+      const response = await fetch(this.baseUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.apiKey}`
+        },
+        body: JSON.stringify({
+          model: ENV_CONFIG.OPENAI_MODEL || 'gpt-4o-mini',
+          messages: [
+            {
+              role: 'system',
+              content: 'Eres un chef experto que crea menús semanales. Responde ÚNICAMENTE con JSON válido. El JSON debe comenzar con { y terminar con }. Verifica que todos los arrays estén cerrados.'
+            },
+            {
+              role: 'user',
+              content: simplePrompt
+            }
+          ],
+          temperature: 0.3, // Temperatura un poco más baja para consistencia
+          max_tokens: 6000
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Error en la API con prompt simplificado:', errorText);
+        throw new Error(`Error en la API: ${response.status} - ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      const content = data.choices[0]?.message?.content;
+      
+      if (!content) {
+        throw new Error('No se recibió contenido de la IA');
+      }
+
+      // Limpiar y parsear JSON
+      let cleanContent = content.trim();
+      if (cleanContent.startsWith('```json')) {
+        cleanContent = cleanContent.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+      } else if (cleanContent.startsWith('```')) {
+        cleanContent = cleanContent.replace(/^```\s*/, '').replace(/\s*```$/, '');
+      }
+      
+      cleanContent = this.cleanJSONString(cleanContent);
+      const jsonStart = cleanContent.indexOf('{');
+      const jsonEnd = cleanContent.lastIndexOf('}') + 1;
+      
+      if (jsonStart === -1 || jsonEnd === 0) {
+        throw new Error('No se encontró JSON válido en la respuesta');
+      }
+      
+      let jsonString = cleanContent.substring(jsonStart, jsonEnd);
+      jsonString = this.cleanJSONString(jsonString);
+      
+      if (!this.isValidJSON(jsonString)) {
+        const repairedJSON = this.attemptJSONRepair(jsonString);
+        if (repairedJSON && this.isValidJSON(repairedJSON)) {
+          jsonString = repairedJSON;
+        } else {
+          throw new Error('JSON incompleto o inválido recibido de la IA');
+        }
+      }
+      
+      const weeklyMenu = JSON.parse(jsonString);
+      const menuArray = weeklyMenu.weeklyMenu || weeklyMenu;
+      
+      if (!Array.isArray(menuArray) || menuArray.length !== 7) {
+        throw new Error(`Menú inválido: se esperaban 7 días pero se recibieron ${menuArray?.length || 0}`);
+      }
+      
+      // Validar estructura
+      const validDays = menuArray.filter(day => 
+        day && 
+        day.dayName && 
+        day.meals && 
+        (day.meals.breakfast || day.meals.lunch || day.meals.dinner)
+      );
+      
+      if (validDays.length !== 7) {
+        throw new Error(`Estructura inválida: solo ${validDays.length} días son válidos de 7`);
+      }
+      
+      // Agregar citaciones médicas
+      const menuWithCitations = validDays.map(day => ({
+        ...day,
+        medicalRecommendations: this.generateDailyMedicalRecommendations(day, request)
+      }));
+      
+      console.log('✅ Menú generado exitosamente por IA con prompt simplificado');
+      
+      return {
+        success: true,
+        weeklyMenu: menuWithCitations,
+        message: 'Menú generado por IA con prompt simplificado'
+      };
+      
+    } catch (error: any) {
+      console.error('❌ Error generando con prompt simplificado:', error);
+      // Lanzar error para que el sistema de reintentos lo maneje
+      throw error;
+    }
   }
 
 

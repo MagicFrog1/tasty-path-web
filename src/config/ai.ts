@@ -13,8 +13,8 @@ export const AI_CONFIG = {
   
   // Configuración de menús
   MENU_GENERATION: {
-    MAX_RETRIES: 3,
-    TIMEOUT_MS: 120000, // 2 minutos para generación de plan mensal (aumentado de 45s)
+    MAX_RETRIES: 5, // Aumentado a 5 reintentos para asegurar éxito
+    TIMEOUT_MS: 180000, // 3 minutos para dar más tiempo a la IA
     FALLBACK_ENABLED: false, // DESHABILITADO - Forzar uso de IA
   },
   
@@ -53,24 +53,32 @@ export const AI_CONFIG = {
 // Función para verificar si la configuración de IA está completa
 export const isAIConfigured = (): boolean => {
   const apiKey = AI_CONFIG.OPENAI_API_KEY;
-  const isConfigured = !!(apiKey && 
-                         apiKey !== 'your-openai-api-key' && 
-                         apiKey.length > 0 &&
-                         apiKey.startsWith('sk-'));
+  
+  // Verificaciones más completas
+  const hasApiKey = !!apiKey && apiKey.length > 0;
+  const notPlaceholder = apiKey !== 'your-openai-api-key' && apiKey !== '';
+  const validFormat = apiKey?.startsWith('sk-') || apiKey?.startsWith('sk-proj-');
+  const minLength = apiKey && apiKey.length >= 20; // Las API keys de OpenAI son largas
+  
+  const isConfigured = hasApiKey && notPlaceholder && validFormat && minLength;
   
   console.log('🔧 Verificando configuración de IA:');
-  console.log('🔑 API Key presente:', !!apiKey);
-  console.log('🔑 API Key válida:', isConfigured);
+  console.log('🔑 API Key presente:', hasApiKey);
+  console.log('🔑 No es placeholder:', notPlaceholder);
+  console.log('🔑 Formato válido (sk- o sk-proj-):', validFormat);
+  console.log('🔑 Longitud suficiente (>=20):', minLength);
   console.log('🔑 Longitud de API Key:', apiKey?.length || 0);
-  console.log('🔑 Empieza con sk-:', apiKey?.startsWith('sk-') || false);
+  console.log('🔑 Prefijo:', apiKey?.substring(0, 10) || 'N/A');
+  console.log('✅ Configuración completa:', isConfigured);
   
   if (!isConfigured) {
-    console.warn('⚠️ API Key de OpenAI no configurada correctamente.');
-    console.warn('💡 Para configurarla en Vercel:');
-    console.warn('   1. Ve a Settings → Environment Variables');
-    console.warn('   2. Agrega: VITE_OPENAI_API_KEY = sk-tu-clave-aqui');
-    console.warn('   3. Redespliega la aplicación');
-    console.warn('📖 Ver VERCEL_CONFIG.md para más detalles');
+    console.error('❌ API Key de OpenAI no configurada correctamente.');
+    console.error('💡 Para configurarla en Vercel:');
+    console.error('   1. Ve a Settings → Environment Variables');
+    console.error('   2. Agrega: VITE_OPENAI_API_KEY = sk-tu-clave-aqui');
+    console.error('   3. O usa: NEXT_PUBLIC_OPENAI_API_KEY (ambos funcionan)');
+    console.error('   4. Redespliega la aplicación');
+    console.error('📖 Ver DIAGNOSTICO_FALLBACK_IA.md para más detalles');
   }
   
   return isConfigured;
