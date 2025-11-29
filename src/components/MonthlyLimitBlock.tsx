@@ -145,8 +145,9 @@ const MonthlyLimitBlock: React.FC<MonthlyLimitBlockProps> = ({ nextGenerationDat
       </IconWrapper>
       <Title>Límite mensual alcanzado</Title>
       <Message>
-        Has alcanzado tu límite de 1 plan semanal gratuito este mes. 
-        Actualiza a Premium para generar planes ilimitados.
+        Los usuarios gratuitos pueden generar solo <strong>1 plan semanal al mes</strong>. 
+        Ya has usado tu generación gratuita de este mes. 
+        Actualiza a Premium para generar planes ilimitados sin restricciones.
       </Message>
       
       <DateInfo>

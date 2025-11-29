@@ -750,12 +750,37 @@ const PlanGeneratorPage: React.FC = () => {
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Verificar restricciones antes de generar
+    // Verificar restricciones antes de generar - Validación CRÍTICA para usuarios gratuitos
     if (!restrictions.canCreatePlan) {
+      if (!restrictions.isPremium && !restrictions.canGenerateThisMonth) {
+        // Usuario gratuito que ya generó su plan mensual
+        setStatus(`Has alcanzado tu límite de 1 plan gratuito este mes. Puedes generar un nuevo plan el ${restrictions.nextGenerationDate ? new Date(restrictions.nextGenerationDate).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' }) : 'próximo mes'}. ¡Actualiza a Premium para planes ilimitados!`);
+        setStatusType('error');
+        setShowUpgradePrompt(true);
+        return;
+      }
       setStatus('Has alcanzado el límite de planes gratuitos. ¡Actualiza a Premium!');
       setStatusType('error');
       setShowUpgradePrompt(true);
       return;
+    }
+
+    // Validación adicional: verificar límite mensual antes de iniciar generación
+    if (!restrictions.isPremium) {
+      const plansThisMonth = weeklyPlans.filter(plan => {
+        if (!plan.createdAt) return false;
+        const planDate = new Date(plan.createdAt);
+        const now = new Date();
+        return planDate.getMonth() === now.getMonth() && 
+               planDate.getFullYear() === now.getFullYear();
+      }).length;
+      
+      if (plansThisMonth >= 1) {
+        setStatus(`Solo puedes generar 1 plan gratuito al mes. Ya generaste ${plansThisMonth} este mes. ¡Actualiza a Premium para planes ilimitados!`);
+        setStatusType('error');
+        setShowUpgradePrompt(true);
+        return;
+      }
     }
 
     if (currentStep < 3) {
@@ -1289,9 +1314,15 @@ const PlanGeneratorPage: React.FC = () => {
     );
   }
 
-  // Verificar límite mensual para usuarios no premium
-  if (!restrictions.isPremium && !restrictions.canGenerateThisMonth && restrictions.nextGenerationDate) {
-    return <MonthlyLimitBlock nextGenerationDate={restrictions.nextGenerationDate} />;
+  // Verificar límite mensual para usuarios no premium - BLOQUEAR completamente si ya generó este mes
+  if (!restrictions.isPremium && !restrictions.canGenerateThisMonth) {
+    // Si no tiene nextGenerationDate, calcularlo
+    const nextDate = restrictions.nextGenerationDate || (() => {
+      const now = new Date();
+      const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+      return nextMonth.toISOString();
+    })();
+    return <MonthlyLimitBlock nextGenerationDate={nextDate} />;
   }
 
   const loadingSteps = [
