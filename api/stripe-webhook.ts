@@ -187,12 +187,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const supabase = createClient(supabaseUrl, supabaseServiceKey, {
     auth: {
       autoRefreshToken: false,
-      persistSession: false
+      persistSession: false,
+      detectSessionInUrl: false
+    },
+    db: {
+      schema: 'public'
+    },
+    global: {
+      headers: {
+        'x-client-info': 'stripe-webhook'
+      }
     }
   });
   
   // Verificar que el cliente tenga permisos de service_role
   console.log('🔐 Cliente de Supabase creado con service_role (bypass RLS)');
+  console.log('🔑 Service key prefix:', supabaseServiceKey?.substring(0, 20) + '...');
 
   try {
     // Manejar diferentes tipos de eventos
@@ -543,6 +553,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               onConflict: 'user_id',
             });
 
+          let subscriptionSaved = false; // Flag para rastrear si se guardó exitosamente
+
           if (upsertError) {
             console.error('❌ ERROR CRÍTICO actualizando suscripción en Supabase:');
             console.error('📋 Código de error:', upsertError.code);
@@ -551,24 +563,92 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             console.error('📋 Hint:', upsertError.hint);
             console.error('📋 Datos que intentamos guardar:', JSON.stringify(subscriptionData, null, 2));
             
-            // CRÍTICO: Intentar INSERT directo si el UPSERT falla
-            console.log('🔄 Intentando INSERT directo como fallback...');
-            const { error: insertError, data: insertData } = await supabase
-              .from('user_subscriptions')
-              .insert(subscriptionData);
+            // CRÍTICO: Intentar usando función SQL con SECURITY DEFINER (bypass completo de RLS)
+            console.log('🔄 Intentando usar función SQL insert_user_subscription (bypass RLS)...');
             
-            if (insertError) {
-              console.error('❌ Error en INSERT directo:', insertError);
-            } else {
-              console.log('✅ INSERT directo exitoso:', insertData);
+            try {
+              const { data: functionData, error: functionError } = await supabase.rpc('insert_user_subscription', {
+                p_user_id: subscriptionData.user_id,
+                p_stripe_customer_id: subscriptionData.stripe_customer_id,
+                p_stripe_subscription_id: subscriptionData.stripe_subscription_id,
+                p_plan: subscriptionData.plan,
+                p_is_premium: subscriptionData.is_premium,
+                p_status: subscriptionData.status,
+                p_current_period_start: subscriptionData.current_period_start,
+                p_current_period_end: subscriptionData.current_period_end,
+                p_cancel_at_period_end: subscriptionData.cancel_at_period_end || false,
+                p_canceled_at: subscriptionData.canceled_at || null,
+              });
+
+              if (functionError) {
+                console.error('❌ Error en función SQL insert_user_subscription:', functionError);
+                
+                // Último recurso: Intentar INSERT directo
+                console.log('🔄 Último intento: INSERT directo...');
+                const { error: insertError, data: insertData } = await supabase
+                  .from('user_subscriptions')
+                  .insert(subscriptionData);
+                
+                if (insertError) {
+                  console.error('❌ Error en INSERT directo también:', insertError);
+                  // Responder a Stripe con advertencia pero no fallar
+                  return res.status(200).json({ 
+                    received: true, 
+                    error: 'Database update failed - all methods failed',
+                    details: {
+                      upsert: upsertError.message,
+                      function: functionError.message,
+                      insert: insertError.message
+                    },
+                    subscriptionData: subscriptionData
+                  });
+                } else {
+                  console.log('✅ INSERT directo exitoso (último recurso):', insertData);
+                  subscriptionSaved = true; // Marcar como guardado exitosamente
+                  // Continuar con el flujo normal
+                }
+              } else {
+                console.log('✅✅✅ SUSCRIPCIÓN GUARDADA CON FUNCIÓN SQL (BYPASS RLS) ✅✅✅');
+                console.log('📋 ID retornado:', functionData);
+                subscriptionSaved = true; // Marcar como guardado exitosamente
+                // Continuar con el flujo normal
+              }
+            } catch (functionException: any) {
+              console.error('❌ Excepción al llamar función SQL:', functionException);
+              
+              // Intentar INSERT directo como último recurso
+              console.log('🔄 Último intento: INSERT directo...');
+              const { error: insertError } = await supabase
+                .from('user_subscriptions')
+                .insert(subscriptionData);
+              
+              if (insertError) {
+                console.error('❌ Error en INSERT directo también:', insertError);
+                return res.status(200).json({ 
+                  received: true, 
+                  error: 'Database update failed - all methods failed',
+                  details: {
+                    upsert: upsertError.message,
+                    function: functionException.message,
+                    insert: insertError.message
+                  }
+                });
+              } else {
+                console.log('✅ INSERT directo exitoso después de excepción');
+                subscriptionSaved = true; // Marcar como guardado exitosamente
+              }
             }
-            
-            // Responder a Stripe con advertencia pero no fallar
+          } else {
+            // UPSERT fue exitoso
+            subscriptionSaved = true;
+          }
+          
+          // Solo continuar si la suscripción se guardó exitosamente
+          if (!subscriptionSaved) {
+            console.error('❌ No se pudo guardar la suscripción con ningún método');
             return res.status(200).json({ 
               received: true, 
-              error: 'Database update failed',
-              details: upsertError.message,
-              fallbackInsert: insertError ? 'failed' : 'success'
+              error: 'Failed to save subscription after all attempts'
             });
           }
 
@@ -582,7 +662,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             status: subscriptionData.status,
             periodStart: subscriptionData.current_period_start,
             periodEnd: subscriptionData.current_period_end,
-            data: upsertData,
+            method: upsertError ? 'fallback' : 'upsert',
           });
 
           // Verificar que los datos se guardaron correctamente

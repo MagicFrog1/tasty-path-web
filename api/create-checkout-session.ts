@@ -183,17 +183,48 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         if (supabaseUrl && supabaseServiceKey) {
           const { createClient } = await import('@supabase/supabase-js');
-          const supabase = createClient(supabaseUrl, supabaseServiceKey);
+          const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+            auth: {
+              autoRefreshToken: false,
+              persistSession: false,
+              detectSessionInUrl: false
+            },
+            db: {
+              schema: 'public'
+            }
+          });
+
+          // Calcular fechas iniciales (aunque el status sea incomplete)
+          const now = new Date();
+          let periodEnd = new Date(now);
+          
+          // Calcular fecha de fin según el plan (aunque sea incomplete, necesitamos fechas válidas)
+          if (planId === 'trial') {
+            periodEnd.setDate(periodEnd.getDate() + 7);
+          } else if (planId === 'weekly') {
+            periodEnd.setDate(periodEnd.getDate() + 7);
+          } else if (planId === 'monthly') {
+            periodEnd.setMonth(periodEnd.getMonth() + 1);
+          } else if (planId === 'annual') {
+            periodEnd.setFullYear(periodEnd.getFullYear() + 1);
+          } else {
+            periodEnd.setMonth(periodEnd.getMonth() + 1); // Fallback: 1 mes
+          }
 
           const subscriptionData = {
             user_id: userId,
             stripe_customer_id: (session.customer as string) || null,
+            stripe_subscription_id: null, // Aún no existe
             plan: planId as 'trial' | 'weekly' | 'monthly' | 'annual',
             is_premium: false, // Siempre false al inicio
             status: 'incomplete',
+            current_period_start: now.toISOString(),
+            current_period_end: periodEnd.toISOString(),
+            cancel_at_period_end: false,
+            canceled_at: null,
           };
 
-          // Upsert para crear o actualizar
+          // Intentar UPSERT primero
           const { error: upsertError } = await supabase
             .from('user_subscriptions')
             .upsert(subscriptionData, {
@@ -202,6 +233,66 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
           if (upsertError) {
             console.error('⚠️ Error guardando suscripción inicial en Supabase:', upsertError);
+            
+            // Intentar usar función SQL como fallback
+            if (upsertError.code === '42501') {
+              console.log('🔄 Intentando usar función SQL insert_user_subscription (bypass RLS)...');
+              
+              try {
+                const { data: functionData, error: functionError } = await supabase.rpc('insert_user_subscription', {
+                  p_user_id: subscriptionData.user_id,
+                  p_stripe_customer_id: subscriptionData.stripe_customer_id,
+                  p_stripe_subscription_id: subscriptionData.stripe_subscription_id,
+                  p_plan: subscriptionData.plan,
+                  p_is_premium: subscriptionData.is_premium,
+                  p_status: subscriptionData.status,
+                  p_current_period_start: subscriptionData.current_period_start,
+                  p_current_period_end: subscriptionData.current_period_end,
+                  p_cancel_at_period_end: subscriptionData.cancel_at_period_end,
+                  p_canceled_at: subscriptionData.canceled_at,
+                });
+
+                if (functionError) {
+                  console.error('⚠️ Error en función SQL insert_user_subscription:', functionError);
+                  // Intentar INSERT directo como último recurso
+                  const { error: insertError } = await supabase
+                    .from('user_subscriptions')
+                    .insert(subscriptionData);
+                  
+                  if (insertError) {
+                    console.error('⚠️ Error en INSERT directo también:', insertError);
+                  } else {
+                    console.log('✅ Suscripción inicial guardada con INSERT directo (último recurso)');
+                  }
+                } else {
+                  console.log('✅ Suscripción inicial guardada con función SQL (bypass RLS)');
+                }
+              } catch (functionException: any) {
+                console.error('⚠️ Excepción al llamar función SQL:', functionException);
+                // Intentar INSERT directo
+                const { error: insertError } = await supabase
+                  .from('user_subscriptions')
+                  .insert(subscriptionData);
+                
+                if (insertError) {
+                  console.error('⚠️ Error en INSERT directo después de excepción:', insertError);
+                } else {
+                  console.log('✅ Suscripción inicial guardada con INSERT directo');
+                }
+              }
+            } else {
+              // Si no es error RLS, intentar INSERT directo
+              console.log('🔄 Intentando INSERT directo como fallback...');
+              const { error: insertError } = await supabase
+                .from('user_subscriptions')
+                .insert(subscriptionData);
+              
+              if (insertError) {
+                console.error('⚠️ Error en INSERT directo:', insertError);
+              } else {
+                console.log('✅ Suscripción inicial guardada con INSERT directo');
+              }
+            }
             // No fallar el checkout si hay error, solo loguear
           } else {
             console.log('✅ Suscripción inicial guardada en Supabase con is_premium=false');

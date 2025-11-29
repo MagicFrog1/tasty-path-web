@@ -129,6 +129,33 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const isActive = subscription.status === 'active' || subscription.status === 'trialing';
     const status = isActive ? 'active' : subscription.status;
 
+    // Función auxiliar para convertir timestamps de Stripe a ISO string de forma segura
+    const convertTimestampToISO = (timestamp: number | null | undefined): string | null => {
+      // Validar que el timestamp exista y sea un número válido
+      if (timestamp === null || timestamp === undefined || typeof timestamp !== 'number') {
+        return null;
+      }
+      
+      // Validar que no sea NaN o Infinity
+      if (isNaN(timestamp) || !isFinite(timestamp)) {
+        console.warn('⚠️ Timestamp inválido (NaN o Infinity):', timestamp);
+        return null;
+      }
+      
+      // Stripe usa timestamps en segundos Unix, convertir a milisegundos
+      // Si el número es muy grande (más de 1e12), podría estar ya en milisegundos
+      const milliseconds = timestamp > 1e12 ? timestamp : timestamp * 1000;
+      const date = new Date(milliseconds);
+      
+      // Validar que la fecha sea válida
+      if (isNaN(date.getTime())) {
+        console.warn('⚠️ Fecha inválida detectada. Timestamp:', timestamp, 'Milisegundos:', milliseconds);
+        return null;
+      }
+      
+      return date.toISOString();
+    };
+
     // Actualizar Supabase
     const subscriptionData = {
       user_id: finalUserId,
@@ -138,12 +165,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       is_premium: isActive,
       status: status,
       // Usar UTC para todas las fechas (Stripe devuelve timestamps en Unix segundos)
-      current_period_start: new Date((subscription as any).current_period_start * 1000).toISOString(),
-      current_period_end: new Date((subscription as any).current_period_end * 1000).toISOString(),
-      cancel_at_period_end: (subscription as any).cancel_at_period_end,
-      canceled_at: (subscription as any).canceled_at 
-        ? new Date((subscription as any).canceled_at * 1000).toISOString() 
-        : null,
+      current_period_start: convertTimestampToISO(subscription.current_period_start),
+      current_period_end: convertTimestampToISO(subscription.current_period_end),
+      cancel_at_period_end: subscription.cancel_at_period_end || false,
+      canceled_at: convertTimestampToISO(subscription.canceled_at),
     };
 
     const { error: upsertError } = await supabase
