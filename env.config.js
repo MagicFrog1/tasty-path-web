@@ -62,7 +62,23 @@ if (typeof window !== 'undefined' && typeof import.meta !== 'undefined' && impor
 
 export const ENV_CONFIG = {
   // OpenAI API Configuration
-  OPENAI_API_KEY: getEnvVar('OPENAI_API_KEY') || import.meta?.env?.VITE_OPENAI_API_KEY || '',
+  // Priorizar NEXT_PUBLIC_* (Vercel) sobre VITE_* (desarrollo local)
+  OPENAI_API_KEY: (() => {
+    // PRIORIDAD 1: NEXT_PUBLIC_OPENAI_API_KEY (Vercel)
+    if (typeof import.meta !== 'undefined' && import.meta.env?.NEXT_PUBLIC_OPENAI_API_KEY) {
+      return import.meta.env.NEXT_PUBLIC_OPENAI_API_KEY;
+    }
+    // PRIORIDAD 2: VITE_OPENAI_API_KEY (desarrollo local)
+    if (typeof import.meta !== 'undefined' && import.meta.env?.VITE_OPENAI_API_KEY) {
+      return import.meta.env.VITE_OPENAI_API_KEY;
+    }
+    // PRIORIDAD 3: getEnvVar (busca en múltiples lugares)
+    const fromGetEnvVar = getEnvVar('OPENAI_API_KEY');
+    if (fromGetEnvVar) {
+      return fromGetEnvVar;
+    }
+    return '';
+  })(),
   
   // NutriChat API Key (específica para el chat de nutrición)
   // Configurar en Vercel como VITE_NUTRICHAT_API_KEY o NEXT_PUBLIC_NUTRICHAT_API_KEY

@@ -96,10 +96,22 @@ class AIMenuService {
       allergies: request.allergies
     });
     
-    // Verificar si la IA está configurada correctamente
-    if (!isAIConfigured()) {
-      console.log('⚠️ IA no configurada correctamente, usando fallback local...');
-      console.log('🔍 Razón: API Key no válida o no configurada');
+    // Verificar si la IA está configurada correctamente con más detalle
+    const aiConfigured = isAIConfigured();
+    console.log('🔧 Estado de configuración de IA:', {
+      configured: aiConfigured,
+      apiKeyPresent: !!this.apiKey,
+      apiKeyLength: this.apiKey?.length || 0,
+      apiKeyPrefix: this.apiKey?.substring(0, 7) || 'N/A',
+      baseUrl: this.baseUrl,
+      model: ENV_CONFIG.OPENAI_MODEL || 'gpt-4o-mini'
+    });
+    
+    if (!aiConfigured) {
+      console.error('❌ IA no configurada correctamente, usando fallback local...');
+      console.error('🔍 Razón: API Key no válida o no configurada');
+      console.error('💡 Verifica que NEXT_PUBLIC_OPENAI_API_KEY esté configurada en Vercel');
+      console.error('💡 O usa VITE_OPENAI_API_KEY en desarrollo local');
       return await this.generateFallbackMenu(request);
     }
     
@@ -107,13 +119,17 @@ class AIMenuService {
     
     try {
       const result = await this.retryAIGeneration(request, 1);
-      console.log('✅ RESULTADO FINAL:', result.success ? 'ÉXITO CON IA' : 'FALLBACK');
+      if (!result.success) {
+        console.warn('⚠️ RESULTADO FINAL: FALLBACK - La generación con IA falló');
+      } else {
+        console.log('✅ RESULTADO FINAL: ÉXITO CON IA');
+      }
       return result;
     } catch (error) {
       console.error('❌ ERROR CRÍTICO en generación de menú:', error);
-      console.log('🔄 Usando fallback local debido a error crítico...');
-      console.log('🔍 Tipo de error:', error instanceof Error ? error.message : String(error));
-      console.log('🔍 Stack trace:', error instanceof Error ? error.stack : 'No disponible');
+      console.error('🔄 Usando fallback local debido a error crítico...');
+      console.error('🔍 Tipo de error:', error instanceof Error ? error.message : String(error));
+      console.error('🔍 Stack trace:', error instanceof Error ? error.stack : 'No disponible');
       return await this.generateFallbackMenu(request);
     }
   }
