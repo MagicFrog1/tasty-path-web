@@ -853,12 +853,12 @@ class AIMenuService {
     - Varía entre proteínas animales y vegetales
     - Prioriza carnes magras y pescados
     
-    🥩 OBLIGATORIO: INCLUYE CARNES Y PESCADOS REGULARMENTE:
-    - INCLUYE carnes y pescados en AL MENOS 5 de 7 días de la semana
+    🥩 CARNES Y PESCADOS (OPCIONAL):
+    - Con 1-2 días con carne o pescado es suficiente, aunque puedes incluir más si lo deseas
     - PRIORIZA: pollo, pavo, ternera magra, salmón, atún, merluza, huevos
-    - USA carnes magras como fuente principal de proteína
+    - Los demás días puedes usar proteínas vegetales, huevos, legumbres
+    - NO es necesario que todos los días tengan carne o pescado
     - COMBINA con proteínas vegetales para variedad nutricional
-    - INCLUYE huevos como fuente de proteína de alta calidad
     ${needsHighProtein ? `
     🥩 EXTRA PARA ALTO RENDIMIENTO:
     - AUMENTA la frecuencia de carnes y pescados a 6-7 días por semana
@@ -913,17 +913,28 @@ class AIMenuService {
     return `
     GENERACIÓN #${seed} - Crea un menú semanal SENCILLO y VARIADO basado en EVIDENCIA MÉDICA RECIENTE.
 
-    🥩 PROTEÍNAS ANIMALES OBLIGATORIAS (SI NO ES VEGANO/VEGETARIANO):
-    - CADA ALMUERZO Y CENA debe tener carne o pescado como ingrediente principal
-    - NUNCA uses solo huevos como proteína principal en comidas principales
+    🥩 PROTEÍNAS ANIMALES (SI NO ES VEGANO/VEGETARIANO):
+    - Con 1-2 días con carne o pescado es suficiente (puedes incluir más si lo deseas)
+    - Los demás días puedes usar proteínas vegetales, huevos, legumbres o platos sin proteína animal
+    - NO es necesario que cada almuerzo y cena tenga carne o pescado
     - INCLUYE: pollo, ternera, cerdo, salmón, atún, merluza, bacalao, langostinos, conejo, cordero, pato, pavo
-    - VARÍA entre diferentes tipos de carnes y pescados cada día
+    - VARÍA entre diferentes tipos de carnes y pescados cuando los incluyas
 
     OBJETIVOS NUTRICIONALES:
     - Calorías: ${Math.round(request.totalCalories / 7)} cal/día
     - Proteínas: ${request.nutritionGoals.protein}g/día
     - Carbohidratos: ${request.nutritionGoals.carbs}g/día
     - Grasas: ${request.nutritionGoals.fat}g/día
+
+    💰 PRESUPUESTO OBLIGATORIO (MUY IMPORTANTE):
+    - El presupuesto semanal es de €${request.weeklyBudget || 60} - DEBES RESPETARLO ESTRICTAMENTE
+    - Calcula el costo aproximado de todos los ingredientes de la semana
+    - El costo total semanal NO debe exceder €${request.weeklyBudget || 60}
+    - Prioriza ingredientes económicos: legumbres, arroz, pasta, vegetales de temporada, pollo
+    - Evita ingredientes muy caros: mariscos premium, carnes exóticas, productos importados costosos
+    - Si el presupuesto es bajo (menos de €70), usa más proteínas vegetales (legumbres, huevos) y menos carne/pescado
+    - Si el presupuesto es alto (más de €80), puedes incluir más variedad y ingredientes premium
+    - Distribuye el costo a lo largo de la semana de forma equilibrada
 
     PREFERENCIAS: ${dietaryPrefs}
     ALERGIAS: ${allergies}
@@ -970,11 +981,12 @@ class AIMenuService {
     - Las recetas deben ser SENCILLAS de preparar
     - VARÍA COMPLETAMENTE los ingredientes entre días - NO repitas ingredientes principales
     
-    🥩 PROTEÍNAS ANIMALES OBLIGATORIAS (SI NO ES VEGANO/VEGETARIANO):
-    - CADA ALMUERZO Y CENA debe tener carne o pescado como ingrediente principal
-    - NUNCA uses solo huevos como proteína principal en comidas principales
+    🥩 PROTEÍNAS ANIMALES (SI NO ES VEGANO/VEGETARIANO):
+    - Con 1-2 días con carne o pescado es suficiente (puedes incluir más si lo deseas)
+    - Los demás días puedes usar proteínas vegetales, huevos, legumbres o platos sin proteína animal
+    - NO es necesario que cada almuerzo y cena tenga carne o pescado
     - INCLUYE: pollo, ternera, cerdo, salmón, atún, merluza, bacalao, langostinos, conejo, cordero, pato, pavo
-    - VARÍA entre diferentes tipos de carnes y pescados cada día
+    - VARÍA entre diferentes tipos de carnes y pescados cuando los incluyas
     
     🚨 RESPETO OBLIGATORIO A PREFERENCIAS DIETÉTICAS:
     - Si el usuario es VEGANO: NUNCA incluyas carnes, pescados, huevos, lácteos, miel, gelatina
@@ -1026,13 +1038,7 @@ class AIMenuService {
     - Langostinos al ajillo con arroz integral
     - Pavo relleno con verduras asadas
     
-    ⚠️ CRÍTICO PARA OMNÍVOROS: SIGUE ESTOS EJEMPLOS OBLIGATORIAMENTE:
-    - Cada almuerzo debe tener carne o pescado como ingrediente principal
-    - Cada cena debe tener carne o pescado como ingrediente principal
-    - NO uses solo huevos como proteína principal en comidas principales
-    - VARÍA entre diferentes tipos de carnes y pescados cada día
-    
-    📅 EJEMPLO COMPLETO DE MENÚ SEMANAL CON PROTEÍNA ANIMAL:
+    📅 EJEMPLO COMPLETO DE MENÚ SEMANAL VARIADO (1-2 días con carne/pescado):
     
     LUNES:
     - Desayuno: Avena con frutos secos y plátano
@@ -1076,10 +1082,10 @@ class AIMenuService {
     - Cena: Pavo relleno con verduras asadas
     - Snacks: Uvas con queso manchego
     
-    🥩 OBLIGATORIO: SIGUE ESTOS EJEMPLOS PARA USUARIOS OMNÍVOROS:
-    - Incluye AL MENOS una fuente de proteína animal en cada comida principal
-    - Varía entre diferentes tipos de carnes y pescados cada día
-    - Prioriza carnes magras y pescados sobre proteínas vegetales
+    📝 NOTA PARA USUARIOS OMNÍVOROS:
+    - Con 1-2 días con carne o pescado es suficiente (puedes incluir más si lo deseas)
+    - Los demás días puedes usar proteínas vegetales, huevos, legumbres
+    - Varía entre diferentes tipos de carnes y pescados cuando los incluyas
     - Combina carnes con vegetales y carbohidratos complejos
     ` : ''}
     
@@ -2602,10 +2608,11 @@ class AIMenuService {
 ✅ PERMITIDO: vegetales, frutas, legumbres, cereales, huevos, lácteos`;
     } else {
       mainDietType = 'OMNÍVORA';
-      strictRules = `🥩 OBLIGATORIO INCLUIR CARNES Y PESCADOS:
-- MÍNIMO 5 de 7 días con carne o pescado
+      strictRules = `🥩 CARNES Y PESCADOS (OPCIONAL PERO RECOMENDADO):
+- Con 1-2 días con carne o pescado es suficiente, aunque puedes incluir más si lo deseas
 - PRIORIZA: pollo, pavo, ternera, cerdo, salmón, atún, merluza
-- USA carnes magras como base de las comidas principales`;
+- Los demás días puedes usar proteínas vegetales, huevos, legumbres o platos sin proteína animal
+- NO es necesario que todos los días tengan carne o pescado`;
     }
     
     // Reglas adicionales según preferencias
@@ -2636,6 +2643,16 @@ USUARIO:
 - Edad: ${request.age || 'No especificado'} años
 - Género: ${request.gender || 'No especificado'}
 
+💰 PRESUPUESTO OBLIGATORIO (MUY IMPORTANTE):
+- El presupuesto semanal es de €${request.weeklyBudget || 60} - DEBES RESPETARLO ESTRICTAMENTE
+- Calcula el costo aproximado de todos los ingredientes de la semana
+- El costo total semanal NO debe exceder €${request.weeklyBudget || 60}
+- Prioriza ingredientes económicos: legumbres, arroz, pasta, vegetales de temporada, pollo
+- Evita ingredientes muy caros: mariscos premium, carnes exóticas, productos importados costosos
+- Si el presupuesto es bajo (menos de €70), usa más proteínas vegetales (legumbres, huevos) y menos carne/pescado
+- Si el presupuesto es alto (más de €80), puedes incluir más variedad y ingredientes premium
+- Distribuye el costo a lo largo de la semana de forma equilibrada
+
 REGLAS ESTRICTAS:
 ${strictRules}${additionalRules}
 
@@ -2657,14 +2674,14 @@ ${request.activityLevel ? `- Actividad: ${request.activityLevel} - Días más ac
 - Ajusta la cantidad de ingredientes según el peso y altura del usuario
 
 ${!isVegan && !isVegetarian ? `
-EJEMPLOS REALES PARA DIETA OMNÍVORA:
-- Lunes: Pechuga de pollo a la plancha con arroz integral y brócoli
-- Martes: Salmón al horno con quinoa y espinacas
-- Miércoles: Solomillo de ternera con patatas asadas
-- Jueves: Merluza al vapor con verduras salteadas
-- Viernes: Chuleta de cerdo con arroz y judías verdes
-- Sábado: Atún a la plancha con ensalada mixta
-- Domingo: Cordero al horno con bulgur y tomate
+EJEMPLOS REALES PARA DIETA OMNÍVORA (1-2 días con carne/pescado):
+- Lunes: Pechuga de pollo a la plancha con arroz integral y brócoli (con carne)
+- Martes: Lentejas estofadas con verduras y arroz (vegetal)
+- Miércoles: Salmón al horno con quinoa y espinacas (con pescado)
+- Jueves: Tortilla de patatas con ensalada (vegetariana)
+- Viernes: Garbanzos con espinacas y pan integral (vegetal)
+- Sábado: Risotto de setas con queso parmesano (vegetariana)
+- Domingo: Pasta con tomate y albahaca (vegetal)
 ` : ''}
 
 ${isVegan ? `
@@ -2804,13 +2821,12 @@ IMPORTANTE:
 - Respeta las reglas dietéticas estrictamente
 - DEBE incluir exactamente 7 días (Lunes a Domingo)
 
-🚨 CRÍTICO - PROTEÍNAS ANIMALES OBLIGATORIAS:
-- SI NO ES VEGANO/VEGETARIANO: CADA almuerzo y cena DEBE tener carne o pescado
-- NO uses solo huevos como proteína principal en almuerzo/cena
-- INCLUYE: pollo, ternera, cerdo, salmón, atún, merluza, bacalao, langostinos
-- EJEMPLOS CORRECTOS: "Pechuga de pollo a la plancha con puré de patata" ✅, "Salmón al horno con arroz integral" ✅
-- EJEMPLOS INCORRECTOS: "Huevos revueltos con vegetales" ❌, "Tortilla francesa" ❌ (para almuerzo/cena)
-- SIGUE EL EJEMPLO COMPLETO DE MENÚ SEMANAL ARRIBA
+🥩 PROTEÍNAS ANIMALES (SI NO ES VEGANO/VEGETARIANO):
+- Con 1-2 días con carne o pescado es suficiente (puedes incluir más si lo deseas)
+- Los demás días puedes usar proteínas vegetales, huevos, legumbres o platos sin proteína animal
+- NO es necesario que cada almuerzo y cena tenga carne o pescado
+- INCLUYE cuando los uses: pollo, ternera, cerdo, salmón, atún, merluza, bacalao, langostinos
+- EJEMPLOS: "Pechuga de pollo a la plancha" ✅, "Salmón al horno" ✅, "Lentejas estofadas" ✅, "Tortilla de patatas" ✅
 
 🎯 VARIEDAD DE INGREDIENTES OBLIGATORIA:
 - USA ingredientes comunes y accesibles (NO solo exóticos)
