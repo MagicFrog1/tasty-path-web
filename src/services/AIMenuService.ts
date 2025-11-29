@@ -2639,6 +2639,8 @@ IMPORTANTE:
 - VARÍA frutas: manzana, naranja, pera, kiwi, fresas, arándanos, uvas, granada
 - VARÍA carbohidratos: arroz integral, quinoa, pasta integral, patata, avena, bulgur, cuscús
 - NO repitas los mismos ingredientes en días consecutivos
+- NO repitas exactamente el mismo nombre de plato principal (almuerzo o cena) más de 1 vez en toda la semana
+- Asegúrate de que haya al menos 10 platos principales diferentes entre todos los almuerzos y cenas de la semana
 
 🔥 CALORÍAS REALISTAS Y VARIADAS (CRÍTICO):
 - LAS CALORÍAS DEBEN VARIAR ENTRE DÍAS (NO todas iguales)

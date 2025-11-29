@@ -353,7 +353,7 @@ const NavButton = styled(Link)`
     border-color: ${theme.colors.primary};
     background: rgba(46, 139, 87, 0.2);
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(46, 139, 87, 0.4), 0 0 20px rgba(46, 139, 87, 0.2);
+    box-shadow: 0 4px 12px rgba(46, 139, 87, 0.4), 0 0 40px rgba(46, 139, 87, 0.2);
     
     &::before {
       width: 300px;
@@ -368,10 +368,10 @@ const NavButton = styled(Link)`
 
 const Hero = styled.section`
   position: relative;
-  padding: 100px 0 120px;
+  padding: 96px 0 120px;
   background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
   display: grid;
-  gap: 48px;
+  gap: 40px;
   border-bottom: 1px solid rgba(46, 139, 87, 0.08);
   animation: ${fadeInUp} 0.8s ease-out;
   border-radius: 0;
@@ -381,16 +381,44 @@ const Hero = styled.section`
 
 const HeroLayout = styled.div`
   display: grid;
-  gap: 36px;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 40px;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
   position: relative;
   z-index: 1;
+  
+  @media (max-width: 960px) {
+    grid-template-columns: minmax(0, 1fr);
+  }
 `;
 
 const HeroCopy = styled.div`
   display: grid;
   gap: 20px;
   animation: ${fadeInUp} 1s ease-out 0.2s both;
+  padding: 32px 40px;
+  border-radius: 28px;
+  margin-left: 16px;
+  margin-right: -50px;
+  background: radial-gradient(circle at top left, rgba(46, 139, 87, 0.12), transparent 55%),
+    radial-gradient(circle at bottom right, rgba(56, 161, 105, 0.12), transparent 55%),
+    rgba(255, 255, 255, 0.85);
+  box-shadow:
+    0 18px 45px rgba(15, 118, 110, 0.16),
+    0 0 0 1px rgba(46, 139, 87, 0.08);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+  border: 1px solid rgba(46, 139, 87, 0.14);
+
+  @media (max-width: 768px) {
+    margin-left: 0;
+    margin-right: 0;
+    padding: 22px 20px;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.95);
+    box-shadow:
+      0 10px 30px rgba(15, 118, 110, 0.14),
+      0 0 0 1px rgba(46, 139, 87, 0.06);
+  }
 `;
 
 const HeroTitle = styled.h1`
@@ -468,11 +496,15 @@ const Bullet = styled.span`
 
 const HeroPanel = styled.div`
   position: relative;
-  padding: 32px;
-  border-radius: 0;
-  background: transparent;
-  border: none;
-  box-shadow: none;
+  padding: 30px 32px;
+  border-radius: 24px;
+  background: radial-gradient(circle at top right, rgba(46, 139, 87, 0.08), transparent 55%),
+    radial-gradient(circle at bottom left, rgba(56, 161, 105, 0.06), transparent 55%),
+    rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(46, 139, 87, 0.08);
+  box-shadow:
+    0 18px 45px rgba(15, 118, 110, 0.12),
+    0 0 0 1px rgba(15, 23, 42, 0.02);
   display: grid;
   gap: 20px;
   animation: ${scaleIn} 1s ease-out 0.6s both;
@@ -964,9 +996,9 @@ const LandingPage: React.FC = () => {
   const { user } = useAuth();
 
   const heroList = [
-    'IA nutricional entrenada con criterios médicos',
-    'Menús adaptados a tus gustos y alergias',
-    'Lista de compras automatizada en segundos',
+    'NutriChat: resuelve tus dudas al momento con una IA entrenada por nutricionistas.',
+    'Mi NutriPersonal: une tus menús con entrenamientos y hábitos diarios.',
+    'Lista de la compra inteligente: cantidades exactas y cero desperdicio.',
   ];
 
   const stats = [
@@ -995,6 +1027,27 @@ const LandingPage: React.FC = () => {
     {
       title: 'Compra organizada',
       description: 'Lista inteligente por categorías y cantidades exactas.',
+      icon: <FiShoppingBag />,
+    },
+  ];
+
+  const coreFeatures = [
+    {
+      title: 'NutriChat',
+      description:
+        'Un chat pensado solo para nutrición: pregunta sobre tus menús, cambios de ingredientes o dudas médicas generales (siempre con fuentes revisadas).',
+      icon: <FiSmile />,
+    },
+    {
+      title: 'Mi NutriPersonal',
+      description:
+        'Tu espacio para unir alimentación y ejercicio: objetivos, rutinas y métricas conectadas con tus menús semanales para avanzar de forma ordenada.',
+      icon: <FiTrendingUp />,
+    },
+    {
+      title: 'Lista de la compra automática',
+      description:
+        'A partir de tu plan semanal generamos una lista agrupada por secciones del súper, con cantidades redondeadas y avisos de posibles sustituciones.',
       icon: <FiShoppingBag />,
     },
   ];
@@ -1123,8 +1176,9 @@ const LandingPage: React.FC = () => {
             <HeroCopy>
               <HeroTitle>Nutrición inteligente diseñada para ti</HeroTitle>
               <HeroSubtitle>
-                Genera menús semanales personalizados con IA, obtén una lista de compras inteligente y
-                recomendaciones fiables validadas por nuestro equipo nutricional.
+                MyTastyPath es tu asistente completo de nutrición: genera menús semanales con IA, resuelve
+                tus dudas en NutriChat, conecta tus entrenos con Mi NutriPersonal y se encarga de que tu lista
+                de la compra salga clara y sin desperdicio.
               </HeroSubtitle>
               <HeroList>
                 {heroList.map((item) => (
@@ -1147,12 +1201,11 @@ const LandingPage: React.FC = () => {
               </PanelBadge>
               <HeroPanelHeading>
                 <h3>Tu plan ideal, en minutos</h3>
-                <span>Automatiza tu semana con IA</span>
               </HeroPanelHeading>
               <PanelList>
-                <li>Analizamos tus datos metabólicos y objetivos.</li>
-                <li>Recetas variadas con macros y tiempos de preparación.</li>
-                <li>Lista de compras sin desperdicio.</li>
+                <li>Analizamos tus datos (metabolismo, objetivos y presupuesto semanal aproximado).</li>
+                <li>Generamos menús variados con IA, evitando repetir siempre los mismos 4–5 platos.</li>
+                <li>Creamos una lista de la compra agrupada y sin desperdicio, lista para ir al súper.</li>
               </PanelList>
             </HeroPanel>
           </HeroLayout>
@@ -1180,6 +1233,24 @@ const LandingPage: React.FC = () => {
                   <h3>{item.title}</h3>
                 </CardHead>
                 <p>{item.description}</p>
+              </Card>
+            ))}
+          </Grid>
+        </SectionAnchor>
+
+        <SectionAnchor id="funciones" data-reveal>
+          <SectionTitle>
+            <span>Todo lo que incluye</span>
+            <h2>Las piezas clave de MyTastyPath</h2>
+          </SectionTitle>
+          <Grid>
+            {coreFeatures.map((feature) => (
+              <Card key={feature.title} data-reveal>
+                <CardHead>
+                  <IconWrap>{feature.icon}</IconWrap>
+                  <h3>{feature.title}</h3>
+                </CardHead>
+                <p>{feature.description}</p>
               </Card>
             ))}
           </Grid>

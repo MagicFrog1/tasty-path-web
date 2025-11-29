@@ -14,6 +14,8 @@ import { useNavigate } from 'react-router-dom';
 const PageWrapper = styled.div`
   display: grid;
   gap: 32px;
+  max-width: 1200px;
+  margin: 0 auto;
 `;
 
 const Header = styled.div`
@@ -74,7 +76,8 @@ const ProgressItem = styled.div<{ active: boolean }>`
 const Form = styled.form`
   display: grid;
   gap: 24px;
-  max-width: 960px;
+  max-width: 1150px;
+  width: 100%;
 `;
 
 const Row = styled.div`
@@ -95,7 +98,7 @@ const Field = styled.div`
 const StepLayout = styled.div`
   display: grid;
   gap: 24px;
-  grid-template-columns: minmax(0, 1fr) 320px;
+  grid-template-columns: minmax(0, 1fr) 360px;
 
   @media (max-width: 960px) {
     grid-template-columns: 1fr;
@@ -661,7 +664,7 @@ const TimeRange = styled.div`
 `;
 
 const PlanGeneratorPage: React.FC = () => {
-  const { profile } = useUserProfile();
+  const { profile, dietConfig } = useUserProfile();
   const { addWeeklyPlan, weeklyPlans } = useWeeklyPlan();
   const { updateShoppingListFromPlan } = useShoppingList();
   const restrictions = useSubscriptionRestrictions();
@@ -674,6 +677,7 @@ const PlanGeneratorPage: React.FC = () => {
   const [weight, setWeight] = useState(profile?.weight || 70);
   const [height, setHeight] = useState(profile?.height || 170);
   const [customCalories, setCustomCalories] = useState<number | null>(null);
+  const [weeklyBudget, setWeeklyBudget] = useState<number>(dietConfig?.weeklyBudget ?? 60);
   const [useCustomCalories, setUseCustomCalories] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
@@ -827,6 +831,7 @@ const PlanGeneratorPage: React.FC = () => {
           fiber: 25 
         },
         totalCalories: Math.round(targetCalories * 7),
+        weeklyBudget: weeklyBudget || dietConfig?.weeklyBudget || 60,
         dietaryPreferences,
         allergies: allergens,
         weight,
@@ -863,7 +868,7 @@ const PlanGeneratorPage: React.FC = () => {
         description: `Plan generado (web) para ${goal}`,
         nutritionGoals: { protein: 25, carbs: 50, fat: 25, fiber: 25 },
         progress: { completedMeals: 0, totalMeals: 21, percentage: 0 },
-        config: { goal, weight, height, dietaryPreferences, allergens },
+        config: { goal, weight, height, dietaryPreferences, allergens, weeklyBudget },
         meals: response.weeklyMenu,
         estimatedCalories: Math.round(targetCalories),
         createdAt: now.toISOString(),
@@ -1510,6 +1515,29 @@ const PlanGeneratorPage: React.FC = () => {
                       Has establecido manualmente {customCalories} kcal/día.
                     </p>
                   )}
+                </Field>
+                <Field>
+                  <Label>Presupuesto aproximado para la compra semanal (€)</Label>
+                  <Input
+                    type="number"
+                    value={weeklyBudget}
+                    onChange={e => {
+                      const value = Number(e.target.value.replace(',', '.'));
+                      if (Number.isNaN(value)) {
+                        setWeeklyBudget(0);
+                        return;
+                      }
+                      setWeeklyBudget(Math.max(0, Math.min(value, 500)));
+                    }}
+                    min={0}
+                    max={500}
+                    disabled={isLoading}
+                    style={{ maxWidth: '220px' }}
+                  />
+                  <p style={{ fontSize: '12px', color: theme.colors.textSecondary, marginTop: '4px' }}>
+                    La IA intentará ajustar las recetas e ingredientes para que la lista de la compra se acerque a este
+                    presupuesto semanal (sin ser una promesa exacta).
+                  </p>
                 </Field>
               </>
             )}

@@ -188,6 +188,48 @@ const LocationOption = styled.button<{ selected?: boolean }>`
   }
 `;
 
+const FocusSelector = styled.div`
+  display: grid;
+  gap: 16px;
+  margin-top: 24px;
+`;
+
+const FocusGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 12px;
+`;
+
+const FocusOption = styled.button<{ selected?: boolean }>`
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 16px 18px;
+  border-radius: 14px;
+  border: 2px solid ${({ selected }) => selected ? theme.colors.primary : 'rgba(46, 139, 87, 0.2)'};
+  background: ${({ selected }) => selected ? 'rgba(46, 139, 87, 0.06)' : theme.colors.white};
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: left;
+
+  &:hover {
+    border-color: ${theme.colors.primary};
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(46, 139, 87, 0.15);
+  }
+
+  strong {
+    font-size: 14px;
+    color: ${theme.colors.primaryDark};
+  }
+
+  span {
+    font-size: 13px;
+    color: ${theme.colors.textSecondary};
+  }
+`;
+
 const GenerateButton = styled.button`
   width: 100%;
   padding: 16px 24px;
@@ -326,6 +368,7 @@ const MiNutriPersonalPage: React.FC = () => {
   
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
   const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
+  const [trainingFocus, setTrainingFocus] = useState<string>('auto');
   const [isGenerating, setIsGenerating] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
 
@@ -336,6 +379,15 @@ const MiNutriPersonalPage: React.FC = () => {
     { id: 'gym', name: 'Gimnasio', icon: FiActivity },
     { id: 'park', name: 'Parques', icon: FiMapPin },
     { id: 'home', name: 'Casa', icon: FiTarget },
+  ];
+
+  const focusOptions = [
+    { id: 'auto', name: 'Equilibrado', description: 'Combina fuerza, cardio y recuperación de forma automática.' },
+    { id: 'weight_loss', name: 'Bajar peso', description: 'Más sesiones de cardio y trabajo metabólico.' },
+    { id: 'strength_progression', name: 'Mejorar pesos', description: 'Enfoque en fuerza y progresión de cargas.' },
+    { id: 'legs', name: 'Piernas y glúteos', description: 'Prioriza trabajo fuerte de tren inferior.' },
+    { id: 'chest_back', name: 'Pecho y espalda', description: 'Mayor frecuencia en pecho, espalda y zona superior.' },
+    { id: 'arms', name: 'Bíceps y tríceps', description: 'Rutinas con foco en brazos y definición.' },
   ];
 
   const handleLocationToggle = (locationId: string) => {
@@ -364,7 +416,8 @@ const MiNutriPersonalPage: React.FC = () => {
       const exercises = await generateExercisesForPlan(
         plan,
         profile,
-        selectedLocations
+        selectedLocations,
+        trainingFocus === 'auto' ? undefined : trainingFocus
       );
 
       // Agregar ejercicios al plan
@@ -515,6 +568,25 @@ const MiNutriPersonalPage: React.FC = () => {
                     ))}
                   </LocationGrid>
                 </LocationSelector>
+
+                <FocusSelector>
+                  <PlanSelectorTitle>
+                    <FiTarget />
+                    ¿En qué quieres que se enfoque la rutina?
+                  </PlanSelectorTitle>
+                  <FocusGrid>
+                    {focusOptions.map(focus => (
+                      <FocusOption
+                        key={focus.id}
+                        selected={trainingFocus === focus.id}
+                        onClick={() => setTrainingFocus(focus.id)}
+                      >
+                        <strong>{focus.name}</strong>
+                        <span>{focus.description}</span>
+                      </FocusOption>
+                    ))}
+                  </FocusGrid>
+                </FocusSelector>
 
                 <GenerateButton
                   onClick={handleGenerateExercises}

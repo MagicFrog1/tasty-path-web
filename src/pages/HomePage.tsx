@@ -820,12 +820,14 @@ const QuickLinkCard = styled(Link)`
   flex-direction: column;
   gap: 24px;
   padding: 36px;
-  border-radius: 0;
+  border-radius: 20px;
   text-decoration: none;
   color: #1b1f24;
-  background: transparent;
-  border: none;
-  box-shadow: none;
+  background: linear-gradient(135deg, rgba(248, 250, 252, 0.95) 0%, #ffffff 100%);
+  border: 1px solid rgba(46, 139, 87, 0.12);
+  box-shadow:
+    0 10px 30px rgba(15, 23, 42, 0.08),
+    0 0 0 1px rgba(15, 23, 42, 0.02);
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   animation: ${fadeInUp} 1s ease-out both;
   position: relative;
@@ -833,6 +835,10 @@ const QuickLinkCard = styled(Link)`
 
   &:hover {
     transform: translateY(-4px);
+    box-shadow:
+      0 18px 45px rgba(15, 23, 42, 0.16),
+      0 0 0 1px rgba(46, 139, 87, 0.18);
+    border-color: ${theme.colors.primary};
   }
 `;
 
@@ -858,17 +864,29 @@ const QuickLinkHeading = styled.div`
 const QuickLinkFooter = styled.div`
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  color: ${theme.colors.primary};
+  justify-content: center;
+  gap: 8px;
+  align-self: flex-start;
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, ${theme.colors.primary} 0%, ${theme.colors.primaryDark} 100%);
+  color: #ffffff;
   font-weight: 700;
-  font-size: 16px;
+  font-size: 15px;
+  box-shadow: 0 8px 20px rgba(46, 139, 87, 0.32);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
   svg {
     transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    font-size: 18px;
   }
 
   ${QuickLinkCard}:hover & svg {
     transform: translateX(8px);
+  }
+
+  ${QuickLinkCard}:hover & {
+    box-shadow: 0 12px 26px rgba(46, 139, 87, 0.4);
   }
 `;
 

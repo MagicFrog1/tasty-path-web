@@ -37,11 +37,12 @@ export interface DailyExercise {
   location?: 'gym' | 'park' | 'home';
 }
 
-// Generar ejercicios personalizados para un plan semanal
+  // Generar ejercicios personalizados para un plan semanal
 export async function generateExercisesForPlan(
   plan: WeeklyPlan,
   profile: UserProfile | null,
-  locations: string[]
+  locations: string[],
+  trainingFocus?: string
 ): Promise<Exercise[]> {
   const exercises: Exercise[] = [];
   const meals = plan.meals || [];
@@ -63,7 +64,8 @@ export async function generateExercisesForPlan(
       dayNumber,
       goal,
       location,
-      profile
+      profile,
+      trainingFocus
     );
     
     exercises.push({
@@ -81,7 +83,8 @@ async function generateDailyExercise(
   dayNumber: number,
   goal: string,
   location: 'gym' | 'park' | 'home',
-  profile: UserProfile | null
+  profile: UserProfile | null,
+  trainingFocus?: string
 ): Promise<Exercise> {
   const week = Math.ceil(dayNumber / 7);
   const dayOfWeek = ((dayNumber - 1) % 7) + 1;
@@ -98,7 +101,30 @@ async function generateDailyExercise(
   ];
   
   const dayIndex = (dayNumber - 1) % 7;
-  const muscleGroup = muscleGroups[dayIndex];
+
+  // Permitir que el usuario fuerce un foco concreto desde MiNutriPersonal
+  let muscleGroup = muscleGroups[dayIndex];
+  if (trainingFocus) {
+    switch (trainingFocus) {
+      case 'weight_loss':
+        muscleGroup = muscleGroups[5]; // Cardio intensivo
+        break;
+      case 'strength_progression':
+        muscleGroup = muscleGroups[2]; // Piernas y glúteos, gran masa muscular
+        break;
+      case 'legs':
+        muscleGroup = muscleGroups[2]; // Piernas y glúteos
+        break;
+      case 'chest_back':
+        muscleGroup = dayNumber % 2 === 0 ? muscleGroups[0] : muscleGroups[1]; // alterna pecho/espalda
+        break;
+      case 'arms':
+        muscleGroup = dayNumber % 2 === 0 ? muscleGroups[0] : muscleGroups[1]; // pecho+tríceps / espalda+bíceps
+        break;
+      default:
+        break;
+    }
+  }
   
   // Intentar generar con IA si está configurada
   if (isAIConfigured() && profile) {
@@ -222,7 +248,7 @@ RESPONDE EN FORMATO JSON:
   }
   
   // Fallback: Generación básica según ubicación y objetivo
-  return generateFallbackExercise(dayNumber, goal, location, profile);
+  return generateFallbackExercise(dayNumber, goal, location, profile, trainingFocus);
 }
 
 // Generar ejercicio de fallback
@@ -230,7 +256,8 @@ function generateFallbackExercise(
   dayNumber: number,
   goal: string,
   location: 'gym' | 'park' | 'home',
-  profile: UserProfile | null
+  profile: UserProfile | null,
+  trainingFocus?: string
 ): Exercise {
   const userAge = profile?.age || 30;
   const isSenior = userAge >= 60;
@@ -247,7 +274,29 @@ function generateFallbackExercise(
     { focus: 'Recuperación Activa', type: 'flexibility' as const },
   ];
   
-  const muscleGroup = muscleGroups[(dayNumber - 1) % 7];
+  let muscleGroup = muscleGroups[(dayNumber - 1) % 7];
+
+  if (trainingFocus) {
+    switch (trainingFocus) {
+      case 'weight_loss':
+        muscleGroup = muscleGroups[5];
+        break;
+      case 'strength_progression':
+        muscleGroup = muscleGroups[2];
+        break;
+      case 'legs':
+        muscleGroup = muscleGroups[2];
+        break;
+      case 'chest_back':
+        muscleGroup = dayNumber % 2 === 0 ? muscleGroups[0] : muscleGroups[1];
+        break;
+      case 'arms':
+        muscleGroup = dayNumber % 2 === 0 ? muscleGroups[0] : muscleGroups[1];
+        break;
+      default:
+        break;
+    }
+  }
   
   // Ejercicios específicos por grupo muscular y ubicación
   const gymExercises = {
