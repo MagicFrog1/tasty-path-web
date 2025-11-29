@@ -4,6 +4,9 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 /**
  * Webhook de Stripe para manejar eventos de suscripción
  * Este endpoint procesa los eventos de Stripe y actualiza la base de datos de Supabase
+ * 
+ * CRÍTICO: Este endpoint debe deshabilitar el bodyParser para obtener el body raw
+ * y poder verificar la firma de Stripe correctamente.
  */
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Solo permitir métodos POST
@@ -37,40 +40,107 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: 'No signature found' });
   }
 
-  // Obtener el body raw para la verificación de la firma
-  // CRÍTICO: En Vercel, cuando bodyParser: false, req.body debería ser un Buffer
-  // Pero a veces puede venir parseado, así que necesitamos manejarlo correctamente
+  // CRÍTICO: Obtener el body raw para la verificación de la firma
+  // En Vercel con bodyParser: false, el body debe leerse desde el stream
   let rawBody: Buffer;
   
   try {
-    // En Vercel con bodyParser: false, el body debería venir como Buffer
+    // En Vercel Serverless Functions, cuando bodyParser: false,
+    // el body puede venir de diferentes formas dependiendo de cómo Vercel lo procesa.
+    // La forma más confiable es leerlo directamente del stream del request.
+    
+    // Intentar múltiples estrategias en orden de preferencia:
+    
+    // Estrategia 1: Si el body ya es un Buffer, usarlo directamente
     if (Buffer.isBuffer(req.body)) {
       rawBody = req.body;
-      console.log('✅ Body recibido como Buffer, tamaño:', rawBody.length);
-    } else if (typeof req.body === 'string') {
-      // Si es string, convertirlo a Buffer
-      // Esto puede pasar si Vercel lo convierte automáticamente
+      console.log('✅ Body recibido como Buffer, tamaño:', rawBody.length, 'bytes');
+    }
+    // Estrategia 2: Si es string, convertir a Buffer
+    else if (typeof req.body === 'string') {
       rawBody = Buffer.from(req.body, 'utf8');
-      console.log('⚠️ Body recibido como string, convertido a Buffer, tamaño:', rawBody.length);
-    } else {
-      // Si viene parseado como objeto, esto es un problema grave
-      // La verificación de firma fallará porque el JSON puede tener diferencias de formato
-      console.error('❌ Body recibido como objeto parseado. Esto causará fallo en verificación de firma.');
-      console.error('📋 Tipo de body:', typeof req.body);
-      console.error('📋 Body:', JSON.stringify(req.body).substring(0, 200));
-      
-      // Intentar reconstruirlo, pero esto probablemente fallará
-      const bodyString = JSON.stringify(req.body);
-      rawBody = Buffer.from(bodyString, 'utf8');
-      console.warn('⚠️ Intentando reconstruir body desde objeto parseado. La verificación puede fallar.');
+      console.log('✅ Body recibido como string, convertido a Buffer, tamaño:', rawBody.length, 'bytes');
+    }
+    // Estrategia 3: Leer del stream del request (más confiable en Vercel)
+    else {
+      console.log('📖 Leyendo body desde el stream del request...');
+      rawBody = await new Promise<Buffer>((resolve, reject) => {
+        const chunks: Buffer[] = [];
+        let hasResolved = false;
+        
+        // Si el stream ya tiene datos, puede que ya esté disponible
+        // Intentar leer directamente si está disponible
+        if (req.readable && !req.readableEnded) {
+          req.on('data', (chunk: Buffer) => {
+            if (!hasResolved) {
+              chunks.push(chunk);
+            }
+          });
+          
+          req.on('end', () => {
+            if (!hasResolved) {
+              hasResolved = true;
+              const body = chunks.length > 0 ? Buffer.concat(chunks) : Buffer.alloc(0);
+              console.log('✅ Body leído desde stream, tamaño:', body.length, 'bytes');
+              resolve(body);
+            }
+          });
+          
+          req.on('error', (error) => {
+            if (!hasResolved) {
+              hasResolved = true;
+              console.error('❌ Error leyendo stream:', error);
+              reject(error);
+            }
+          });
+          
+          // Timeout de seguridad
+          setTimeout(() => {
+            if (!hasResolved) {
+              hasResolved = true;
+              if (chunks.length > 0) {
+                // Si tenemos chunks, usarlos
+                resolve(Buffer.concat(chunks));
+              } else {
+                reject(new Error('Timeout leyendo el body del request'));
+              }
+            }
+          }, 10000);
+        } else {
+          // Stream ya fue consumido o no está disponible
+          // Intentar reconstruir desde el body si existe
+          if (req.body) {
+            console.warn('⚠️ Stream no disponible, usando body existente');
+            const bodyStr = typeof req.body === 'string' 
+              ? req.body 
+              : JSON.stringify(req.body);
+            resolve(Buffer.from(bodyStr, 'utf8'));
+          } else {
+            reject(new Error('No se puede obtener el body: stream no disponible y body vacío'));
+          }
+        }
+      });
     }
     
     if (!rawBody || rawBody.length === 0) {
+      console.error('❌ Body vacío o no encontrado');
       return res.status(400).json({ error: 'No body found in request' });
     }
+    
+    console.log('✅ Body raw obtenido exitosamente, tamaño:', rawBody.length, 'bytes');
   } catch (error: any) {
-    console.error('❌ Error procesando body:', error);
-    return res.status(400).json({ error: 'Error processing request body' });
+    console.error('❌ Error obteniendo body raw:', error);
+    console.error('📋 Detalles del error:', {
+      message: error.message,
+      stack: error.stack,
+      bodyType: typeof req.body,
+      isBuffer: Buffer.isBuffer(req.body),
+      hasBody: !!req.body,
+    });
+    return res.status(400).json({ 
+      error: `Error processing request body: ${error.message}`,
+      hint: 'Are you passing the raw request body you received from Stripe?'
+    });
   }
 
   let event: Stripe.Event;
@@ -86,18 +156,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       webhookSecret,
       300 // Tolerancia de tiempo en segundos (5 minutos)
     );
-    console.log('✅ Webhook verificado:', event.type);
+    console.log('✅ Webhook verificado correctamente:', event.type);
+    console.log('📋 Event ID:', event.id);
     console.log('⏰ Timestamp del evento:', new Date(event.created * 1000).toISOString());
-    console.log('⏰ Hora actual del servidor:', new Date().toISOString());
   } catch (err: any) {
     console.error('❌ Error verificando webhook:', err.message);
-    console.error('📋 Tipo de body original:', typeof req.body);
-    console.error('📋 Es Buffer:', Buffer.isBuffer(req.body));
-    console.error('📋 Tamaño del rawBody:', rawBody.length);
-    console.error('📋 Primeros 200 caracteres del body:', rawBody.toString('utf8').substring(0, 200));
-    console.error('📋 Signature recibida:', signature.substring(0, 50) + '...');
-    console.error('⏰ Hora actual del servidor:', new Date().toISOString());
-    return res.status(400).json({ error: `Webhook Error: ${err.message}` });
+    console.error('📋 Detalles del error:', {
+      message: err.message,
+      bodySize: rawBody.length,
+      signaturePrefix: signature?.substring(0, 50) + '...',
+      webhookSecretPrefix: webhookSecret?.substring(0, 10) + '...',
+      serverTime: new Date().toISOString(),
+    });
+    return res.status(400).json({ 
+      error: `Webhook Error: ${err.message}. Are you passing the raw request body you received from Stripe? If a webhook request is being forwarded by a third-party tool, ensure that the exact request body, including JSON formatting and new line style, is preserved.` 
+    });
   }
 
   // Obtener credenciales de Supabase
