@@ -132,10 +132,23 @@ export default async function handler(
     });
 
   } catch (error: any) {
-    console.error('❌ Error en create-user-subscription:', error);
+    console.error('❌ Error en create-user-subscription:', {
+      message: error?.message,
+      stack: error?.stack,
+      name: error?.name,
+      code: error?.code,
+      details: error?.details,
+      hint: error?.hint,
+    });
     return res.status(500).json({
       error: 'Error interno del servidor',
-      message: error.message
+      message: error?.message || 'Error desconocido',
+      details: process.env.NODE_ENV === 'development' ? {
+        stack: error?.stack,
+        code: error?.code,
+        details: error?.details,
+        hint: error?.hint,
+      } : undefined
     });
   }
 }

@@ -184,18 +184,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     subError = errorByUserId;
 
     console.log('🔍 NutriChat: Verificando suscripción del usuario:', {
-      userId: user.id,
-      userEmail: user.email,
+      jwtUserId: user.id,
+      jwtUserEmail: user.email,
       subscriptionFound: !!subscription,
+      allSubscriptionsCount: allSubscriptionsByUserId?.length || 0,
       subscriptionData: subscription ? {
+        id: subscription.id,
         plan: subscription.plan,
         status: subscription.status,
         is_premium: subscription.is_premium,
         user_id: subscription.user_id,
+        user_id_match: subscription.user_id === user.id,
         stripe_subscription_id: subscription.stripe_subscription_id,
         current_period_start: subscription.current_period_start,
         current_period_end: subscription.current_period_end
       } : null,
+      allSubscriptions: allSubscriptionsByUserId?.map(sub => ({
+        id: sub.id,
+        plan: sub.plan,
+        status: sub.status,
+        is_premium: sub.is_premium,
+        user_id: sub.user_id,
+        user_id_match: sub.user_id === user.id
+      })) || [],
       error: subError?.message,
       errorCode: subError?.code
     });
@@ -203,6 +214,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (subError) {
       console.error('❌ NutriChat: Error al verificar suscripción:', subError);
       // No bloquear si hay error, solo loguear
+    }
+
+    // CRÍTICO: Verificar que el user_id de la suscripción coincida con el user.id del JWT
+    if (subscription && subscription.user_id !== user.id) {
+      console.error('⚠️ NutriChat: user_id de suscripción no coincide con JWT user.id:', {
+        subscriptionUserId: subscription.user_id,
+        jwtUserId: user.id,
+        match: subscription.user_id === user.id
+      });
+      // No bloquear, pero loguear el problema
     }
 
     // Verificar si el usuario tiene plan premium
@@ -217,24 +238,42 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const hasNoStatus = !subscription?.status || subscription.status === null;
     
     // Aceptar si:
-    // - Es trial (siempre premium)
+    // - Es trial (siempre premium, sin importar status)
     // - Tiene flag premium
     // - Tiene plan no-free Y (está activo/trialing O no tiene status definido)
     const hasActiveSubscription = subscription && 
       (isTrial || isPremiumFlag || (isNotFree && (isActiveStatus || hasNoStatus)));
 
-    console.log('🔍 NutriChat: Análisis de suscripción premium:', {
+    console.log('🔍 NutriChat: Análisis detallado de suscripción premium:', {
       hasSubscription: !!subscription,
+      subscriptionId: subscription?.id,
       plan: subscription?.plan,
+      planType: typeof subscription?.plan,
       status: subscription?.status,
+      statusType: typeof subscription?.status,
       is_premium: subscription?.is_premium,
+      is_premiumType: typeof subscription?.is_premium,
+      user_id: subscription?.user_id,
+      jwt_user_id: user.id,
+      user_id_match: subscription?.user_id === user.id,
+      // Análisis de condiciones
       isTrial,
       isPremiumFlag,
       isNotFree,
       isActiveStatus,
       hasNoStatus,
+      // Resultado final
       hasActiveSubscription,
-      finalDecision: hasActiveSubscription ? '✅ PREMIUM' : '❌ NO PREMIUM'
+      finalDecision: hasActiveSubscription ? '✅ PREMIUM - ACCESO PERMITIDO' : '❌ NO PREMIUM - ACCESO DENEGADO',
+      // Desglose de la condición
+      conditionBreakdown: {
+        'isTrial (plan === "trial")': isTrial,
+        'isPremiumFlag (is_premium === true)': isPremiumFlag,
+        'isNotFree && (isActiveStatus || hasNoStatus)': isNotFree && (isActiveStatus || hasNoStatus),
+        'isNotFree': isNotFree,
+        'isActiveStatus': isActiveStatus,
+        'hasNoStatus': hasNoStatus
+      }
     });
 
     if (!hasActiveSubscription) {
