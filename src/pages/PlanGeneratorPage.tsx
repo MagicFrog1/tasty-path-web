@@ -1009,17 +1009,16 @@ const PlanGeneratorPage: React.FC = () => {
       setStatus('¡Plan generado con IA! Revisa "Mis Planes" y tu "Lista de Compras" para ver el resultado.');
       setStatusType('success');
       
-      // Esperar un momento antes de ocultar el loading
+      // Detener el cronómetro inmediatamente
+      setElapsedTime(0);
+      setIsLoading(false);
+      setLoadingStep(0);
+      setShowSuccessNotification(true);
+      
+      // Ocultar notificación después de 5 segundos
       setTimeout(() => {
-        setIsLoading(false);
-        setLoadingStep(0);
-        setShowSuccessNotification(true);
-        
-        // Ocultar notificación después de 5 segundos
-        setTimeout(() => {
-          setShowSuccessNotification(false);
-        }, 5000);
-      }, 500);
+        setShowSuccessNotification(false);
+      }, 5000);
     } catch (err) {
       console.error(err);
       setStatus('No se pudo generar el plan con IA. Intenta de nuevo.');
