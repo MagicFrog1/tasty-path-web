@@ -91,7 +91,7 @@ export interface FilterOptions {
 }
 
 // Tipos para el sistema de planes de suscripción
-export type SubscriptionPlan = 'free' | 'trial' | 'weekly' | 'monthly' | 'annual';
+export type SubscriptionPlan = 'free' | 'weekly' | 'monthly' | 'annual';
 
 export interface SubscriptionDetails {
   plan: SubscriptionPlan;

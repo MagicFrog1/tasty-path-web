@@ -51,21 +51,6 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
       ],
     },
     {
-      id: 'trial',
-      name: 'Plan de Prueba',
-      price: 0,
-      period: 'gratis',
-      trialDays: 0,
-      features: [
-        { id: 'unlimited_plans', name: 'Planes Ilimitados', description: 'Generación ilimitada de planes personalizados', available: true },
-        { id: 'recipes', name: 'Recetas', description: 'Acceso a base de datos de recetas', available: true },
-        { id: 'shopping_list', name: 'Lista de Compras', description: 'Generación automática de listas', available: true },
-        { id: 'plan_generator', name: 'Generador de Planes', description: 'Acceso a todas las funciones de generador de planes', available: true },
-        { id: 'premium_recipes', name: 'Recetas Premium', description: 'Recetas exclusivas y avanzadas', available: true },
-        { id: 'priority_support', name: 'Soporte Prioritario', description: 'Atención al cliente prioritaria', available: true },
-      ],
-    },
-    {
       id: 'weekly',
       name: 'Plan Semanal',
       price: 3.49,
@@ -215,9 +200,6 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
       switch (plan) {
         case 'free':
           endDate = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000); // 3 días
-          break;
-        case 'trial':
-          endDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 días
           break;
         case 'weekly':
           endDate = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // 1 semana

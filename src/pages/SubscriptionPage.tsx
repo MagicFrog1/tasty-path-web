@@ -511,7 +511,7 @@ const SubscriptionPage: React.FC = () => {
     const params = new URLSearchParams(location.search);
     const success = params.get('success');
     const canceled = params.get('canceled');
-    const plan = params.get('plan') as 'trial' | 'weekly' | 'monthly' | 'annual' | null;
+    const plan = params.get('plan') as 'weekly' | 'monthly' | 'annual' | null;
     const sessionId = params.get('session_id');
 
     // Solo procesar success una vez
@@ -608,7 +608,7 @@ const SubscriptionPage: React.FC = () => {
     }
   }, [location.search, user?.id, user?.email, navigate, selectPlan, checkSubscriptionStatus]);
 
-  const handleSelectPlan = async (planId: 'trial' | 'weekly' | 'monthly' | 'annual' | 'free') => {
+  const handleSelectPlan = async (planId: 'weekly' | 'monthly' | 'annual' | 'free') => {
     if (planId === 'free') {
       await selectPlan('free');
       return;
@@ -685,7 +685,7 @@ const SubscriptionPage: React.FC = () => {
       }
       
       const result = await redirectToCheckout(
-        planId as 'trial' | 'weekly' | 'monthly' | 'annual',
+        planId as 'weekly' | 'monthly' | 'annual',
         user?.email || undefined,
         user?.id
       );
@@ -868,13 +868,11 @@ const SubscriptionPage: React.FC = () => {
                 <p style={{ margin: '8px 0 0 0', opacity: highlight ? 0.9 : 0.7, fontSize: '15px', lineHeight: '1.6' }}>
                   {plan.id === 'free'
                     ? 'Perfecto para probar la experiencia TastyPath.'
-                    : plan.id === 'trial'
-                      ? 'Plan de prueba gratuito con acceso completo a todas las funciones premium.'
-                      : plan.id === 'weekly'
-                        ? 'Flexibilidad semanal para quienes inician su transformación.'
-                        : plan.id === 'monthly'
-                          ? 'Plan recomendado para resultados sostenidos con IA.'
-                          : 'La mejor inversión anual con hasta 2 meses de regalo.'}
+                    : plan.id === 'weekly'
+                      ? 'Flexibilidad semanal para quienes inician su transformación.'
+                      : plan.id === 'monthly'
+                        ? 'Plan recomendado para resultados sostenidos con IA.'
+                        : 'La mejor inversión anual con hasta 2 meses de regalo.'}
                 </p>
               </div>
               <PriceRow>
@@ -919,7 +917,7 @@ const SubscriptionPage: React.FC = () => {
               <SelectButton 
                 highlight={highlight} 
                 isCurrent={isCurrent}
-                onClick={() => !isCurrent && plan.id !== 'free' && handleSelectPlan(plan.id as 'trial' | 'weekly' | 'monthly' | 'annual' | 'free')}
+                onClick={() => !isCurrent && plan.id !== 'free' && handleSelectPlan(plan.id as 'weekly' | 'monthly' | 'annual' | 'free')}
                 disabled={isCurrent || isProcessing || plan.id === 'free'}
                 style={plan.id === 'free' ? { opacity: 0.6, cursor: 'not-allowed' } : {}}
               >
