@@ -246,7 +246,6 @@ class AIMenuService {
     
       const apiUrl = this.getApiUrlWithParams();
       const apiHeaders = this.getApiHeaders();
-      const isGeminiAPI = this.isGemini();
       
       console.log('📤 Enviando solicitud sin timeout...');
       console.log('🔗 URL base:', this.getApiUrl());
