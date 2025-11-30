@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { SubscriptionPlan, SubscriptionDetails, PlanOption } from '../types';
 import PaymentService, { PaymentResponse } from '../services/PaymentService';
 import { storage } from '../utils/storage';
@@ -112,12 +112,7 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
     },
   ];
 
-  // Verificar estado de suscripción al cargar la app
-  useEffect(() => {
-    checkSubscriptionStatus();
-  }, []);
-
-  const checkSubscriptionStatus = async (userId?: string | null) => {
+  const checkSubscriptionStatus = useCallback(async (userId?: string | null) => {
     try {
       setIsLoading(true);
       console.log('🔍 Verificando estado de suscripción...');
@@ -193,7 +188,12 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
+
+  // Verificar estado de suscripción al cargar la app
+  useEffect(() => {
+    checkSubscriptionStatus();
+  }, [checkSubscriptionStatus]);
 
   const selectPlan = async (plan: SubscriptionPlan) => {
     try {

@@ -75,10 +75,13 @@ export default async function handler(
       .eq('user_id', userId)
       .maybeSingle();
 
+    // Si hay un error que no sea "no encontrado", loguearlo pero continuar
     if (existingError && existingError.code !== 'PGRST116') {
       console.error('⚠️ Error verificando suscripción existente:', existingError);
+      // No retornar error aquí, continuar para intentar crear
     }
 
+    // Si ya existe una suscripción, retornar éxito (no es un error)
     if (existing) {
       console.log('ℹ️ Ya existe una suscripción para este usuario:', (existing as any).id);
       return res.status(200).json({
