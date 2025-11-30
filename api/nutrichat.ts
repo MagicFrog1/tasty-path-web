@@ -67,11 +67,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.log('✅ NutriChat: Usuario autenticado:', user.id);
 
     // Verificar suscripción del usuario
+    // Buscar suscripciones activas o en periodo de prueba
     const { data: subscription, error: subError } = await supabaseAdmin
       .from('user_subscriptions')
       .select('*')
       .eq('user_id', user.id)
-      .eq('status', 'active')
+      .in('status', ['active', 'trialing'])
       .maybeSingle();
 
     console.log('🔍 NutriChat: Verificando suscripción del usuario:', {
@@ -93,13 +94,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Verificar si el usuario tiene plan premium
     // Un usuario tiene premium si:
-    // 1. Tiene una suscripción activa Y
+    // 1. Tiene una suscripción activa o en periodo de prueba Y
     // 2. (is_premium es true) O (el plan NO es 'free')
-    // Nota: Permitimos 'trial' también ya que es una suscripción activa
+    // Nota: Permitimos cualquier plan activo excepto 'free'
+    const isActiveStatus = subscription?.status === 'active' || subscription?.status === 'trialing';
     const isNotFree = subscription?.plan && subscription.plan !== 'free';
     
     const hasActiveSubscription = subscription && 
-      subscription.status === 'active' && 
+      isActiveStatus && 
       (subscription.is_premium === true || isNotFree);
 
     if (!hasActiveSubscription) {
