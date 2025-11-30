@@ -54,28 +54,36 @@ export const AI_CONFIG = {
 export const isAIConfigured = (): boolean => {
   const apiKey = AI_CONFIG.OPENAI_API_KEY;
   
-  // Verificaciones más completas
+  // Verificaciones más completas - soporta tanto OpenAI como Gemini
   const hasApiKey = !!apiKey && apiKey.length > 0;
   const notPlaceholder = apiKey !== 'your-openai-api-key' && apiKey !== '';
-  const validFormat = apiKey?.startsWith('sk-') || apiKey?.startsWith('sk-proj-');
-  const minLength = apiKey && apiKey.length >= 20; // Las API keys de OpenAI son largas
+  const isOpenAI = apiKey?.startsWith('sk-') || apiKey?.startsWith('sk-proj-');
+  const isGemini = apiKey?.startsWith('AIza');
+  const validFormat = isOpenAI || isGemini;
+  const minLength = apiKey && ((isOpenAI && apiKey.length >= 20) || (isGemini && apiKey.length >= 20));
   
   const isConfigured = hasApiKey && notPlaceholder && validFormat && minLength;
   
   console.log('🔧 Verificando configuración de IA:');
   console.log('🔑 API Key presente:', hasApiKey);
   console.log('🔑 No es placeholder:', notPlaceholder);
-  console.log('🔑 Formato válido (sk- o sk-proj-):', validFormat);
+  console.log('🔑 Formato válido (sk- para OpenAI o AIza para Gemini):', validFormat);
+  console.log('🔑 Es OpenAI:', isOpenAI);
+  console.log('🔑 Es Gemini:', isGemini);
   console.log('🔑 Longitud suficiente (>=20):', minLength);
   console.log('🔑 Longitud de API Key:', apiKey?.length || 0);
   console.log('🔑 Prefijo:', apiKey?.substring(0, 10) || 'N/A');
   console.log('✅ Configuración completa:', isConfigured);
   
   if (!isConfigured) {
-    console.error('❌ API Key de OpenAI no configurada correctamente.');
+    console.error('❌ API Key no configurada correctamente.');
     console.error('💡 Para configurarla en Vercel:');
+    console.error('   Para OpenAI:');
     console.error('   1. Ve a Settings → Environment Variables');
     console.error('   2. Agrega: VITE_OPENAI_API_KEY = sk-tu-clave-aqui');
+    console.error('   Para Gemini:');
+    console.error('   1. Ve a Settings → Environment Variables');
+    console.error('   2. Agrega: VITE_OPENAI_API_KEY = AIza-tu-clave-aqui');
     console.error('   3. O usa: NEXT_PUBLIC_OPENAI_API_KEY (ambos funcionan)');
     console.error('   4. Redespliega la aplicación');
     console.error('📖 Ver DIAGNOSTICO_FALLBACK_IA.md para más detalles');

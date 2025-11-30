@@ -86,6 +86,44 @@ export interface Meal {
 class AIMenuService {
   private apiKey: string = ENV_CONFIG.OPENAI_API_KEY; // Usar la API key correcta
   private baseUrl: string = ENV_CONFIG.OPENAI_API_URL; // Usar la URL correcta
+  
+  // Detectar si es Gemini o OpenAI basándose en la API key
+  private isGemini(): boolean {
+    return this.apiKey?.startsWith('AIza') || false;
+  }
+  
+  // Obtener la URL correcta según el tipo de API
+  private getApiUrl(): string {
+    if (this.isGemini()) {
+      // URL de Gemini API
+      return 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
+    }
+    // URL de OpenAI API
+    return this.baseUrl;
+  }
+  
+  // Obtener los headers correctos según el tipo de API
+  private getApiHeaders(): Record<string, string> {
+    if (this.isGemini()) {
+      // Gemini usa query parameter, no Bearer token
+      return {
+        'Content-Type': 'application/json'
+      };
+    }
+    // OpenAI usa Bearer token
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${this.apiKey}`
+    };
+  }
+  
+  // Obtener la URL con query parameters para Gemini
+  private getApiUrlWithParams(): string {
+    if (this.isGemini()) {
+      return `${this.getApiUrl()}?key=${this.apiKey}`;
+    }
+    return this.getApiUrl();
+  }
 
   // Función para generar menú semanal usando IA con reintentos
   async generateWeeklyMenu(request: AIMenuRequest): Promise<AIMenuResponse> {
@@ -152,12 +190,15 @@ class AIMenuService {
   // Función interna para intentar generación con IA
   private async attemptAIGeneration(request: AIMenuRequest): Promise<AIMenuResponse> {
     // Verificar configuración de la API con más detalle
+    const isGeminiAPI = this.isGemini();
     console.log('🔧 VERIFICACIÓN COMPLETA DE CONFIGURACIÓN DE IA:');
     console.log('🔑 API Key presente:', !!this.apiKey);
     console.log('🔑 API Key longitud:', this.apiKey?.length || 0);
-    console.log('🔑 API Key empieza con sk-:', this.apiKey?.startsWith('sk-') || false);
+    console.log('🔑 API Key empieza con AIza (Gemini):', this.apiKey?.startsWith('AIza') || false);
+    console.log('🔑 API Key empieza con sk- (OpenAI):', this.apiKey?.startsWith('sk-') || false);
+    console.log('🔑 Es Gemini:', isGeminiAPI);
     console.log('🔑 API Key NO es placeholder:', this.apiKey !== 'your-openai-api-key');
-    console.log('🌐 Base URL:', this.baseUrl);
+    console.log('🌐 Base URL:', this.getApiUrl());
     console.log('🤖 Modelo:', ENV_CONFIG.OPENAI_MODEL || 'gpt-4o-mini');
     console.log('📊 Request recibido:', {
       totalCalories: request.totalCalories,
@@ -168,17 +209,23 @@ class AIMenuService {
     // Verificación más estricta de la API key
     if (!this.apiKey) {
       console.error('❌ API Key no está definida');
-      throw new Error('API key de OpenAI no está definida');
+      throw new Error('API key no está definida');
     }
     
     if (this.apiKey === 'your-openai-api-key') {
       console.error('❌ API Key es el placeholder por defecto');
-      throw new Error('API key de OpenAI es el placeholder por defecto');
+      throw new Error('API key es el placeholder por defecto');
     }
     
-    if (!this.apiKey.startsWith('sk-')) {
-      console.error('❌ API Key no tiene el formato correcto');
+    // Verificar formato según el tipo de API
+    if (!isGeminiAPI && !this.apiKey.startsWith('sk-')) {
+      console.error('❌ API Key de OpenAI no tiene el formato correcto');
       throw new Error('API key de OpenAI no tiene el formato correcto (debe empezar con sk-)');
+    }
+    
+    if (isGeminiAPI && !this.apiKey.startsWith('AIza')) {
+      console.error('❌ API Key de Gemini no tiene el formato correcto');
+      throw new Error('API key de Gemini no tiene el formato correcto (debe empezar con AIza)');
     }
     
     console.log('✅ Configuración de IA verificada correctamente - Procediendo con generación...');
@@ -197,51 +244,92 @@ class AIMenuService {
     const seedBasedElements = this.generateSeedBasedElements(generationSeed);
     console.log('🎨 Elementos únicos generados:', seedBasedElements);
     
-      console.log('📤 Enviando solicitud a OpenAI sin timeout...');
-      console.log('🔗 URL:', this.baseUrl);
+      const apiUrl = this.getApiUrlWithParams();
+      const apiHeaders = this.getApiHeaders();
+      const isGeminiAPI = this.isGemini();
+      
+      console.log('📤 Enviando solicitud sin timeout...');
+      console.log('🔗 URL base:', this.getApiUrl());
+      console.log('🔑 API Key (primeros 10 chars):', this.apiKey?.substring(0, 10) || 'N/A');
+      console.log('🔑 Es Gemini:', isGeminiAPI);
+      console.log('🔗 URL final:', apiUrl);
+      
+      // Preparar el body según el tipo de API
+      let requestBody: any;
+      if (isGeminiAPI) {
+        // Formato de Gemini API
+        requestBody = {
+          contents: [{
+            parts: [{
+              text: `Eres un chef experto que crea menús semanales. CRÍTICO: Debes responder ÚNICAMENTE con JSON válido y completo. El JSON debe estar perfectamente formateado, sin errores de sintaxis, con todas las llaves y corchetes cerrados correctamente. NO incluyas texto adicional antes o después del JSON. El JSON debe comenzar con { y terminar con }. Verifica que todos los arrays estén cerrados con ] y todos los objetos con }.\n\n${prompt}`
+            }]
+          }],
+          generationConfig: {
+            temperature: 0.2,
+            maxOutputTokens: 8000
+          }
+        };
+        console.log('🔑 Usando autenticación Gemini con query parameter');
+      } else {
+        // Formato de OpenAI API
+        requestBody = {
+          model: ENV_CONFIG.OPENAI_MODEL || 'gpt-4o-mini',
+          messages: [
+            {
+              role: 'system',
+              content: 'Eres un chef experto que crea menús semanales. CRÍTICO: Debes responder ÚNICAMENTE con JSON válido y completo. El JSON debe estar perfectamente formateado, sin errores de sintaxis, con todas las llaves y corchetes cerrados correctamente. NO incluyas texto adicional antes o después del JSON. El JSON debe comenzar con { y terminar con }. Verifica que todos los arrays estén cerrados con ] y todos los objetos con }.'
+            },
+            {
+              role: 'user',
+              content: prompt
+            }
+          ],
+          temperature: 0.2,
+          max_tokens: 8000
+        };
+        console.log('🔑 Usando autenticación OpenAI con Authorization Bearer');
+      }
       
       try {
-        const response = await fetch(this.baseUrl, {
+        const response = await fetch(apiUrl, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${this.apiKey}`
-          },
-          body: JSON.stringify({
-            model: ENV_CONFIG.OPENAI_MODEL || 'gpt-4o-mini', // Usar modelo configurado (gpt-4o-mini es más moderno y mejor)
-            messages: [
-              {
-                role: 'system',
-                content: 'Eres un chef experto que crea menús semanales. CRÍTICO: Debes responder ÚNICAMENTE con JSON válido y completo. El JSON debe estar perfectamente formateado, sin errores de sintaxis, con todas las llaves y corchetes cerrados correctamente. NO incluyas texto adicional antes o después del JSON. El JSON debe comenzar con { y terminar con }. Verifica que todos los arrays estén cerrados con ] y todos los objetos con }.'
-              },
-              {
-                role: 'user',
-                content: prompt
-              }
-            ],
-            temperature: 0.2, // Temperatura muy baja para JSON consistente y válido
-            max_tokens: 8000 // gpt-4o-mini soporta hasta 16384 tokens de output, usando 8000 para JSON completo
-          })
+          headers: apiHeaders,
+          body: JSON.stringify(requestBody)
         });
         
-        console.log('📥 Respuesta recibida de OpenAI:');
+        console.log('📥 Respuesta recibida:', isGeminiAPI ? 'de Gemini' : 'de OpenAI');
         console.log('📊 Status:', response.status, response.statusText);
         console.log('📋 Headers:', Object.fromEntries(response.headers.entries()));
 
         if (!response.ok) {
           const errorText = await response.text();
           console.error('❌ Error en la API:', errorText);
-          throw new Error(`Error en la API: ${response.status} - ${response.statusText} - ${errorText}`);
+          const errorMsg = isGeminiAPI 
+            ? `Error de autenticación con Gemini (${response.status}). Verifica que NEXT_PUBLIC_GEMINI_API_KEY esté configurada correctamente en Vercel. Error: ${errorText}`
+            : `Error en la API: ${response.status} - ${response.statusText} - ${errorText}`;
+          throw new Error(errorMsg);
         }
 
         const data = await response.json();
-          console.log('📦 Datos de respuesta:', {
-          choices: data.choices?.length || 0,
-          usage: data.usage,
-          model: data.model
-        });
         
-        const content = data.choices[0]?.message?.content;
+        // Extraer contenido según el tipo de API
+        let content: string;
+        if (isGeminiAPI) {
+          // Formato de respuesta de Gemini
+          console.log('📦 Datos de respuesta de Gemini:', {
+            candidates: data.candidates?.length || 0,
+            usageMetadata: data.usageMetadata
+          });
+          content = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        } else {
+          // Formato de respuesta de OpenAI
+          console.log('📦 Datos de respuesta de OpenAI:', {
+            choices: data.choices?.length || 0,
+            usage: data.usage,
+            model: data.model
+          });
+          content = data.choices[0]?.message?.content || '';
+        }
         
         if (!content) {
           throw new Error('No se recibió contenido de la IA');
@@ -2342,15 +2430,28 @@ class AIMenuService {
       const userHash = this.hashString(JSON.stringify(request));
       const generationSeed = timestamp + randomComponent + userHash;
       
-      console.log('🤖 Llamando a OpenAI con prompt simplificado...');
+      const isGeminiAPI = this.isGemini();
+      const apiUrl = this.getApiUrlWithParams();
+      const apiHeaders = this.getApiHeaders();
       
-      const response = await fetch(this.baseUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.apiKey}`
-        },
-        body: JSON.stringify({
+      console.log('🤖 Llamando a', isGeminiAPI ? 'Gemini' : 'OpenAI', 'con prompt simplificado...');
+      
+      // Preparar el body según el tipo de API
+      let requestBody: any;
+      if (isGeminiAPI) {
+        requestBody = {
+          contents: [{
+            parts: [{
+              text: `Eres un chef experto que crea menús semanales. Responde ÚNICAMENTE con JSON válido. El JSON debe comenzar con { y terminar con }. Verifica que todos los arrays estén cerrados.\n\n${simplePrompt}`
+            }]
+          }],
+          generationConfig: {
+            temperature: 0.3,
+            maxOutputTokens: 6000
+          }
+        };
+      } else {
+        requestBody = {
           model: ENV_CONFIG.OPENAI_MODEL || 'gpt-4o-mini',
           messages: [
             {
@@ -2362,9 +2463,15 @@ class AIMenuService {
               content: simplePrompt
             }
           ],
-          temperature: 0.3, // Temperatura un poco más baja para consistencia
+          temperature: 0.3,
           max_tokens: 6000
-        })
+        };
+      }
+      
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: apiHeaders,
+        body: JSON.stringify(requestBody)
       });
 
       if (!response.ok) {
@@ -2374,7 +2481,14 @@ class AIMenuService {
       }
 
       const data = await response.json();
-      const content = data.choices[0]?.message?.content;
+      
+      // Extraer contenido según el tipo de API
+      let content: string;
+      if (isGeminiAPI) {
+        content = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      } else {
+        content = data.choices[0]?.message?.content || '';
+      }
       
       if (!content) {
         throw new Error('No se recibió contenido de la IA');
