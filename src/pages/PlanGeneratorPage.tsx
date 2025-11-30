@@ -823,9 +823,6 @@ const PlanGeneratorPage: React.FC = () => {
         else if (goal === 'Salud cardiovascular') targetCalories = tmt * 0.95;
       }
 
-      setLoadingStep(2);
-      setStatus('Preparando solicitud para IA...');
-
       // Calcular macros según objetivo y características físicas
       let proteinPercent = 25;
       let carbsPercent = 50;
@@ -869,15 +866,13 @@ const PlanGeneratorPage: React.FC = () => {
         gender: profile.gender,
       };
 
-      setLoadingStep(3);
-      setStatus('Generando menús personalizados con IA...');
       const response = await AIMenuService.generateWeeklyMenu(aiRequest);
 
       if (!response.success || !response.weeklyMenu) {
         throw new Error('La IA no devolvió un menú válido');
       }
 
-      setLoadingStep(4);
+      setLoadingStep(2);
       setStatus('Guardando plan semanal...');
 
       const now = new Date();
@@ -902,7 +897,7 @@ const PlanGeneratorPage: React.FC = () => {
 
       addWeeklyPlan(weeklyPlan);
 
-      setLoadingStep(5);
+      setLoadingStep(3);
       setStatus('Generando lista de compras...');
 
       const ingredients = new Map<string, { quantity: string; unit: string }>();
@@ -941,7 +936,7 @@ const PlanGeneratorPage: React.FC = () => {
         );
       }
 
-      setLoadingStep(6);
+      setLoadingStep(4);
       setStatus('¡Plan generado con IA! Revisa "Mis Planes" y tu "Lista de Compras" para ver el resultado.');
       setStatusType('success');
       
@@ -1327,11 +1322,9 @@ const PlanGeneratorPage: React.FC = () => {
 
   const loadingSteps = [
     { id: 1, label: 'Calculando parámetros nutricionales' },
-    { id: 2, label: 'Preparando solicitud para IA' },
-    { id: 3, label: 'Generando menús personalizados con IA' },
-    { id: 4, label: 'Guardando plan semanal' },
-    { id: 5, label: 'Generando lista de compras' },
-    { id: 6, label: 'Finalizando...' },
+    { id: 2, label: 'Guardando plan semanal' },
+    { id: 3, label: 'Generando lista de compras' },
+    { id: 4, label: 'Finalizando...' },
   ];
 
   // Actualizar tiempo transcurrido cada segundo cuando está cargando
