@@ -557,11 +557,29 @@ const Login: React.FC = () => {
         }
 
         // Crear registro inicial en user_subscriptions (sin suscripción)
+        // Llamar al endpoint API del servidor para crear el registro
         if (data.user?.id) {
           try {
             console.log('📝 Creando registro inicial en user_subscriptions para usuario:', data.user.id);
-            await createInitialUserSubscription(data.user.id);
-            console.log('✅ Registro inicial en user_subscriptions creado exitosamente');
+            const response = await fetch('/api/create-user-subscription', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                userId: data.user.id,
+                userEmail: email.toLowerCase(),
+              }),
+            });
+
+            if (response.ok) {
+              const result = await response.json();
+              console.log('✅ Registro inicial en user_subscriptions creado exitosamente:', result);
+            } else {
+              const errorData = await response.json().catch(() => ({}));
+              console.error('⚠️ Error creando registro inicial en user_subscriptions:', errorData);
+              // No bloquear el registro si esto falla, solo loguear
+            }
           } catch (subError: any) {
             console.error('⚠️ Error creando registro inicial en user_subscriptions:', subError);
             // No bloquear el registro si esto falla, solo loguear

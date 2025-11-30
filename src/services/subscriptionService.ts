@@ -20,14 +20,17 @@ export interface UserSubscription {
 /**
  * Crea un registro inicial de suscripción para un usuario recién registrado
  * Se llama automáticamente cuando un usuario se registra
+ * Esta función puede ser llamada sin sesión activa (usando service role key en el backend)
  */
-export async function createInitialUserSubscription(userId: string): Promise<UserSubscription | null> {
+export async function createInitialUserSubscription(userId: string, skipAuthCheck: boolean = false): Promise<UserSubscription | null> {
   try {
-    // Verificar que el usuario esté autenticado
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      console.warn('⚠️ Usuario no autenticado, no se puede crear suscripción inicial');
-      return null;
+    // Verificar que el usuario esté autenticado (a menos que se especifique skipAuthCheck)
+    if (!skipAuthCheck) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        console.warn('⚠️ Usuario no autenticado, no se puede crear suscripción inicial');
+        return null;
+      }
     }
 
     // Verificar si ya existe una suscripción para este usuario
