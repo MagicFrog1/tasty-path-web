@@ -94,14 +94,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Verificar si el usuario tiene plan premium
     // Un usuario tiene premium si:
     // 1. Tiene una suscripción activa Y
-    // 2. (is_premium es true) O (el plan NO es 'free' ni 'trial')
-    const isNotFreeOrTrial = subscription?.plan && 
-                             subscription.plan !== 'free' && 
-                             subscription.plan !== 'trial';
+    // 2. (is_premium es true) O (el plan NO es 'free')
+    // Nota: Permitimos 'trial' también ya que es una suscripción activa
+    const isNotFree = subscription?.plan && subscription.plan !== 'free';
     
     const hasActiveSubscription = subscription && 
       subscription.status === 'active' && 
-      (subscription.is_premium === true || isNotFreeOrTrial);
+      (subscription.is_premium === true || isNotFree);
 
     if (!hasActiveSubscription) {
       console.warn('⚠️ NutriChat: Usuario sin suscripción premium:', {
