@@ -69,16 +69,32 @@ export default async function handler(
     const supabase = getSupabaseAdmin();
 
     // Verificar si ya existe una suscripción para este usuario
-    const { data: existing, error: existingError } = await supabase
-      .from('user_subscriptions')
-      .select('*')
-      .eq('user_id', userId)
-      .maybeSingle();
+    let existing: any = null;
+    try {
+      const { data, error: existingError } = await supabase
+        .from('user_subscriptions')
+        .select('*')
+        .eq('user_id', userId)
+        .maybeSingle();
 
-    // Si hay un error que no sea "no encontrado", loguearlo pero continuar
-    if (existingError && existingError.code !== 'PGRST116') {
-      console.error('⚠️ Error verificando suscripción existente:', existingError);
-      // No retornar error aquí, continuar para intentar crear
+      // Si hay un error que no sea "no encontrado", loguearlo pero continuar
+      if (existingError && existingError.code !== 'PGRST116') {
+        console.error('⚠️ Error verificando suscripción existente:', {
+          code: existingError.code,
+          message: existingError.message,
+          details: existingError.details,
+          hint: existingError.hint
+        });
+        // No retornar error aquí, continuar para intentar crear
+      } else {
+        existing = data;
+      }
+    } catch (checkError: any) {
+      console.error('⚠️ Excepción al verificar suscripción existente:', {
+        message: checkError?.message,
+        stack: checkError?.stack
+      });
+      // Continuar para intentar crear
     }
 
     // Si ya existe una suscripción, retornar éxito (no es un error)
@@ -105,22 +121,64 @@ export default async function handler(
       canceled_at: null,
     };
 
-    const { data, error } = await supabase
-      .from('user_subscriptions')
-      .insert(subscriptionData as any)
-      .select()
-      .single();
-
-    if (error) {
-      console.error('❌ Error creando suscripción inicial:', {
-        code: error.code,
-        message: error.message,
-        details: error.details,
-        hint: error.hint,
+    let data: any = null;
+    let insertError: any = null;
+    
+    try {
+      const result = await supabase
+        .from('user_subscriptions')
+        .insert(subscriptionData as any)
+        .select()
+        .single();
+      
+      data = result.data;
+      insertError = result.error;
+    } catch (insertException: any) {
+      console.error('❌ Excepción al insertar suscripción:', {
+        message: insertException?.message,
+        stack: insertException?.stack,
+        name: insertException?.name
       });
+      insertError = insertException;
+    }
+
+    if (insertError) {
+      console.error('❌ Error creando suscripción inicial:', {
+        code: insertError.code,
+        message: insertError.message,
+        details: insertError.details,
+        hint: insertError.hint,
+        name: insertError.name,
+        stack: insertError.stack
+      });
+      
+      // Si el error es que ya existe (violación de constraint único), retornar éxito
+      if (insertError.code === '23505' || insertError.message?.includes('duplicate') || insertError.message?.includes('unique')) {
+        console.log('ℹ️ La suscripción ya existe (constraint único), verificando nuevamente...');
+        try {
+          const { data: existingAfterError } = await supabase
+            .from('user_subscriptions')
+            .select('*')
+            .eq('user_id', userId)
+            .maybeSingle();
+          
+          if (existingAfterError) {
+            console.log('✅ Suscripción encontrada después del error de duplicado:', (existingAfterError as any).id);
+            return res.status(200).json({
+              success: true,
+              message: 'Suscripción ya existe',
+              subscription: existingAfterError
+            });
+          }
+        } catch (recheckError: any) {
+          console.error('⚠️ Error al verificar después del error de duplicado:', recheckError);
+        }
+      }
+      
       return res.status(500).json({
         error: 'Error creando suscripción inicial',
-        details: error.message
+        details: insertError.message,
+        code: insertError.code
       });
     }
 
