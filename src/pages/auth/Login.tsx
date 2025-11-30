@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../../services/supabase';
 import { DatabaseService } from '../../services/databaseService';
+import { createInitialUserSubscription } from '../../services/subscriptionService';
 
 // =====================================================
 // STYLED COMPONENTS - Diseño Moderno y Profesional
@@ -553,6 +554,18 @@ const Login: React.FC = () => {
           }
           
           throw new Error(errorMessage);
+        }
+
+        // Crear registro inicial en user_subscriptions (sin suscripción)
+        if (data.user?.id) {
+          try {
+            console.log('📝 Creando registro inicial en user_subscriptions para usuario:', data.user.id);
+            await createInitialUserSubscription(data.user.id);
+            console.log('✅ Registro inicial en user_subscriptions creado exitosamente');
+          } catch (subError: any) {
+            console.error('⚠️ Error creando registro inicial en user_subscriptions:', subError);
+            // No bloquear el registro si esto falla, solo loguear
+          }
         }
 
         // Mensaje de éxito con instrucciones

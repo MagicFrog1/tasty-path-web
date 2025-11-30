@@ -18,6 +18,69 @@ export interface UserSubscription {
 }
 
 /**
+ * Crea un registro inicial de suscripción para un usuario recién registrado
+ * Se llama automáticamente cuando un usuario se registra
+ */
+export async function createInitialUserSubscription(userId: string): Promise<UserSubscription | null> {
+  try {
+    // Verificar que el usuario esté autenticado
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      console.warn('⚠️ Usuario no autenticado, no se puede crear suscripción inicial');
+      return null;
+    }
+
+    // Verificar si ya existe una suscripción para este usuario
+    const existing = await getUserSubscription(userId);
+    if (existing) {
+      console.log('ℹ️ Ya existe una suscripción para este usuario, no se crea una nueva');
+      return existing;
+    }
+
+    // Crear registro inicial sin suscripción (plan free)
+    const now = new Date();
+    const subscriptionData: Partial<UserSubscription> = {
+      user_id: userId,
+      stripe_customer_id: null,
+      stripe_subscription_id: null,
+      plan: null, // null = sin plan (free)
+      is_premium: false,
+      status: null, // null = sin estado (no tiene suscripción activa)
+      current_period_start: null,
+      current_period_end: null,
+      cancel_at_period_end: false,
+      canceled_at: null,
+    };
+
+    const { data, error } = await supabase
+      .from('user_subscriptions')
+      .insert(subscriptionData)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('❌ Error creando suscripción inicial:', {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+      });
+      return null;
+    }
+
+    console.log('✅ Suscripción inicial creada para usuario:', userId);
+    return data as UserSubscription;
+  } catch (error: any) {
+    console.error('❌ Error creando suscripción inicial (catch):', {
+      message: error?.message,
+      status: error?.status,
+      code: error?.code,
+    });
+    return null;
+  }
+}
+
+/**
  * Obtiene la suscripción actual del usuario desde Supabase
  */
 export async function getUserSubscription(userId: string): Promise<UserSubscription | null> {
