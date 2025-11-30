@@ -933,6 +933,7 @@ const PlanGeneratorPage: React.FC = () => {
         bmi: nutritionService.calculateBMI(weight, height),
         age: profile.age,
         gender: profile.gender,
+        goal, // Incluir el objetivo del usuario
       };
 
       const response = await AIMenuService.generateWeeklyMenu(aiRequest);

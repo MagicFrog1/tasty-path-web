@@ -33,6 +33,7 @@ export interface AIMenuRequest {
   age?: number;
   gender?: 'male' | 'female';
   medicalConditions?: string[]; // Campo faltante para condiciones médicas
+  goal?: string; // Objetivo del usuario (ej: "Pérdida de peso", "Aumento de masa muscular", etc.)
 }
 
 export interface AIMenuResponse {
@@ -921,6 +922,7 @@ class AIMenuService {
     - Proteínas: ${request.nutritionGoals.protein}g/día
     - Carbohidratos: ${request.nutritionGoals.carbs}g/día
     - Grasas: ${request.nutritionGoals.fat}g/día
+    ${request.goal ? `- Objetivo del usuario: ${request.goal}` : ''}
 
     💰 PRESUPUESTO OBLIGATORIO (MUY IMPORTANTE):
     - El presupuesto semanal es de €${request.weeklyBudget || 60} - DEBES RESPETARLO ESTRICTAMENTE
@@ -2717,6 +2719,61 @@ class AIMenuService {
 - IMPORTANTE: Usa estos elementos como guía para crear un menú ÚNICO y diferente a generaciones anteriores
 ` : '';
     
+    // Mapeo de objetivos a instrucciones específicas
+    const goalInstructions = request.goal ? (() => {
+      const goalLower = request.goal.toLowerCase();
+      if (goalLower.includes('pérdida') || goalLower.includes('perdida') || goalLower.includes('peso')) {
+        return `🎯 OBJETIVO: PÉRDIDA DE PESO
+- Prioriza alimentos bajos en calorías pero altos en volumen (vegetales, frutas, proteínas magras)
+- Incluye más proteína magra para mantener la masa muscular durante la pérdida de peso
+- Reduce carbohidratos refinados, prioriza carbohidratos complejos y fibra
+- Incluye alimentos saciantes: legumbres, vegetales de hoja verde, proteínas magras
+- Evita alimentos procesados y altos en azúcares añadidos
+- Las porciones deben ser moderadas para crear un déficit calórico
+- Prioriza métodos de cocción saludables: plancha, vapor, horno, hervido
+- Incluye snacks bajos en calorías entre comidas si es necesario`;
+      } else if (goalLower.includes('aumento') || goalLower.includes('masa') || goalLower.includes('muscular')) {
+        return `🎯 OBJETIVO: AUMENTO DE MASA MUSCULAR
+- Prioriza alimentos ricos en proteína de alta calidad (carnes magras, pescados, huevos, legumbres)
+- Aumenta la cantidad de carbohidratos complejos para energía y recuperación
+- Incluye grasas saludables para hormonas y absorción de vitaminas
+- Las porciones deben ser generosas para crear un superávit calórico
+- Distribuye la proteína a lo largo del día (mínimo 20-30g por comida)
+- Incluye carbohidratos post-entrenamiento si aplica
+- Prioriza alimentos densos en nutrientes y calorías
+- Incluye snacks proteicos entre comidas`;
+      } else if (goalLower.includes('diabetes') || goalLower.includes('glucosa')) {
+        return `🎯 OBJETIVO: CONTROL DE DIABETES
+- Prioriza alimentos con bajo índice glucémico
+- Evita azúcares añadidos y carbohidratos refinados
+- Incluye carbohidratos complejos con fibra (legumbres, cereales integrales)
+- Distribuye los carbohidratos de forma equilibrada a lo largo del día
+- Prioriza proteínas magras y grasas saludables
+- Incluye alimentos ricos en fibra para ralentizar la absorción de glucosa
+- Evita alimentos procesados y altos en azúcares
+- Las porciones de carbohidratos deben ser controladas y consistentes`;
+      } else if (goalLower.includes('cardiovascular') || goalLower.includes('corazón') || goalLower.includes('corazon')) {
+        return `🎯 OBJETIVO: SALUD CARDIOVASCULAR
+- Prioriza alimentos ricos en omega-3 (pescados grasos, nueces, semillas)
+- Incluye alimentos ricos en fibra soluble (avena, legumbres, frutas)
+- Reduce alimentos altos en sodio y grasas saturadas
+- Prioriza grasas saludables (aceite de oliva, aguacate, frutos secos)
+- Incluye alimentos ricos en antioxidantes (frutas, vegetales de colores)
+- Evita alimentos procesados y fritos
+- Prioriza métodos de cocción saludables: plancha, vapor, horno, hervido
+- Incluye alimentos ricos en potasio (plátanos, espinacas, patatas)`;
+      } else if (goalLower.includes('mantenimiento')) {
+        return `🎯 OBJETIVO: MANTENIMIENTO
+- Mantén un equilibrio entre todos los grupos alimentarios
+- Las porciones deben ser moderadas y equilibradas
+- Incluye variedad de alimentos de todos los grupos
+- Prioriza alimentos frescos y naturales
+- Mantén un balance calórico para mantener el peso actual`;
+      }
+      return `🎯 OBJETIVO: ${request.goal}
+- Ajusta el menú según este objetivo específico del usuario`;
+    })() : '';
+
     return `Eres un nutricionista experto. Crea un menú semanal REALISTA y VARIADO.
 ${seedInfo}
 
@@ -2734,6 +2791,7 @@ USUARIO:
 - Nivel de actividad: ${request.activityLevel || 'No especificado'}
 - Edad: ${request.age || 'No especificado'} años
 - Género: ${request.gender || 'No especificado'}
+${goalInstructions ? `\n${goalInstructions}` : ''}
 
 💰 PRESUPUESTO OBLIGATORIO (MUY IMPORTANTE):
 - El presupuesto semanal es de €${request.weeklyBudget || 60} - DEBES RESPETARLO ESTRICTAMENTE

@@ -919,15 +919,16 @@ const SubscriptionPage: React.FC = () => {
               <SelectButton 
                 highlight={highlight} 
                 isCurrent={isCurrent}
-                onClick={() => !isCurrent && handleSelectPlan(plan.id as 'trial' | 'weekly' | 'monthly' | 'annual' | 'free')}
-                disabled={isCurrent || isProcessing}
+                onClick={() => !isCurrent && plan.id !== 'free' && handleSelectPlan(plan.id as 'trial' | 'weekly' | 'monthly' | 'annual' | 'free')}
+                disabled={isCurrent || isProcessing || plan.id === 'free'}
+                style={plan.id === 'free' ? { opacity: 0.6, cursor: 'not-allowed' } : {}}
               >
                 {isProcessing 
                   ? 'Procesando...' 
                   : isCurrent 
                     ? 'Plan actual' 
                     : plan.id === 'free'
-                      ? 'Seleccionar plan'
+                      ? 'Plan por defecto'
                       : 'Suscribirse ahora'}
               </SelectButton>
             </PlanCard>

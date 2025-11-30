@@ -774,7 +774,7 @@ const Login: React.FC = () => {
                 disabled={isLoading}
               />
               <label htmlFor="terms">
-                Acepto los <Link to="/terminos" target="_blank" onClick={(e) => e.stopPropagation()}>términos y condiciones</Link> y la <Link to="/privacidad" target="_blank" onClick={(e) => e.stopPropagation()}>política de privacidad</Link> de TastyPath
+                Acepto los <Link to="/terminos" onClick={(e) => e.stopPropagation()}>términos y condiciones</Link> y la <Link to="/privacidad" onClick={(e) => e.stopPropagation()}>política de privacidad</Link> de TastyPath
               </label>
             </CheckboxContainer>
 
