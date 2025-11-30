@@ -36,7 +36,9 @@ function getSupabaseAdmin() {
       }
     });
     console.log('✅ Cliente de Supabase Admin inicializado con Service Role Key (bypass RLS)');
-    console.log('🔑 Service key prefix:', supabaseServiceKey?.substring(0, 20) + '...');
+    if (supabaseServiceKey) {
+      console.log('🔑 Service key prefix:', supabaseServiceKey.substring(0, 20) + '...');
+    }
   }
   return supabaseAdmin;
 }
