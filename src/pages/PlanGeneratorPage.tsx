@@ -488,7 +488,9 @@ const LoadingOverlay = styled.div<{ show: boolean }>`
   align-items: center;
   justify-content: center;
   flex-direction: column;
-  gap: 32px;
+  gap: 20px;
+  padding: 20px;
+  overflow-y: auto;
   animation: ${({ show }) => (show ? 'fadeIn 0.3s ease' : 'none')};
 
   @keyframes fadeIn {
@@ -499,64 +501,96 @@ const LoadingOverlay = styled.div<{ show: boolean }>`
       opacity: 1;
     }
   }
+
+  @media (max-height: 700px) {
+    gap: 12px;
+    padding: 16px;
+  }
 `;
 
 const LoadingContent = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 24px;
+  gap: 16px;
   text-align: center;
-  max-width: 500px;
-  padding: 0 32px;
+  max-width: 480px;
+  width: 100%;
+  padding: 0 16px;
+
+  @media (max-height: 700px) {
+    gap: 12px;
+    max-width: 420px;
+  }
 `;
 
 const Spinner = styled.div`
-  width: 80px;
-  height: 80px;
-  border: 6px solid rgba(46, 139, 87, 0.1);
+  width: 60px;
+  height: 60px;
+  border: 4px solid rgba(46, 139, 87, 0.1);
   border-top-color: ${theme.colors.primary};
   border-radius: 50%;
   animation: spin 1s linear infinite;
+  flex-shrink: 0;
 
   @keyframes spin {
     to {
       transform: rotate(360deg);
     }
   }
+
+  @media (max-height: 700px) {
+    width: 50px;
+    height: 50px;
+    border-width: 3px;
+  }
 `;
 
 const LoadingTitle = styled.h2`
   margin: 0;
-  font-size: clamp(1.8rem, 4vw, 2.4rem);
+  font-size: clamp(1.5rem, 3.5vw, 2rem);
   font-weight: 800;
   color: #0a0e13;
   font-family: ${theme.fonts.heading};
   letter-spacing: -0.02em;
   line-height: 1.2;
+
+  @media (max-height: 700px) {
+    font-size: clamp(1.3rem, 3vw, 1.7rem);
+  }
 `;
 
 const LoadingMessage = styled.p`
   margin: 0;
-  font-size: 18px;
+  font-size: clamp(14px, 2vw, 16px);
   color: ${theme.colors.textSecondary};
-  line-height: 1.6;
+  line-height: 1.5;
+
+  @media (max-height: 700px) {
+    font-size: 13px;
+    line-height: 1.4;
+  }
 `;
 
 const LoadingSteps = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
   width: 100%;
-  margin-top: 8px;
+  margin-top: 4px;
+
+  @media (max-height: 700px) {
+    gap: 6px;
+    margin-top: 2px;
+  }
 `;
 
 const LoadingStep = styled.div<{ active: boolean; completed: boolean }>`
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
-  border-radius: 12px;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 10px;
   background: ${({ active, completed }) => 
     completed ? 'rgba(46, 139, 87, 0.1)' : 
     active ? 'rgba(46, 139, 87, 0.15)' : 
@@ -565,18 +599,29 @@ const LoadingStep = styled.div<{ active: boolean; completed: boolean }>`
     completed ? theme.colors.primary : 
     active ? theme.colors.primaryDark : 
     theme.colors.textSecondary};
-  font-size: 14px;
+  font-size: clamp(12px, 1.5vw, 14px);
   font-weight: ${({ active }) => (active ? 600 : 400)};
   transition: all 0.3s ease;
 
   &::before {
     content: ${({ completed }) => (completed ? '"✓"' : '"○"')};
-    font-size: 18px;
+    font-size: 16px;
     font-weight: 700;
     color: ${({ completed, active }) => 
       completed ? theme.colors.primary : 
       active ? theme.colors.primary : 
       theme.colors.textSecondary};
+    flex-shrink: 0;
+  }
+
+  @media (max-height: 700px) {
+    padding: 8px 12px;
+    font-size: 12px;
+    gap: 8px;
+
+    &::before {
+      font-size: 14px;
+    }
   }
 `;
 
@@ -584,26 +629,37 @@ const TimeEstimator = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
-  padding: 20px;
-  border-radius: 16px;
+  gap: 8px;
+  padding: 16px 20px;
+  border-radius: 14px;
   background: linear-gradient(135deg, rgba(46, 139, 87, 0.08) 0%, rgba(34, 197, 94, 0.05) 100%);
   border: 1px solid rgba(46, 139, 87, 0.2);
   box-shadow: 0 4px 16px rgba(46, 139, 87, 0.1);
-  min-width: 280px;
-  margin-top: 8px;
+  width: 100%;
+  max-width: 300px;
+  margin-top: 4px;
+
+  @media (max-height: 700px) {
+    padding: 12px 16px;
+    gap: 6px;
+    max-width: 260px;
+  }
 `;
 
 const TimeLabel = styled.div`
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 600;
   color: ${theme.colors.textSecondary};
   text-transform: uppercase;
   letter-spacing: 0.05em;
+
+  @media (max-height: 700px) {
+    font-size: 10px;
+  }
 `;
 
 const TimeDisplay = styled.div`
-  font-size: 2rem;
+  font-size: clamp(1.5rem, 4vw, 2rem);
   font-weight: 800;
   color: ${theme.colors.primary};
   font-family: ${theme.fonts.heading};
@@ -625,9 +681,17 @@ const TimeDisplay = styled.div`
   }
 
   span {
-    font-size: 1.2rem;
+    font-size: clamp(1rem, 2.5vw, 1.2rem);
     font-weight: 600;
     color: ${theme.colors.textSecondary};
+  }
+
+  @media (max-height: 700px) {
+    font-size: 1.4rem;
+
+    span {
+      font-size: 1rem;
+    }
   }
 `;
 
@@ -659,9 +723,14 @@ const OscillatorDot = styled.div<{ delay: number }>`
 `;
 
 const TimeRange = styled.div`
-  font-size: 12px;
+  font-size: 11px;
   color: ${theme.colors.textSecondary};
-  margin-top: 4px;
+  margin-top: 2px;
+
+  @media (max-height: 700px) {
+    font-size: 10px;
+    margin-top: 0;
+  }
 `;
 
 const PlanGeneratorPage: React.FC = () => {
