@@ -101,7 +101,8 @@ export const ENV_CONFIG = {
   })(),
   
   // API Configuration
-  OPENAI_API_URL: 'https://api.openai.com/v1/chat/completions',
+  // Base URL sin el path - los servicios agregarán el path completo según necesiten
+  OPENAI_API_URL: 'https://api.openai.com',
   OPENAI_MODEL: 'gpt-4o-mini',
   
   // Supabase Configuration

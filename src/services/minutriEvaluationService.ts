@@ -118,7 +118,7 @@ Responde ÚNICAMENTE con JSON válido en este formato:
 }`;
 
     try {
-      const response = await fetch(ENV_CONFIG.OPENAI_API_URL, {
+      const response = await fetch(ENV_CONFIG.OPENAI_API_URL + '/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
