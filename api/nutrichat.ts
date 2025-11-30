@@ -67,40 +67,109 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.log('✅ NutriChat: Usuario autenticado:', user.id);
 
     // Verificar suscripción del usuario
-    // Buscar suscripciones activas o en periodo de prueba
+    // Buscar TODAS las suscripciones del usuario primero (sin filtrar por status)
+    // para encontrar planes premium incluso si tienen status diferente
     let subscription: any = null;
     let subError: any = null;
     
-    // Primero intentar buscar por user_id directo
-    const { data: subscriptionByUserId, error: errorByUserId } = await supabaseAdmin
+    // Buscar todas las suscripciones por user_id (sin filtrar por status)
+    const { data: allSubscriptionsByUserId, error: errorByUserId } = await supabaseAdmin
       .from('user_subscriptions')
       .select('*')
-      .eq('user_id', user.id)
-      .in('status', ['active', 'trialing'])
-      .maybeSingle();
+      .eq('user_id', user.id);
     
-    if (subscriptionByUserId) {
-      subscription = subscriptionByUserId;
-    } else {
-      // Si no se encontró por user_id, buscar por email
-      if (user.email) {
-        const { data: profile } = await supabaseAdmin
-          .from('user_profiles')
-          .select('id')
-          .eq('email', user.email)
-          .maybeSingle();
+    console.log('🔍 NutriChat: Todas las suscripciones por user_id:', {
+      userId: user.id,
+      count: allSubscriptionsByUserId?.length || 0,
+      subscriptions: allSubscriptionsByUserId?.map(sub => ({
+        plan: sub.plan,
+        status: sub.status,
+        is_premium: sub.is_premium,
+        user_id: sub.user_id
+      })) || []
+    });
+    
+    // Buscar la mejor suscripción premium disponible
+    if (allSubscriptionsByUserId && allSubscriptionsByUserId.length > 0) {
+      // Prioridad 1: Suscripción activa o en periodo de prueba con plan premium
+      subscription = allSubscriptionsByUserId.find(sub => 
+        (sub.status === 'active' || sub.status === 'trialing') &&
+        (sub.is_premium === true || (sub.plan && sub.plan !== 'free'))
+      );
+      
+      // Prioridad 2: Cualquier suscripción con plan 'trial' (es premium)
+      if (!subscription) {
+        subscription = allSubscriptionsByUserId.find(sub => 
+          sub.plan === 'trial'
+        );
+      }
+      
+      // Prioridad 3: Cualquier suscripción con is_premium = true
+      if (!subscription) {
+        subscription = allSubscriptionsByUserId.find(sub => 
+          sub.is_premium === true
+        );
+      }
+      
+      // Prioridad 4: Cualquier suscripción con plan que no sea 'free'
+      if (!subscription) {
+        subscription = allSubscriptionsByUserId.find(sub => 
+          sub.plan && sub.plan !== 'free'
+        );
+      }
+    }
+    
+    // Si no encontramos por user_id, buscar por email
+    if (!subscription && user.email) {
+      const { data: profile } = await supabaseAdmin
+        .from('user_profiles')
+        .select('id')
+        .eq('email', user.email)
+        .maybeSingle();
+      
+      if (profile?.id) {
+        const { data: allSubscriptionsByEmail } = await supabaseAdmin
+          .from('user_subscriptions')
+          .select('*')
+          .eq('user_id', profile.id);
         
-        if (profile?.id) {
-          // Buscar suscripciones con el profile.id (puede ser diferente al user.id del JWT)
-          const { data: subscriptionByEmail, error: errorByEmail } = await supabaseAdmin
-            .from('user_subscriptions')
-            .select('*')
-            .eq('user_id', profile.id)
-            .in('status', ['active', 'trialing'])
-            .maybeSingle();
+        console.log('🔍 NutriChat: Todas las suscripciones por email (profile.id):', {
+          profileId: profile.id,
+          count: allSubscriptionsByEmail?.length || 0,
+          subscriptions: allSubscriptionsByEmail?.map(sub => ({
+            plan: sub.plan,
+            status: sub.status,
+            is_premium: sub.is_premium,
+            user_id: sub.user_id
+          })) || []
+        });
+        
+        if (allSubscriptionsByEmail && allSubscriptionsByEmail.length > 0) {
+          // Misma lógica de prioridad
+          subscription = allSubscriptionsByEmail.find(sub => 
+            (sub.status === 'active' || sub.status === 'trialing') &&
+            (sub.is_premium === true || (sub.plan && sub.plan !== 'free'))
+          );
           
-          if (subscriptionByEmail) {
-            subscription = subscriptionByEmail;
+          if (!subscription) {
+            subscription = allSubscriptionsByEmail.find(sub => 
+              sub.plan === 'trial'
+            );
+          }
+          
+          if (!subscription) {
+            subscription = allSubscriptionsByEmail.find(sub => 
+              sub.is_premium === true
+            );
+          }
+          
+          if (!subscription) {
+            subscription = allSubscriptionsByEmail.find(sub => 
+              sub.plan && sub.plan !== 'free'
+            );
+          }
+          
+          if (subscription) {
             console.log('✅ NutriChat: Suscripción encontrada por email:', {
               userJwtId: user.id,
               profileId: profile.id,
@@ -110,69 +179,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           }
         }
       }
-      
-      // Si aún no encontramos, buscar todas las suscripciones del usuario para diagnóstico
-      if (!subscription) {
-        const { data: allSubscriptions } = await supabaseAdmin
-          .from('user_subscriptions')
-          .select('*')
-          .eq('user_id', user.id);
-        
-        console.log('🔍 NutriChat: Diagnóstico - Todas las suscripciones por user_id:', {
-          userId: user.id,
-          count: allSubscriptions?.length || 0,
-          subscriptions: allSubscriptions?.map(sub => ({
-            plan: sub.plan,
-            status: sub.status,
-            is_premium: sub.is_premium,
-            user_id: sub.user_id
-          })) || []
-        });
-        
-        // También buscar todas las suscripciones por email si no encontramos ninguna
-        if (user.email && (!allSubscriptions || allSubscriptions.length === 0)) {
-          const { data: profile } = await supabaseAdmin
-            .from('user_profiles')
-            .select('id')
-            .eq('email', user.email)
-            .maybeSingle();
-          
-          if (profile?.id) {
-            const { data: allSubscriptionsByEmail } = await supabaseAdmin
-              .from('user_subscriptions')
-              .select('*')
-              .eq('user_id', profile.id);
-            
-            console.log('🔍 NutriChat: Diagnóstico - Todas las suscripciones por email (profile.id):', {
-              profileId: profile.id,
-              count: allSubscriptionsByEmail?.length || 0,
-              subscriptions: allSubscriptionsByEmail?.map(sub => ({
-                plan: sub.plan,
-                status: sub.status,
-                is_premium: sub.is_premium,
-                user_id: sub.user_id
-              })) || []
-            });
-            
-            // Si hay alguna suscripción activa, usarla
-            if (allSubscriptionsByEmail && allSubscriptionsByEmail.length > 0) {
-              const activeSub = allSubscriptionsByEmail.find(
-                sub => sub.status === 'active' || sub.status === 'trialing'
-              );
-              if (activeSub) {
-                subscription = activeSub;
-                console.log('✅ NutriChat: Usando suscripción activa encontrada por email:', {
-                  plan: subscription.plan,
-                  status: subscription.status
-                });
-              }
-            }
-          }
-        }
-      }
-      
-      subError = errorByUserId;
     }
+    
+    subError = errorByUserId;
 
     console.log('🔍 NutriChat: Verificando suscripción del usuario:', {
       userId: user.id,
@@ -198,15 +207,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Verificar si el usuario tiene plan premium
     // Un usuario tiene premium si:
-    // 1. Tiene una suscripción activa o en periodo de prueba Y
-    // 2. (is_premium es true) O (el plan NO es 'free')
-    // Nota: Permitimos cualquier plan activo excepto 'free'
-    const isActiveStatus = subscription?.status === 'active' || subscription?.status === 'trialing';
+    // 1. Tiene plan 'trial' (siempre premium) O
+    // 2. Tiene is_premium = true O
+    // 3. Tiene un plan que NO es 'free' Y (status activo/trialing O simplemente existe)
+    const isTrial = subscription?.plan === 'trial';
+    const isPremiumFlag = subscription?.is_premium === true;
     const isNotFree = subscription?.plan && subscription.plan !== 'free';
+    const isActiveStatus = subscription?.status === 'active' || subscription?.status === 'trialing';
     
+    // Aceptar si es trial, tiene flag premium, o tiene plan no-free (incluso si no está activo)
     const hasActiveSubscription = subscription && 
-      isActiveStatus && 
-      (subscription.is_premium === true || isNotFree);
+      (isTrial || isPremiumFlag || (isNotFree && (isActiveStatus || !subscription.status)));
 
     if (!hasActiveSubscription) {
       console.warn('⚠️ NutriChat: Usuario sin suscripción premium:', {
