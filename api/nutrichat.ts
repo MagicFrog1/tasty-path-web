@@ -207,17 +207,35 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Verificar si el usuario tiene plan premium
     // Un usuario tiene premium si:
-    // 1. Tiene plan 'trial' (siempre premium) O
+    // 1. Tiene plan 'trial' (siempre premium, sin importar el status) O
     // 2. Tiene is_premium = true O
-    // 3. Tiene un plan que NO es 'free' Y (status activo/trialing O simplemente existe)
+    // 3. Tiene un plan que NO es 'free' Y (status activo/trialing O status es null/undefined)
     const isTrial = subscription?.plan === 'trial';
     const isPremiumFlag = subscription?.is_premium === true;
-    const isNotFree = subscription?.plan && subscription.plan !== 'free';
+    const isNotFree = subscription?.plan && subscription.plan !== 'free' && subscription.plan !== null;
     const isActiveStatus = subscription?.status === 'active' || subscription?.status === 'trialing';
+    const hasNoStatus = !subscription?.status || subscription.status === null;
     
-    // Aceptar si es trial, tiene flag premium, o tiene plan no-free (incluso si no está activo)
+    // Aceptar si:
+    // - Es trial (siempre premium)
+    // - Tiene flag premium
+    // - Tiene plan no-free Y (está activo/trialing O no tiene status definido)
     const hasActiveSubscription = subscription && 
-      (isTrial || isPremiumFlag || (isNotFree && (isActiveStatus || !subscription.status)));
+      (isTrial || isPremiumFlag || (isNotFree && (isActiveStatus || hasNoStatus)));
+
+    console.log('🔍 NutriChat: Análisis de suscripción premium:', {
+      hasSubscription: !!subscription,
+      plan: subscription?.plan,
+      status: subscription?.status,
+      is_premium: subscription?.is_premium,
+      isTrial,
+      isPremiumFlag,
+      isNotFree,
+      isActiveStatus,
+      hasNoStatus,
+      hasActiveSubscription,
+      finalDecision: hasActiveSubscription ? '✅ PREMIUM' : '❌ NO PREMIUM'
+    });
 
     if (!hasActiveSubscription) {
       console.warn('⚠️ NutriChat: Usuario sin suscripción premium:', {
@@ -229,13 +247,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           is_premium: subscription.is_premium,
           isActiveStatus: isActiveStatus,
           isNotFree: isNotFree,
+          hasNoStatus: hasNoStatus,
           hasActiveSubscription: false
         } : 'NO ENCONTRADA',
         checkDetails: {
           hasSubscription: !!subscription,
-          isActiveStatus: isActiveStatus,
-          isNotFree: isNotFree,
-          isPremiumFlag: subscription?.is_premium === true
+          isTrial,
+          isPremiumFlag,
+          isActiveStatus,
+          isNotFree,
+          hasNoStatus
         }
       });
       return res.status(403).json({ 
