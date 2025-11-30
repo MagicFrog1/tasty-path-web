@@ -196,18 +196,18 @@ class AIMenuService {
       // Preparar el body para OpenAI API
       const requestBody = {
         model: ENV_CONFIG.OPENAI_MODEL || 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'system',
-            content: 'Eres un chef experto que crea menús semanales. CRÍTICO: Debes responder ÚNICAMENTE con JSON válido y completo. El JSON debe estar perfectamente formateado, sin errores de sintaxis, con todas las llaves y corchetes cerrados correctamente. NO incluyas texto adicional antes o después del JSON. El JSON debe comenzar con { y terminar con }. Verifica que todos los arrays estén cerrados con ] y todos los objetos con }.'
-          },
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
+            messages: [
+              {
+                role: 'system',
+                content: 'Eres un chef experto que crea menús semanales. CRÍTICO: Debes responder ÚNICAMENTE con JSON válido y completo. El JSON debe estar perfectamente formateado, sin errores de sintaxis, con todas las llaves y corchetes cerrados correctamente. NO incluyas texto adicional antes o después del JSON. El JSON debe comenzar con { y terminar con }. Verifica que todos los arrays estén cerrados con ] y todos los objetos con }.'
+              },
+              {
+                role: 'user',
+                content: prompt
+              }
+            ],
         temperature: 0.8, // Aumentado de 0.2 a 0.8 para mayor variación en los menús
-        max_tokens: 8000
+        max_tokens: 16000 // Aumentado para permitir respuestas más largas con descripciones detalladas
       };
       console.log('🔑 Usando endpoint API para OpenAI (evita CORS)');
       
@@ -1850,10 +1850,73 @@ class AIMenuService {
         return repaired;
       }
       
-      // Intentar una reparación más agresiva: buscar el último objeto válido y cerrar todo
+      // Intentar una reparación más agresiva: buscar el último día completo y cerrar desde ahí
       try {
-        // Buscar el último "nutrition" válido y cerrar desde ahí
-        const nutritionMatch = repaired.match(/"nutrition":\s*\{[^}]*"calories":\s*\d+/g);
+        // Buscar todos los días completos (que tengan "dayName" y "nutrition" con "calories")
+        const dayPattern = /"dayName":\s*"[^"]+"/g;
+        const allDays = [...repaired.matchAll(dayPattern)];
+        
+        if (allDays.length > 0) {
+          // Buscar el último día completo buscando el último "nutrition" con "calories" que esté dentro de un día
+          const nutritionPattern = /"nutrition":\s*\{[^}]*"calories":\s*\d+\s*\}/g;
+          const allNutritions = [...repaired.matchAll(nutritionPattern)];
+          
+          if (allNutritions.length > 0) {
+            const lastNutrition = allNutritions[allNutritions.length - 1];
+            const lastNutritionEnd = lastNutrition.index! + lastNutrition[0].length;
+            
+            // Buscar el cierre del objeto del día después de la nutrición
+            let searchFrom = lastNutritionEnd;
+            let dayClosePos = -1;
+            let braceCount = 0;
+            
+            // Contar llaves abiertas desde la nutrición
+            for (let i = searchFrom; i < repaired.length; i++) {
+              if (repaired[i] === '{') braceCount++;
+              if (repaired[i] === '}') {
+                braceCount--;
+                if (braceCount === 0) {
+                  dayClosePos = i;
+                  break;
+                }
+              }
+            }
+            
+            // Si encontramos el cierre del día, construir el JSON completo
+            if (dayClosePos !== -1) {
+              let testRepaired = repaired.substring(0, dayClosePos + 1);
+              
+              // Contar cuántos días tenemos
+              const daysFound = allDays.length;
+              
+              // Si tenemos menos de 7 días, cerrar el array y el objeto principal
+              if (daysFound > 0) {
+                // Cerrar el array weeklyMenu
+                testRepaired += ']';
+                // Cerrar el objeto principal
+                testRepaired += '}';
+                
+                // Verificar si el JSON es válido
+                if (this.isValidJSON(testRepaired)) {
+                  // Verificar que tenga al menos algunos días válidos
+                  try {
+                    const parsed = JSON.parse(testRepaired);
+                    const menuArray = parsed.weeklyMenu || parsed;
+                    if (Array.isArray(menuArray) && menuArray.length > 0) {
+                      console.log(`✅ JSON reparado con ${menuArray.length} días completos`);
+                      return testRepaired;
+                    }
+                  } catch (e) {
+                    // Continuar con otros métodos de reparación
+                  }
+                }
+              }
+            }
+          }
+        }
+        
+        // Método alternativo: buscar el último objeto "nutrition" válido y cerrar desde ahí
+        const nutritionMatch = repaired.match(/"nutrition":\s*\{[^}]*"calories":\s*\d+\s*\}/g);
         if (nutritionMatch && nutritionMatch.length > 0) {
           const lastNutrition = nutritionMatch[nutritionMatch.length - 1];
           const lastNutritionIndex = repaired.lastIndexOf(lastNutrition);
@@ -1878,6 +1941,7 @@ class AIMenuService {
         }
       } catch (e) {
         // Ignorar errores en reparación agresiva
+        console.error('Error en reparación agresiva:', e);
       }
       
       return null;
@@ -2358,19 +2422,19 @@ class AIMenuService {
       
       // Preparar el body para OpenAI API
       const requestBody = {
-        model: ENV_CONFIG.OPENAI_MODEL || 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'system',
-            content: 'Eres un chef experto que crea menús semanales. Responde ÚNICAMENTE con JSON válido. El JSON debe comenzar con { y terminar con }. Verifica que todos los arrays estén cerrados.'
-          },
-          {
-            role: 'user',
-            content: simplePrompt
-          }
-        ],
+          model: ENV_CONFIG.OPENAI_MODEL || 'gpt-4o-mini',
+          messages: [
+            {
+              role: 'system',
+              content: 'Eres un chef experto que crea menús semanales. Responde ÚNICAMENTE con JSON válido. El JSON debe comenzar con { y terminar con }. Verifica que todos los arrays estén cerrados.'
+            },
+            {
+              role: 'user',
+              content: simplePrompt
+            }
+          ],
         temperature: 0.3,
-        max_tokens: 6000
+        max_tokens: 16000 // Aumentado para permitir respuestas más largas con descripciones detalladas
       };
       
       const response = await fetch(apiUrl, {
