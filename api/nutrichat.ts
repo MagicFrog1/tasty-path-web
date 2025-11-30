@@ -33,20 +33,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'messages array is required' });
     }
 
-    // Obtener la API key de OpenAI específica para NutriChat desde las variables de entorno del servidor
-    // Priorizar NUTRICHAT_OPENAI_API_KEY, luego caer a OPENAI_API_KEY como fallback
-    const openaiApiKey = process.env.NUTRICHAT_OPENAI_API_KEY ||
-                        process.env.VITE_NUTRICHAT_OPENAI_API_KEY ||
-                        process.env.NEXT_PUBLIC_NUTRICHAT_OPENAI_API_KEY ||
-                        process.env.OPENAI_API_KEY || 
+    // Obtener la API key de OpenAI desde las variables de entorno del servidor
+    // Priorizar OPENAI_API_KEY (más común), luego variables específicas de NutriChat
+    const openaiApiKey = process.env.OPENAI_API_KEY ||
                         process.env.VITE_OPENAI_API_KEY || 
-                        process.env.NEXT_PUBLIC_OPENAI_API_KEY;
+                        process.env.NEXT_PUBLIC_OPENAI_API_KEY ||
+                        process.env.NUTRICHAT_OPENAI_API_KEY ||
+                        process.env.VITE_NUTRICHAT_OPENAI_API_KEY ||
+                        process.env.NEXT_PUBLIC_NUTRICHAT_OPENAI_API_KEY;
 
     console.log('🔍 Verificando API key de NutriChat OpenAI en el servidor:', {
+      OPENAI_API_KEY: process.env.OPENAI_API_KEY ? `${process.env.OPENAI_API_KEY.substring(0, 10)}...` : 'NO ENCONTRADO',
+      VITE_OPENAI_API_KEY: process.env.VITE_OPENAI_API_KEY ? `${process.env.VITE_OPENAI_API_KEY.substring(0, 10)}...` : 'NO ENCONTRADO',
+      NEXT_PUBLIC_OPENAI_API_KEY: process.env.NEXT_PUBLIC_OPENAI_API_KEY ? `${process.env.NEXT_PUBLIC_OPENAI_API_KEY.substring(0, 10)}...` : 'NO ENCONTRADO',
       NUTRICHAT_OPENAI_API_KEY: process.env.NUTRICHAT_OPENAI_API_KEY ? `${process.env.NUTRICHAT_OPENAI_API_KEY.substring(0, 10)}...` : 'NO ENCONTRADO',
-      VITE_NUTRICHAT_OPENAI_API_KEY: process.env.VITE_NUTRICHAT_OPENAI_API_KEY ? `${process.env.VITE_NUTRICHAT_OPENAI_API_KEY.substring(0, 10)}...` : 'NO ENCONTRADO',
-      NEXT_PUBLIC_NUTRICHAT_OPENAI_API_KEY: process.env.NEXT_PUBLIC_NUTRICHAT_OPENAI_API_KEY ? `${process.env.NEXT_PUBLIC_NUTRICHAT_OPENAI_API_KEY.substring(0, 10)}...` : 'NO ENCONTRADO',
-      OPENAI_API_KEY_fallback: process.env.OPENAI_API_KEY ? `${process.env.OPENAI_API_KEY.substring(0, 10)}...` : 'NO ENCONTRADO',
       key_final: openaiApiKey ? `${openaiApiKey.substring(0, 10)}...` : 'NO ENCONTRADO',
       hasKey: !!openaiApiKey,
       keyLength: openaiApiKey?.length || 0,
@@ -54,16 +54,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
 
     if (!openaiApiKey) {
-      console.error('❌ NUTRICHAT_OPENAI_API_KEY no configurada en el servidor');
+      console.error('❌ OPENAI_API_KEY no configurada en el servidor para NutriChat');
       return res.status(401).json({ 
-        error: 'OpenAI API key para NutriChat no está configurada en el servidor. Por favor, configura OPENAI_API_KEY o NUTRICHAT_OPENAI_API_KEY en Vercel (Settings > Environment Variables).' 
+        error: 'OpenAI API key no está configurada en el servidor. Por favor, configura OPENAI_API_KEY en Vercel (Settings > Environment Variables).' 
       });
     }
 
     if (!openaiApiKey.startsWith('sk-')) {
-      console.error('❌ NUTRICHAT_OPENAI_API_KEY tiene formato incorrecto');
-      return res.status(500).json({ 
-        error: 'OpenAI API key para NutriChat tiene formato incorrecto. Debe empezar con "sk-".' 
+      console.error('❌ OPENAI_API_KEY tiene formato incorrecto');
+      return res.status(401).json({ 
+        error: 'OpenAI API key tiene formato incorrecto. Debe empezar con "sk-".' 
       });
     }
     
