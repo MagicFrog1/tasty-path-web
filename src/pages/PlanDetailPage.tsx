@@ -2049,12 +2049,6 @@ const PlanDetailPage: React.FC = () => {
               Objetivo nutricional
             </SummaryLabel>
             <SummaryValue>{plan.config?.goal || 'Personalizado'}</SummaryValue>
-            <MealMeta>
-              <span>Proteínas: {plan.nutritionGoals?.protein ?? 0}%</span>
-              <span>Carbohidratos: {plan.nutritionGoals?.carbs ?? 0}%</span>
-              <span>Grasas: {plan.nutritionGoals?.fat ?? 0}%</span>
-              <span>Fibra: {plan.nutritionGoals?.fiber ?? 0}%</span>
-            </MealMeta>
           </SummaryCard>
         )}
 

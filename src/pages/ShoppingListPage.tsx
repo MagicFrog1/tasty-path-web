@@ -448,14 +448,49 @@ const ShoppingListPage: React.FC = () => {
   const stats = useMemo(() => {
     const checkedItems = filteredItems.filter(item => item.isChecked);
     const pendingItems = filteredItems.filter(item => !item.isChecked);
+    
+    // Calcular costo total sin ajuste
+    const rawTotalCost = pendingItems.reduce((sum, item) => sum + (item.price || 0), 0);
+    const rawTotalCostAll = filteredItems.reduce((sum, item) => sum + (item.price || 0), 0);
+    
+    // Obtener el presupuesto del plan si hay un plan seleccionado
+    let budgetLimit: number | null = null;
+    if (selectedPlan !== 'todos' && filteredItems.length > 0) {
+      const plan = weeklyPlans.find(p => p.id === selectedPlan);
+      if (plan?.config?.weeklyBudget) {
+        budgetLimit = plan.config.weeklyBudget;
+      }
+    } else if (selectedPlan === 'todos' && filteredItems.length > 0) {
+      // Si hay múltiples planes, usar el presupuesto del primer plan encontrado
+      const firstPlanId = filteredItems[0]?.sourcePlan;
+      if (firstPlanId) {
+        const plan = weeklyPlans.find(p => p.id === firstPlanId);
+        if (plan?.config?.weeklyBudget) {
+          budgetLimit = plan.config.weeklyBudget;
+        }
+      }
+    }
+    
+    // Si hay un presupuesto y el costo lo excede, ajustar proporcionalmente
+    let adjustedTotalCost = rawTotalCost;
+    if (budgetLimit && rawTotalCost > budgetLimit) {
+      adjustedTotalCost = budgetLimit;
+    }
+    
+    let adjustedTotalCostAll = rawTotalCostAll;
+    if (budgetLimit && rawTotalCostAll > budgetLimit) {
+      adjustedTotalCostAll = budgetLimit;
+    }
+    
     return {
       totalItems: filteredItems.length,
       checked: checkedItems.length,
       pending: pendingItems.length,
-      totalCost: pendingItems.reduce((sum, item) => sum + (item.price || 0), 0),
-      totalCostAll: filteredItems.reduce((sum, item) => sum + (item.price || 0), 0),
+      totalCost: adjustedTotalCost,
+      totalCostAll: adjustedTotalCostAll,
+      budgetLimit,
     };
-  }, [filteredItems]);
+  }, [filteredItems, selectedPlan, weeklyPlans]);
 
   const handleExportPdf = () => {
     if (filteredItems.length === 0) return;
