@@ -68,12 +68,111 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Verificar suscripción del usuario
     // Buscar suscripciones activas o en periodo de prueba
-    const { data: subscription, error: subError } = await supabaseAdmin
+    let subscription: any = null;
+    let subError: any = null;
+    
+    // Primero intentar buscar por user_id directo
+    const { data: subscriptionByUserId, error: errorByUserId } = await supabaseAdmin
       .from('user_subscriptions')
       .select('*')
       .eq('user_id', user.id)
       .in('status', ['active', 'trialing'])
       .maybeSingle();
+    
+    if (subscriptionByUserId) {
+      subscription = subscriptionByUserId;
+    } else {
+      // Si no se encontró por user_id, buscar por email
+      if (user.email) {
+        const { data: profile } = await supabaseAdmin
+          .from('user_profiles')
+          .select('id')
+          .eq('email', user.email)
+          .maybeSingle();
+        
+        if (profile?.id) {
+          // Buscar suscripciones con el profile.id (puede ser diferente al user.id del JWT)
+          const { data: subscriptionByEmail, error: errorByEmail } = await supabaseAdmin
+            .from('user_subscriptions')
+            .select('*')
+            .eq('user_id', profile.id)
+            .in('status', ['active', 'trialing'])
+            .maybeSingle();
+          
+          if (subscriptionByEmail) {
+            subscription = subscriptionByEmail;
+            console.log('✅ NutriChat: Suscripción encontrada por email:', {
+              userJwtId: user.id,
+              profileId: profile.id,
+              plan: subscription.plan,
+              status: subscription.status
+            });
+          }
+        }
+      }
+      
+      // Si aún no encontramos, buscar todas las suscripciones del usuario para diagnóstico
+      if (!subscription) {
+        const { data: allSubscriptions } = await supabaseAdmin
+          .from('user_subscriptions')
+          .select('*')
+          .eq('user_id', user.id);
+        
+        console.log('🔍 NutriChat: Diagnóstico - Todas las suscripciones por user_id:', {
+          userId: user.id,
+          count: allSubscriptions?.length || 0,
+          subscriptions: allSubscriptions?.map(sub => ({
+            plan: sub.plan,
+            status: sub.status,
+            is_premium: sub.is_premium,
+            user_id: sub.user_id
+          })) || []
+        });
+        
+        // También buscar todas las suscripciones por email si no encontramos ninguna
+        if (user.email && (!allSubscriptions || allSubscriptions.length === 0)) {
+          const { data: profile } = await supabaseAdmin
+            .from('user_profiles')
+            .select('id')
+            .eq('email', user.email)
+            .maybeSingle();
+          
+          if (profile?.id) {
+            const { data: allSubscriptionsByEmail } = await supabaseAdmin
+              .from('user_subscriptions')
+              .select('*')
+              .eq('user_id', profile.id);
+            
+            console.log('🔍 NutriChat: Diagnóstico - Todas las suscripciones por email (profile.id):', {
+              profileId: profile.id,
+              count: allSubscriptionsByEmail?.length || 0,
+              subscriptions: allSubscriptionsByEmail?.map(sub => ({
+                plan: sub.plan,
+                status: sub.status,
+                is_premium: sub.is_premium,
+                user_id: sub.user_id
+              })) || []
+            });
+            
+            // Si hay alguna suscripción activa, usarla
+            if (allSubscriptionsByEmail && allSubscriptionsByEmail.length > 0) {
+              const activeSub = allSubscriptionsByEmail.find(
+                sub => sub.status === 'active' || sub.status === 'trialing'
+              );
+              if (activeSub) {
+                subscription = activeSub;
+                console.log('✅ NutriChat: Usando suscripción activa encontrada por email:', {
+                  plan: subscription.plan,
+                  status: subscription.status
+                });
+              }
+            }
+          }
+        }
+      }
+      
+      subError = errorByUserId;
+    }
 
     console.log('🔍 NutriChat: Verificando suscripción del usuario:', {
       userId: user.id,
@@ -91,25 +190,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       error: subError?.message,
       errorCode: subError?.code
     });
-    
-    // Si no se encontró suscripción, buscar todas las suscripciones del usuario para diagnóstico
-    if (!subscription && !subError) {
-      const { data: allSubscriptions } = await supabaseAdmin
-        .from('user_subscriptions')
-        .select('*')
-        .eq('user_id', user.id);
-      
-      console.log('🔍 NutriChat: Todas las suscripciones del usuario:', {
-        userId: user.id,
-        count: allSubscriptions?.length || 0,
-        subscriptions: allSubscriptions?.map(sub => ({
-          plan: sub.plan,
-          status: sub.status,
-          is_premium: sub.is_premium,
-          user_id: sub.user_id
-        })) || []
-      });
-    }
 
     if (subError) {
       console.error('❌ NutriChat: Error al verificar suscripción:', subError);
