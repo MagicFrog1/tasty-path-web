@@ -94,28 +94,44 @@ export default async function handler(
       userEmail: userEmail || 'NO PROPORCIONADO'
     });
 
-    // CRÍTICO: Crear el cliente DENTRO del handler para asegurar que las variables de entorno estén disponibles
-    // y que se use la Service Role Key correctamente
-    // Verificar que el JWT tenga el claim 'role' = 'service_role'
+    // CRÍTICO: Verificar que el JWT tenga el claim 'role' = 'service_role'
+    // Si tiene role='anon', significa que se está usando la ANON_KEY por error
+    let jwtRole: string | null = null;
     try {
       const jwtParts = supabaseServiceKey.split('.');
       if (jwtParts.length === 3) {
         const payload = JSON.parse(Buffer.from(jwtParts[1], 'base64').toString());
+        jwtRole = payload.role;
         console.log('🔍 JWT Payload decodificado:', {
           role: payload.role,
           iss: payload.iss,
-          hasServiceRole: payload.role === 'service_role'
+          hasServiceRole: payload.role === 'service_role',
+          isAnon: payload.role === 'anon'
         });
+        
+        if (payload.role === 'anon') {
+          console.error('❌ ERROR CRÍTICO: La variable SUPABASE_SERVICE_ROLE_KEY contiene la ANON_KEY en lugar de la Service Role Key');
+          console.error('🔧 SOLUCIÓN:');
+          console.error('   1. Ve a Supabase Dashboard > Settings > API');
+          console.error('   2. Copia la clave "service_role" (NO la "anon" key)');
+          console.error('   3. Ve a Vercel > Settings > Environment Variables');
+          console.error('   4. Actualiza SUPABASE_SERVICE_ROLE_KEY con la clave service_role correcta');
+          console.error('   5. Redespliega la aplicación');
+          return res.status(500).json({
+            error: 'La variable SUPABASE_SERVICE_ROLE_KEY contiene la ANON_KEY en lugar de la Service Role Key. Por favor, actualiza la variable de entorno en Vercel con la Service Role Key correcta de Supabase (Settings > API > service_role key).'
+          });
+        }
         
         if (payload.role !== 'service_role') {
           console.error('❌ ERROR: El JWT no tiene role = service_role. Role encontrado:', payload.role);
           return res.status(500).json({
-            error: 'La Service Role Key no tiene el claim role=service_role. Verifica que estés usando la clave correcta de Supabase.'
+            error: `La Service Role Key tiene un role incorrecto: ${payload.role}. Se esperaba 'service_role'. Verifica que estés usando la clave correcta de Supabase.`
           });
         }
       }
     } catch (jwtError: any) {
       console.warn('⚠️ No se pudo decodificar el JWT para verificar el role:', jwtError.message);
+      // Continuar de todas formas, pero advertir
     }
     
     const supabase = createClient(supabaseUrl, supabaseServiceKey, {
