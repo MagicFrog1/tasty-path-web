@@ -1789,19 +1789,40 @@ const normalizedMeals = (plan: any) => {
             }))
         : Object.entries(meals)
             .filter(([, value]) => Boolean(value))
-            .map(([key, value]: [string, any], mealIndex) => ({
-              key: value?.id || `${label}-meal-${mealIndex}`,
-              type: key.replace(/_/g, ' ').replace(/\b\w/g, letter => letter.toUpperCase()),
-              name: value?.name || value?.title || value?.dish || (key.toLowerCase().includes('snack') ? 'Snack' : 'Receta personalizada'),
-              description: value?.description || value?.notes || '',
-              calories: value?.calories || value?.nutrition?.calories || value?.kcal,
-              macros: value?.macros || value?.nutrition,
-              ingredients: value?.ingredients || value?.items || [],
-              instructions: value?.instructions || value?.steps || value?.preparation || [],
-              prepTime: value?.prepTime || value?.preparationTime || 0,
-              cookTime: value?.cookTime || value?.cookingTime || 0,
-              difficulty: value?.difficulty || 'fácil',
-            }))
+            .flatMap(([key, value]: [string, any], mealIndex) => {
+              // Si es un array (como snacks), crear una entrada para cada elemento
+              if (Array.isArray(value)) {
+                return value
+                  .filter(Boolean)
+                  .map((item: any, itemIndex: number) => ({
+                    key: item?.id || `${label}-${key}-${itemIndex}`,
+                    type: key.replace(/_/g, ' ').replace(/\b\w/g, letter => letter.toUpperCase()),
+                    name: item?.name || item?.title || item?.dish || (key.toLowerCase().includes('snack') ? 'Snack' : 'Receta personalizada'),
+                    description: item?.description || item?.notes || '',
+                    calories: item?.calories || item?.nutrition?.calories || item?.kcal,
+                    macros: item?.macros || item?.nutrition,
+                    ingredients: item?.ingredients || item?.items || [],
+                    instructions: item?.instructions || item?.steps || item?.preparation || [],
+                    prepTime: item?.prepTime || item?.preparationTime || 0,
+                    cookTime: item?.cookTime || item?.cookingTime || 0,
+                    difficulty: item?.difficulty || 'fácil',
+                  }));
+              }
+              // Si es un objeto individual, crear una entrada
+              return [{
+                key: value?.id || `${label}-meal-${mealIndex}`,
+                type: key.replace(/_/g, ' ').replace(/\b\w/g, letter => letter.toUpperCase()),
+                name: value?.name || value?.title || value?.dish || (key.toLowerCase().includes('snack') ? 'Snack' : 'Receta personalizada'),
+                description: value?.description || value?.notes || '',
+                calories: value?.calories || value?.nutrition?.calories || value?.kcal,
+                macros: value?.macros || value?.nutrition,
+                ingredients: value?.ingredients || value?.items || [],
+                instructions: value?.instructions || value?.steps || value?.preparation || [],
+                prepTime: value?.prepTime || value?.preparationTime || 0,
+                cookTime: value?.cookTime || value?.cookingTime || 0,
+                difficulty: value?.difficulty || 'fácil',
+              }];
+            })
       : [];
 
     // Incluir ejercicio si existe
@@ -2027,36 +2048,13 @@ const PlanDetailPage: React.FC = () => {
           </SummaryValue>
         </SummaryCard>
 
-        {hasExercises ? (
-          <SummaryCard>
-            <SummaryLabel>
-              <FiActivity />
-              Ejercicios personalizados
-            </SummaryLabel>
-            <SummaryValue>
-              {mealsByDay.filter(day => day.exercise).length} ejercicios
-            </SummaryValue>
-            <MealMeta>
-              <span>Adaptados a tu edad</span>
-              <span>Según tu objetivo</span>
-              <span>{plan.config?.goal || 'Personalizado'}</span>
-            </MealMeta>
-            <Link to="/mi-nutri-personal" style={{ marginTop: '12px', display: 'inline-block' }}>
-              <RecipeButton style={{ width: '100%', justifyContent: 'center' }}>
-                <FiActivity />
-                Ver ejercicios
-              </RecipeButton>
-            </Link>
-          </SummaryCard>
-        ) : (
-          <SummaryCard>
-            <SummaryLabel>
-              <FiTarget />
-              Objetivo nutricional
-            </SummaryLabel>
-            <SummaryValue>{plan.config?.goal || 'Personalizado'}</SummaryValue>
-          </SummaryCard>
-        )}
+        <SummaryCard>
+          <SummaryLabel>
+            <FiTarget />
+            Objetivo nutricional
+          </SummaryLabel>
+          <SummaryValue>{plan.config?.goal || 'Personalizado'}</SummaryValue>
+        </SummaryCard>
 
         <SummaryCard>
           <SummaryLabel>
@@ -2371,25 +2369,27 @@ const PlanDetailPage: React.FC = () => {
             </RecipeModalHeader>
             <RecipeModalContent>
               {/* Para snacks simples, mostrar información básica */}
-              {selectedMeal.type?.toLowerCase().includes('snack') && (
+              {(selectedMeal.type?.toLowerCase().includes('snack') || selectedMeal.name?.toLowerCase().includes('snack') || selectedMeal.name === 'Snack') && (
                 <div style={{ marginBottom: '32px', padding: '20px', borderRadius: '16px', background: 'rgba(46, 139, 87, 0.05)', borderLeft: '4px solid ' + theme.colors.primary }}>
                   <h4 style={{ margin: '0 0 12px 0', fontSize: '18px', fontWeight: 700, color: theme.colors.textPrimary, display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <FiShoppingBag />
-                    Snack
+                    {selectedMeal.name && selectedMeal.name !== 'Snack' ? selectedMeal.name : 'Snack simple'}
                   </h4>
-                  <p style={{ margin: 0, color: theme.colors.textPrimary, lineHeight: '1.8', fontSize: '15px' }}>
-                    {selectedMeal.name || 'Snack simple'}
-                  </p>
-                  {selectedMeal.description && (
-                    <p style={{ margin: '12px 0 0 0', color: theme.colors.textSecondary, lineHeight: '1.6', fontSize: '14px' }}>
+                  {selectedMeal.description && selectedMeal.description.trim() && (
+                    <p style={{ margin: '12px 0 0 0', color: theme.colors.textSecondary, lineHeight: '1.6', fontSize: '14px', whiteSpace: 'pre-line' }}>
                       {selectedMeal.description}
+                    </p>
+                  )}
+                  {(!selectedMeal.description || !selectedMeal.description.trim()) && (
+                    <p style={{ margin: '12px 0 0 0', color: theme.colors.textSecondary, lineHeight: '1.6', fontSize: '14px' }}>
+                      {selectedMeal.name && selectedMeal.name !== 'Snack' ? selectedMeal.name : 'Snack listo para consumir'}
                     </p>
                   )}
                 </div>
               )}
 
               {/* Instrucciones paso a paso desde description si no hay instructions */}
-              {!selectedMeal.type?.toLowerCase().includes('snack') && formatInstructions(selectedMeal.instructions).length === 0 && selectedMeal.description && (
+              {!(selectedMeal.type?.toLowerCase().includes('snack') || selectedMeal.name?.toLowerCase().includes('snack') || selectedMeal.name === 'Snack') && formatInstructions(selectedMeal.instructions).length === 0 && selectedMeal.description && (
                 <div style={{ marginBottom: '32px', padding: '20px', borderRadius: '16px', background: 'rgba(46, 139, 87, 0.05)', borderLeft: '4px solid ' + theme.colors.primary }}>
                   <h4 style={{ margin: '0 0 12px 0', fontSize: '18px', fontWeight: 700, color: theme.colors.textPrimary, display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <FiBook />
@@ -2429,7 +2429,7 @@ const PlanDetailPage: React.FC = () => {
                 </IngredientsSection>
               )}
 
-              {!selectedMeal.type?.toLowerCase().includes('snack') && (
+              {!(selectedMeal.type?.toLowerCase().includes('snack') || selectedMeal.name?.toLowerCase().includes('snack') || selectedMeal.name === 'Snack') && (
                 <InstructionsSection>
                   <h4>
                     <FiBook />
