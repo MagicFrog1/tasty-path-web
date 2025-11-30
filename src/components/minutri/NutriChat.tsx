@@ -175,21 +175,21 @@ const NutriChat: React.FC<NutriChatProps> = ({ adherence, currentDay, totalDays 
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Consejería proactiva basada en adherencia
-  useEffect(() => {
-    if (adherence < 70 && messages.length === 1) {
-      const tip = adherence < 50
-        ? 'Tu adherencia es del ' + adherence + '%. Sugerencia: Planifica tus comidas del día siguiente antes de acostarte para mejorar la consistencia. También te recomiendo establecer recordatorios para tus comidas y ejercicios.'
-        : 'Tu adherencia es del ' + adherence + '%. Estás en buen camino, pero podemos mejorar. Sugerencia: Enfócate en completar al menos 2 de las 3 comidas diarias y el ejercicio programado. Cada pequeño paso cuenta.';
+  // Consejería proactiva basada en adherencia - DESHABILITADA
+  // useEffect(() => {
+  //   if (adherence < 70 && messages.length === 1) {
+  //     const tip = adherence < 50
+  //       ? 'Tu adherencia es del ' + adherence + '%. Sugerencia: Planifica tus comidas del día siguiente antes de acostarte para mejorar la consistencia. También te recomiendo establecer recordatorios para tus comidas y ejercicios.'
+  //       : 'Tu adherencia es del ' + adherence + '%. Estás en buen camino, pero podemos mejorar. Sugerencia: Enfócate en completar al menos 2 de las 3 comidas diarias y el ejercicio programado. Cada pequeño paso cuenta.';
       
-      setTimeout(() => {
-        setMessages(prev => [...prev, {
-          text: tip,
-          isUser: false
-        }]);
-      }, 2000);
-    }
-  }, [adherence, messages.length]);
+  //     setTimeout(() => {
+  //       setMessages(prev => [...prev, {
+  //         text: tip,
+  //         isUser: false
+  //       }]);
+  //     }, 2000);
+  //   }
+  // }, [adherence, messages.length]);
 
   const handleSend = async () => {
     if (!input.trim()) return;
@@ -398,19 +398,8 @@ Responde de forma natural y conversacional, como lo haría un nutricionista huma
     }
   };
 
-  const proactiveTip = adherence < 70 ? (
-    <ProactiveTip>
-      <h5>
-        <FiAlertCircle />
-        Consejo Proactivo
-      </h5>
-      <p>
-        {adherence < 50
-          ? 'Tu adherencia es del ' + adherence + '%. Recomendamos enfocarte en el ejercicio de fuerza estas dos semanas para impulsar tu metabolismo. Consulta tu nuevo plan de ejercicios.'
-          : 'Tu adherencia es del ' + adherence + '%. Estás progresando bien. Para mejorar aún más, intenta planificar tus comidas del día siguiente antes de acostarte.'}
-      </p>
-    </ProactiveTip>
-  ) : null;
+  // Consejo proactivo deshabilitado
+  const proactiveTip = null;
 
   return (
     <ChatContainer>

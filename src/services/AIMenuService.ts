@@ -977,6 +977,18 @@ class AIMenuService {
     - Las recetas deben ser SENCILLAS de preparar
     - VARÍA COMPLETAMENTE los ingredientes entre días - NO repitas ingredientes principales
     
+    🍎 SNACKS SIMPLES (MUY IMPORTANTE):
+    - Los snacks DEBEN ser alimentos SIMPLES y LISTOS PARA CONSUMIR, NO recetas personalizadas
+    - USA nombres simples como: "Yogur griego", "Plátano", "Nueces", "Manzana", "Almendras", "Uvas", "Queso fresco", "Frutos secos"
+    - NO uses recetas complejas ni preparaciones elaboradas para snacks
+    - Los snacks deben tener prepTime: 0 o máximo 1-2 minutos
+    - Ejemplos CORRECTOS: "Yogur griego", "Plátano", "Nueces", "Manzana con almendras", "Queso fresco", "Frutos secos"
+    - Ejemplos INCORRECTOS: "Hummus casero con verduras", "Smoothie de frutas", "Barritas energéticas caseras"
+    - Adapta el snack según las características del usuario (vegano, vegetariano, alergias, etc.)
+    - Si es vegano: usa frutas, frutos secos, semillas, hummus comprado
+    - Si es vegetariano: puedes incluir yogur, queso, huevos cocidos
+    - Si no tiene restricciones: yogur, frutas, frutos secos, queso, huevos cocidos
+    
     🥩 PROTEÍNAS ANIMALES (SI NO ES VEGANO/VEGETARIANO):
     - Con 1-2 días con carne o pescado es suficiente (puedes incluir más si lo deseas)
     - Los demás días puedes usar proteínas vegetales, huevos, legumbres o platos sin proteína animal
@@ -2679,6 +2691,18 @@ VARIEDAD Y REPETICIÓN:
 - NO uses nombres genéricos como "Desayuno", "Almuerzo"
 - Es normal repetir: tostadas, yogur, fruta, ensaladas básicas
 
+🍎 SNACKS SIMPLES (MUY IMPORTANTE):
+- Los snacks DEBEN ser alimentos SIMPLES y LISTOS PARA CONSUMIR, NO recetas personalizadas
+- USA nombres simples como: "Yogur griego", "Plátano", "Nueces", "Manzana", "Almendras", "Uvas", "Queso fresco", "Frutos secos"
+- NO uses recetas complejas ni preparaciones elaboradas para snacks
+- Los snacks deben tener prepTime: 0 o máximo 1-2 minutos
+- Ejemplos CORRECTOS: "Yogur griego", "Plátano", "Nueces", "Manzana con almendras", "Queso fresco", "Frutos secos"
+- Ejemplos INCORRECTOS: "Hummus casero con verduras", "Smoothie de frutas", "Barritas energéticas caseras"
+- Adapta el snack según las características del usuario (vegano, vegetariano, alergias, etc.)
+- Si es vegano: usa frutas, frutos secos, semillas, hummus comprado
+- Si es vegetariano: puedes incluir yogur, queso, huevos cocidos
+- Si no tiene restricciones: yogur, frutas, frutos secos, queso, huevos cocidos
+
 📊 PERSONALIZACIÓN SEGÚN CARACTERÍSTICAS FÍSICAS:
 ${bmi ? `- IMC: ${bmi.toFixed(1)} (${bmiCategory}) - Ajusta porciones y calorías según esto` : ''}
 ${request.weight && request.height ? `- Peso: ${request.weight} kg, Altura: ${request.height} cm - Calcula porciones apropiadas para esta constitución` : ''}
@@ -2798,10 +2822,11 @@ FORMATO JSON EXACTO (7 DÍAS):
         },
         "snacks": [
           {
-            "name": "Texto concreto",
-            "instructions": "1 frase",
-            "ingredients": ["ingrediente"],
-            "prepTime": 2
+            "name": "Snack simple (ej: Yogur, Plátano, Nueces, Manzana, etc.)",
+            "description": "Snack sencillo y nutritivo",
+            "instructions": "Snack listo para consumir, sin preparación compleja",
+            "ingredients": ["ingrediente simple"],
+            "prepTime": 0
           }
         ]
       },
