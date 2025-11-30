@@ -5,7 +5,10 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 
                     process.env.VITE_SUPABASE_URL || 
                     process.env.SUPABASE_URL;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+// CRÍTICO: Usar SUPABASE_SERVICE_ROLE_KEY para bypass de RLS
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 
+                          process.env.VITE_SUPABASE_SERVICE_ROLE_KEY ||
+                          process.env.SUPABASE_SERVICE_KEY;
 
 // Inicializar Supabase Admin Client (solo en el servidor)
 // Se inicializa dentro del handler para validar las variables de entorno
@@ -16,7 +19,24 @@ function getSupabaseAdmin() {
     if (!supabaseUrl || !supabaseServiceKey) {
       throw new Error('Supabase URL o Service Role Key no están configurados en las variables de entorno del servidor');
     }
-    supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+    // CRÍTICO: Usar Service Role Key con configuración para bypass de RLS
+    supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+        detectSessionInUrl: false
+      },
+      db: {
+        schema: 'public'
+      },
+      global: {
+        headers: {
+          'x-client-info': 'create-user-subscription'
+        }
+      }
+    });
+    console.log('✅ Cliente de Supabase Admin inicializado con Service Role Key (bypass RLS)');
+    console.log('🔑 Service key prefix:', supabaseServiceKey?.substring(0, 20) + '...');
   }
   return supabaseAdmin;
 }
@@ -45,14 +65,26 @@ export default async function handler(
     if (!supabaseUrl || !supabaseServiceKey) {
       console.error('❌ Variables de entorno de Supabase no configuradas:', {
         SUPABASE_URL: !!supabaseUrl,
-        SUPABASE_SERVICE_ROLE_KEY: !!supabaseServiceKey,
+        SUPABASE_SERVICE_ROLE_KEY: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+        VITE_SUPABASE_SERVICE_ROLE_KEY: !!process.env.VITE_SUPABASE_SERVICE_ROLE_KEY,
+        SUPABASE_SERVICE_KEY: !!process.env.SUPABASE_SERVICE_KEY,
         NEXT_PUBLIC_SUPABASE_URL: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
         VITE_SUPABASE_URL: !!process.env.VITE_SUPABASE_URL,
+        serviceKeyFinal: !!supabaseServiceKey,
+        serviceKeyLength: supabaseServiceKey?.length || 0,
+        serviceKeyPrefix: supabaseServiceKey?.substring(0, 10) || 'N/A'
       });
       return res.status(500).json({
-        error: 'Configuración del servidor incompleta. Por favor, configura SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY en Vercel.'
+        error: 'Configuración del servidor incompleta. Por favor, configura SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY en Vercel (Settings > Environment Variables).'
       });
     }
+    
+    console.log('🔐 Verificando Service Role Key:', {
+      hasServiceKey: !!supabaseServiceKey,
+      keyLength: supabaseServiceKey?.length || 0,
+      keyPrefix: supabaseServiceKey?.substring(0, 20) + '...',
+      isServiceRole: supabaseServiceKey?.startsWith('eyJ') || false // JWT tokens empiezan con eyJ
+    });
 
     const { userId, userEmail } = req.body;
 
