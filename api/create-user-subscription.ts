@@ -69,14 +69,18 @@ export default async function handler(
     const supabase = getSupabaseAdmin();
 
     // Verificar si ya existe una suscripción para este usuario
-    const { data: existing } = await supabase
+    const { data: existing, error: existingError } = await supabase
       .from('user_subscriptions')
       .select('*')
       .eq('user_id', userId)
       .maybeSingle();
 
+    if (existingError && existingError.code !== 'PGRST116') {
+      console.error('⚠️ Error verificando suscripción existente:', existingError);
+    }
+
     if (existing) {
-      console.log('ℹ️ Ya existe una suscripción para este usuario:', existing.id);
+      console.log('ℹ️ Ya existe una suscripción para este usuario:', (existing as any).id);
       return res.status(200).json({
         success: true,
         message: 'Ya existe una suscripción para este usuario',
@@ -85,7 +89,7 @@ export default async function handler(
     }
 
     // Crear registro inicial sin suscripción (plan free)
-    const subscriptionData = {
+    const subscriptionData: any = {
       user_id: userId,
       stripe_customer_id: null,
       stripe_subscription_id: null,
@@ -100,7 +104,7 @@ export default async function handler(
 
     const { data, error } = await supabase
       .from('user_subscriptions')
-      .insert(subscriptionData)
+      .insert(subscriptionData as any)
       .select()
       .single();
 
@@ -117,7 +121,7 @@ export default async function handler(
       });
     }
 
-    console.log('✅ Suscripción inicial creada exitosamente:', data.id);
+    console.log('✅ Suscripción inicial creada exitosamente:', (data as any)?.id);
     return res.status(200).json({
       success: true,
       message: 'Suscripción inicial creada exitosamente',
