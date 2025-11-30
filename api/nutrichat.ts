@@ -234,19 +234,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     
     // Verificaciones individuales con conversión a string para comparación segura
     const planStr = String(plan || '').toLowerCase().trim();
-    const isTrial = planStr === 'trial';
-    const isPremiumFlag = isPremium === true || String(isPremium || '').toLowerCase() === 'true';
-    const isNotFree = plan && planStr !== 'free' && planStr !== 'null' && planStr !== '';
+    // Aceptar 'trial', 'trial plan', 'plan de prueba', etc.
+    const isTrial = planStr === 'trial' || planStr.includes('trial') || planStr === 'plan de prueba';
+    const isPremiumFlag = isPremium === true || isPremium === 'true' || String(isPremium || '').toLowerCase() === 'true';
+    // Cualquier plan que no sea 'free' o null/empty se considera no-free
+    const isNotFree = plan && planStr !== 'free' && planStr !== 'null' && planStr !== '' && plan !== null;
     const statusStr = String(status || '').toLowerCase().trim();
     const isActiveStatus = statusStr === 'active' || statusStr === 'trialing' || status === 'active' || status === 'trialing';
     const hasNoStatus = !status || status === null || statusStr === 'null' || statusStr === '';
     
-    // LÓGICA SIMPLIFICADA: Si es trial, SIEMPRE premium. Si no, verificar otras condiciones
+    // LÓGICA SIMPLIFICADA Y FLEXIBLE: Si es trial, SIEMPRE premium. Si no, verificar otras condiciones
     // CRÍTICO: isTrial debe ser la primera condición y siempre retornar true si es trial
+    // También aceptamos si tiene is_premium = true O si tiene cualquier plan no-free
     const hasActiveSubscription = subscription && (
       isTrial || // Plan trial = SIEMPRE premium (sin importar status o is_premium) - PRIORIDAD MÁXIMA
       isPremiumFlag || // Flag premium = premium
-      (isNotFree && (isActiveStatus || hasNoStatus)) // Plan no-free con status activo o sin status
+      isNotFree // Cualquier plan que no sea 'free' o null se considera premium
     );
 
     console.log('🔍 NutriChat: Análisis detallado de suscripción premium:', {

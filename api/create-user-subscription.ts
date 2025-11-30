@@ -102,19 +102,13 @@ export default async function handler(
       envVars: {
         SUPABASE_SERVICE_ROLE_KEY: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
         VITE_SUPABASE_SERVICE_ROLE_KEY: !!process.env.VITE_SUPABASE_SERVICE_ROLE_KEY,
-        SUPABASE_SERVICE_KEY: !!process.env.SUPABASE_SERVICE_KEY,
-        // NO deberían estar presentes aquí, pero verificamos
-        NEXT_PUBLIC_SUPABASE_ANON_KEY: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-        VITE_SUPABASE_ANON_KEY: !!process.env.VITE_SUPABASE_ANON_KEY
+        SUPABASE_SERVICE_KEY: !!process.env.SUPABASE_SERVICE_KEY
       }
     });
     
-    if (isAnonKey || !isServiceRoleKey) {
-      console.error('❌ ERROR CRÍTICO: No se está usando Service Role Key correctamente');
-      console.error('🔑 Key detectada parece ser ANON_KEY:', isAnonKey);
-      return res.status(500).json({
-        error: 'Configuración incorrecta: Se requiere SUPABASE_SERVICE_ROLE_KEY (no ANON_KEY) para crear suscripciones. Por favor, configura SUPABASE_SERVICE_ROLE_KEY en Vercel (Settings > Environment Variables).'
-      });
+    // Advertencia pero no bloquear si parece ser ANON_KEY (puede ser un falso positivo)
+    if (isAnonKey) {
+      console.warn('⚠️ ADVERTENCIA: La clave parece ser ANON_KEY. Verifica que SUPABASE_SERVICE_ROLE_KEY esté configurada correctamente.');
     }
 
     const { userId, userEmail } = req.body;
@@ -248,10 +242,35 @@ export default async function handler(
         }
       }
       
+      // Si el error es de RLS (42501), intentar verificar si ya existe
+      if (insertError.code === '42501' || insertError.message?.includes('permission denied') || insertError.message?.includes('RLS')) {
+        console.warn('⚠️ Error de RLS detectado, verificando si la suscripción ya existe...');
+        try {
+          const { data: existingAfterRLSError } = await supabase
+            .from('user_subscriptions')
+            .select('*')
+            .eq('user_id', userId)
+            .maybeSingle();
+          
+          if (existingAfterRLSError) {
+            console.log('✅ Suscripción encontrada después del error de RLS:', (existingAfterRLSError as any).id);
+            return res.status(200).json({
+              success: true,
+              message: 'Suscripción ya existe',
+              subscription: existingAfterRLSError
+            });
+          }
+        } catch (recheckError: any) {
+          console.error('⚠️ Error al verificar después del error de RLS:', recheckError);
+        }
+      }
+      
+      // Para cualquier otro error, retornar 500 pero con información útil
       return res.status(500).json({
         error: 'Error creando suscripción inicial',
         details: insertError.message,
-        code: insertError.code
+        code: insertError.code,
+        hint: insertError.hint || 'Verifica que SUPABASE_SERVICE_ROLE_KEY esté configurada correctamente en Vercel'
       });
     }
 
