@@ -227,32 +227,43 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // Verificar si el usuario tiene plan premium
+    // CRÍTICO: El plan 'trial' SIEMPRE es premium, sin importar status o is_premium
     // Un usuario tiene premium si:
-    // 1. Tiene plan 'trial' (siempre premium, sin importar el status) O
+    // 1. Tiene plan 'trial' (SIEMPRE premium, sin importar status o is_premium) O
     // 2. Tiene is_premium = true O
-    // 3. Tiene un plan que NO es 'free' Y (status activo/trialing O status es null/undefined)
-    const isTrial = subscription?.plan === 'trial';
-    const isPremiumFlag = subscription?.is_premium === true;
-    const isNotFree = subscription?.plan && subscription.plan !== 'free' && subscription.plan !== null;
-    const isActiveStatus = subscription?.status === 'active' || subscription?.status === 'trialing';
-    const hasNoStatus = !subscription?.status || subscription.status === null;
+    // 3. Tiene un plan que NO es 'free' ni 'null' Y (status activo/trialing O status es null/undefined)
     
-    // Aceptar si:
-    // - Es trial (siempre premium, sin importar status)
-    // - Tiene flag premium
-    // - Tiene plan no-free Y (está activo/trialing O no tiene status definido)
-    const hasActiveSubscription = subscription && 
-      (isTrial || isPremiumFlag || (isNotFree && (isActiveStatus || hasNoStatus)));
+    const plan = subscription?.plan;
+    const status = subscription?.status;
+    const isPremium = subscription?.is_premium;
+    
+    // Verificaciones individuales
+    const isTrial = plan === 'trial';
+    const isPremiumFlag = isPremium === true;
+    const isNotFree = plan && plan !== 'free' && plan !== null;
+    const isActiveStatus = status === 'active' || status === 'trialing';
+    const hasNoStatus = !status || status === null;
+    
+    // LÓGICA SIMPLIFICADA: Si es trial, SIEMPRE premium. Si no, verificar otras condiciones
+    const hasActiveSubscription = subscription && (
+      isTrial || // Plan trial = SIEMPRE premium (sin importar status o is_premium)
+      isPremiumFlag || // Flag premium = premium
+      (isNotFree && (isActiveStatus || hasNoStatus)) // Plan no-free con status activo o sin status
+    );
 
     console.log('🔍 NutriChat: Análisis detallado de suscripción premium:', {
       hasSubscription: !!subscription,
       subscriptionId: subscription?.id,
-      plan: subscription?.plan,
-      planType: typeof subscription?.plan,
-      status: subscription?.status,
-      statusType: typeof subscription?.status,
-      is_premium: subscription?.is_premium,
-      is_premiumType: typeof subscription?.is_premium,
+      // Valores raw con stringify para ver exactamente qué hay
+      plan: plan,
+      planType: typeof plan,
+      planStringified: JSON.stringify(plan),
+      status: status,
+      statusType: typeof status,
+      statusStringified: JSON.stringify(status),
+      is_premium: isPremium,
+      is_premiumType: typeof isPremium,
+      is_premiumStringified: JSON.stringify(isPremium),
       user_id: subscription?.user_id,
       jwt_user_id: user.id,
       user_id_match: subscription?.user_id === user.id,
@@ -272,8 +283,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         'isNotFree && (isActiveStatus || hasNoStatus)': isNotFree && (isActiveStatus || hasNoStatus),
         'isNotFree': isNotFree,
         'isActiveStatus': isActiveStatus,
-        'hasNoStatus': hasNoStatus
-      }
+        'hasNoStatus': hasNoStatus,
+        'Final OR result': isTrial || isPremiumFlag || (isNotFree && (isActiveStatus || hasNoStatus))
+      },
+      // Suscripción completa para debugging
+      fullSubscription: subscription ? {
+        id: subscription.id,
+        user_id: subscription.user_id,
+        plan: subscription.plan,
+        status: subscription.status,
+        is_premium: subscription.is_premium,
+        stripe_customer_id: subscription.stripe_customer_id,
+        stripe_subscription_id: subscription.stripe_subscription_id,
+      } : null
     });
 
     if (!hasActiveSubscription) {
