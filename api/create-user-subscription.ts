@@ -18,35 +18,7 @@ if (supabaseServiceKey === anonKey) {
   console.error('❌ ERROR CRÍTICO: Se está intentando usar ANON_KEY en lugar de SERVICE_ROLE_KEY');
 }
 
-// Inicializar Supabase Admin Client (solo en el servidor)
-// Se inicializa dentro del handler para validar las variables de entorno
-let supabaseAdmin: ReturnType<typeof createClient> | null = null;
-
-function getSupabaseAdmin() {
-  if (!supabaseAdmin) {
-    if (!supabaseUrl || !supabaseServiceKey) {
-      throw new Error('Supabase URL o Service Role Key no están configurados en las variables de entorno del servidor');
-    }
-    // CRÍTICO: Usar Service Role Key con configuración para bypass de RLS
-    supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-        detectSessionInUrl: false
-      },
-      global: {
-        headers: {
-          'x-client-info': 'create-user-subscription'
-        }
-      }
-    });
-    console.log('✅ Cliente de Supabase Admin inicializado con Service Role Key (bypass RLS)');
-    if (supabaseServiceKey) {
-      console.log('🔑 Service key prefix:', supabaseServiceKey.substring(0, 20) + '...');
-    }
-  }
-  return supabaseAdmin;
-}
+// NO inicializar el cliente aquí - hacerlo dentro del handler para asegurar que las variables de entorno estén disponibles
 
 export default async function handler(
   req: VercelRequest,
@@ -122,8 +94,24 @@ export default async function handler(
       userEmail: userEmail || 'NO PROPORCIONADO'
     });
 
-    // Obtener cliente de Supabase Admin (con Service Role Key para bypass RLS)
-    const supabase = getSupabaseAdmin();
+    // CRÍTICO: Crear el cliente DENTRO del handler para asegurar que las variables de entorno estén disponibles
+    // y que se use la Service Role Key correctamente
+    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+        detectSessionInUrl: false
+      },
+      global: {
+        headers: {
+          'x-client-info': 'create-user-subscription',
+          'apikey': supabaseServiceKey // Asegurar que se use la Service Role Key
+        }
+      }
+    });
+    
+    console.log('✅ Cliente de Supabase Admin creado dentro del handler (usando Service Role Key)');
+    console.log('🔑 Service key prefix:', supabaseServiceKey?.substring(0, 20) + '...');
     
     // Verificar que el cliente se creó correctamente
     if (!supabase) {
@@ -132,8 +120,6 @@ export default async function handler(
         error: 'Error al inicializar cliente de Supabase. Por favor, verifica las variables de entorno.'
       });
     }
-    
-    console.log('✅ Cliente de Supabase Admin obtenido correctamente (usando Service Role Key)');
 
     // Verificar si ya existe una suscripción para este usuario
     let existing: any = null;
