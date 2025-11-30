@@ -86,43 +86,30 @@ export interface Meal {
 class AIMenuService {
   private apiKey: string = ENV_CONFIG.OPENAI_API_KEY; // Usar la API key correcta
   private baseUrl: string = ENV_CONFIG.OPENAI_API_URL; // Usar la URL correcta
+  // Usar endpoint API de Vercel como proxy para evitar CORS
+  private apiEndpoint: string = '/api/generate-menu';
   
   // Detectar si es Gemini o OpenAI basándose en la API key
   private isGemini(): boolean {
     return this.apiKey?.startsWith('AIza') || false;
   }
   
-  // Obtener la URL correcta según el tipo de API
+  // Obtener la URL correcta según el tipo de API (ahora siempre usa el endpoint API)
   private getApiUrl(): string {
-    if (this.isGemini()) {
-      // URL de Gemini API
-      return 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
-    }
-    // URL de OpenAI API
-    return this.baseUrl;
+    return this.apiEndpoint;
   }
   
   // Obtener los headers correctos según el tipo de API
   private getApiHeaders(): Record<string, string> {
-    if (this.isGemini()) {
-      // Gemini usa query parameter, no Bearer token
-      return {
-        'Content-Type': 'application/json'
-      };
-    }
-    // OpenAI usa Bearer token
+    // El endpoint API maneja la autenticación en el servidor
     return {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${this.apiKey}`
+      'Content-Type': 'application/json'
     };
   }
   
-  // Obtener la URL con query parameters para Gemini
+  // Obtener la URL con query parameters para Gemini (ahora siempre usa el endpoint API)
   private getApiUrlWithParams(): string {
-    if (this.isGemini()) {
-      return `${this.getApiUrl()}?key=${this.apiKey}`;
-    }
-    return this.getApiUrl();
+    return this.apiEndpoint;
   }
 
   // Función para generar menú semanal usando IA con reintentos
@@ -254,6 +241,7 @@ class AIMenuService {
       console.log('🔗 URL final:', apiUrl);
       
       // Preparar el body según el tipo de API
+      // El endpoint API manejará la conversión y autenticación
       let requestBody: any;
       if (isGeminiAPI) {
         // Formato de Gemini API
@@ -268,7 +256,7 @@ class AIMenuService {
             maxOutputTokens: 8000
           }
         };
-        console.log('🔑 Usando autenticación Gemini con query parameter');
+        console.log('🔑 Usando endpoint API para Gemini');
       } else {
         // Formato de OpenAI API
         requestBody = {
@@ -286,7 +274,7 @@ class AIMenuService {
           temperature: 0.2,
           max_tokens: 8000
         };
-        console.log('🔑 Usando autenticación OpenAI con Authorization Bearer');
+        console.log('🔑 Usando endpoint API para OpenAI (evita CORS)');
       }
       
       try {
@@ -2434,8 +2422,10 @@ class AIMenuService {
       const apiHeaders = this.getApiHeaders();
       
       console.log('🤖 Llamando a', isGeminiAPI ? 'Gemini' : 'OpenAI', 'con prompt simplificado...');
+      console.log('🔗 Usando endpoint API:', apiUrl);
       
       // Preparar el body según el tipo de API
+      // El endpoint API manejará la conversión y autenticación
       let requestBody: any;
       if (isGeminiAPI) {
         requestBody = {
