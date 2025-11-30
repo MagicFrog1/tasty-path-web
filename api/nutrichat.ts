@@ -74,24 +74,49 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .eq('status', 'active')
       .maybeSingle();
 
+    console.log('🔍 NutriChat: Verificando suscripción del usuario:', {
+      userId: user.id,
+      subscriptionFound: !!subscription,
+      subscriptionData: subscription ? {
+        plan: subscription.plan,
+        status: subscription.status,
+        is_premium: subscription.is_premium,
+        stripe_subscription_id: subscription.stripe_subscription_id
+      } : null,
+      error: subError?.message
+    });
+
     if (subError) {
       console.error('❌ NutriChat: Error al verificar suscripción:', subError);
       // No bloquear si hay error, solo loguear
     }
 
-    // Verificar si el usuario tiene plan premium (no free)
+    // Verificar si el usuario tiene plan premium
+    // Un usuario tiene premium si:
+    // 1. Tiene una suscripción activa Y
+    // 2. El plan NO es 'free' O is_premium es true
     const hasActiveSubscription = subscription && 
       subscription.status === 'active' && 
-      subscription.plan !== 'free';
+      (subscription.plan !== 'free' || subscription.is_premium === true);
 
     if (!hasActiveSubscription) {
-      console.warn('⚠️ NutriChat: Usuario sin suscripción premium:', user.id);
+      console.warn('⚠️ NutriChat: Usuario sin suscripción premium:', {
+        userId: user.id,
+        subscription: subscription ? {
+          plan: subscription.plan,
+          status: subscription.status,
+          is_premium: subscription.is_premium
+        } : 'NO ENCONTRADA'
+      });
       return res.status(403).json({ 
         error: 'Esta función requiere una suscripción premium. Por favor, actualiza tu plan para acceder a NutriChat.' 
       });
     }
 
-    console.log('✅ NutriChat: Usuario tiene suscripción premium activa');
+    console.log('✅ NutriChat: Usuario tiene suscripción premium activa:', {
+      plan: subscription.plan,
+      is_premium: subscription.is_premium
+    });
 
     const { messages, model, temperature, max_tokens } = req.body;
 
