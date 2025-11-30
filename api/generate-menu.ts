@@ -55,28 +55,36 @@ export default async function handler(
     
     console.log('✅ API key de OpenAI encontrada y validada correctamente');
     
-    // Obtener el body de la solicitud
-    const { prompt, model, temperature, max_tokens } = req.body;
+    // Obtener el body de la solicitud - aceptar tanto 'prompt' como 'messages'
+    const { prompt, messages, model, temperature, max_tokens } = req.body;
 
     console.log('📥 generate-menu - Request recibido:', {
       model: model || 'gpt-4o-mini',
+      hasPrompt: !!prompt,
+      hasMessages: !!messages,
     });
 
-    if (!prompt) {
-      return res.status(400).json({ error: 'prompt is required' });
-    }
+    let finalMessages;
     
-    // Construir el array de mensajes desde el prompt
-    const messages = [
-      {
-        role: 'system',
-        content: 'Eres un chef experto que crea menús semanales. CRÍTICO: Debes responder ÚNICAMENTE con JSON válido y completo. El JSON debe estar perfectamente formateado, sin errores de sintaxis, con todas las llaves y corchetes cerrados correctamente. NO incluyas texto adicional antes o después del JSON. El JSON debe comenzar con { y terminar con }. Verifica que todos los arrays estén cerrados con ] y todos los objetos con }.'
-      },
-      {
-        role: 'user',
-        content: prompt
-      }
-    ];
+    // Si se envía 'messages', usarlo directamente
+    if (messages && Array.isArray(messages) && messages.length > 0) {
+      finalMessages = messages;
+    } 
+    // Si se envía 'prompt', construir el array de mensajes
+    else if (prompt) {
+      finalMessages = [
+        {
+          role: 'system',
+          content: 'Eres un chef experto que crea menús semanales. CRÍTICO: Debes responder ÚNICAMENTE con JSON válido y completo. El JSON debe estar perfectamente formateado, sin errores de sintaxis, con todas las llaves y corchetes cerrados correctamente. NO incluyas texto adicional antes o después del JSON. El JSON debe comenzar con { y terminar con }. Verifica que todos los arrays estén cerrados con ] y todos los objetos con }.'
+        },
+        {
+          role: 'user',
+          content: prompt
+        }
+      ];
+    } else {
+      return res.status(400).json({ error: 'Se requiere "prompt" o "messages" en el body' });
+    }
 
     const openaiUrl = process.env.OPENAI_API_URL ||
                      process.env.VITE_OPENAI_API_URL ||
@@ -89,7 +97,7 @@ export default async function handler(
 
     const requestBody = {
       model: model || 'gpt-4o-mini',
-      messages: messages,
+      messages: finalMessages,
       temperature: temperature !== undefined ? temperature : 0.2,
       max_tokens: max_tokens !== undefined ? max_tokens : 8000,
     };
