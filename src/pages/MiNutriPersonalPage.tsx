@@ -363,7 +363,7 @@ const SuccessNotification = styled.div<{ show: boolean }>`
 const MiNutriPersonalPage: React.FC = () => {
   const { currentPlan } = useSubscription();
   const { profile } = useUserProfile();
-  const { weeklyPlans, updateWeeklyPlan } = useWeeklyPlan();
+  const { weeklyPlans, updateWeeklyPlan, activePlan, setActivePlan } = useWeeklyPlan();
   const navigate = useNavigate();
   
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
@@ -454,7 +454,19 @@ const MiNutriPersonalPage: React.FC = () => {
         },
       };
 
+      // Actualizar el plan en el contexto (esto lo guarda automáticamente)
       updateWeeklyPlan(selectedPlanId, updatedPlan);
+      
+      // Asegurar que el plan activo también se actualice si es el mismo
+      if (activePlan?.id === selectedPlanId) {
+        setActivePlan(updatedPlan);
+      }
+      
+      console.log('✅ Plan actualizado con ejercicios:', {
+        planId: selectedPlanId,
+        exercisesCount: exercises.length,
+        hasExercises: updatedPlan.config.hasExercises
+      });
       
       setShowSuccess(true);
       setTimeout(() => {

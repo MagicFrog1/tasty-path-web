@@ -178,13 +178,13 @@ class AIMenuService {
     const userHash = this.hashString(JSON.stringify(request));
     const generationSeed = timestamp + randomComponent + userHash;
     
-    const prompt = this.buildSimplePrompt(request);
+    const seedBasedElements = this.generateSeedBasedElements(generationSeed);
+    console.log('🎨 Elementos únicos generados:', seedBasedElements);
+    
+    const prompt = this.buildSimplePrompt(request, generationSeed, seedBasedElements);
     
     console.log('🤖 Generando menú con IA usando seed:', generationSeed);
     console.log('🔢 Componentes del seed - Timestamp:', timestamp, 'Random:', randomComponent, 'Hash:', userHash);
-    
-    const seedBasedElements = this.generateSeedBasedElements(generationSeed);
-    console.log('🎨 Elementos únicos generados:', seedBasedElements);
     
       const apiUrl = this.getApiUrlWithParams();
       const apiHeaders = this.getApiHeaders();
@@ -206,7 +206,7 @@ class AIMenuService {
             content: prompt
           }
         ],
-        temperature: 0.2,
+        temperature: 0.8, // Aumentado de 0.2 a 0.8 para mayor variación en los menús
         max_tokens: 8000
       };
       console.log('🔑 Usando endpoint API para OpenAI (evita CORS)');
@@ -2563,7 +2563,7 @@ class AIMenuService {
   /**
    * Construye un prompt ESTRICTO y ESPECÍFICO para la IA
    */
-  private buildSimplePrompt(request: AIMenuRequest): string {
+  private buildSimplePrompt(request: AIMenuRequest, seed?: number, seedElements?: any): string {
     const caloriesPerDay = Math.round(request.totalCalories / 7);
     
     // Calcular rango de calorías por día (más realista - varía entre días)
@@ -2628,7 +2628,21 @@ class AIMenuService {
     if (isMediterranean) additionalRules += '\n- MEDITERRÁNEA: Aceite de oliva, pescado, vegetales';
     if (isLowSodium) additionalRules += '\n- BAJA EN SODIO: Reduce sal, usa hierbas';
     
+    // Agregar elementos únicos basados en el seed para mayor variación
+    const seedInfo = seed && seedElements ? `
+🎲 VARIACIÓN ÚNICA DE ESTA GENERACIÓN (seed: ${seed}):
+- Cocina principal: ${seedElements.mainCuisine}
+- Proteína principal: ${seedElements.mainProtein}
+- Cereal base: ${seedElements.mainGrain}
+- Fruta principal: ${seedElements.mainFruit}
+- Verdura principal: ${seedElements.mainVegetable}
+- Especia principal: ${seedElements.mainSpice}
+- Técnica de cocción: ${seedElements.cookingMethod}
+- IMPORTANTE: Usa estos elementos como guía para crear un menú ÚNICO y diferente a generaciones anteriores
+` : '';
+    
     return `Eres un nutricionista experto. Crea un menú semanal REALISTA y VARIADO.
+${seedInfo}
 
 USUARIO:
 - Tipo de dieta: ${mainDietType}

@@ -44,7 +44,6 @@ export async function generateExercisesForPlan(
   locations: string[],
   trainingFocus?: string
 ): Promise<Exercise[]> {
-  const exercises: Exercise[] = [];
   const meals = plan.meals || [];
   const days = Array.isArray(meals) ? meals : Object.values(meals);
   
@@ -54,8 +53,8 @@ export async function generateExercisesForPlan(
   // Rotar entre ubicaciones seleccionadas
   const locationRotation = locations.length > 0 ? locations : ['home'];
   
-  for (let i = 0; i < days.length; i++) {
-    const day = days[i];
+  // Generar todos los ejercicios en paralelo para mayor velocidad
+  const exercisePromises = days.map(async (day: any, i: number) => {
     const dayNumber = day?.dayNumber || i + 1;
     const location = locationRotation[i % locationRotation.length] as 'gym' | 'park' | 'home';
     
@@ -68,12 +67,15 @@ export async function generateExercisesForPlan(
       trainingFocus
     );
     
-    exercises.push({
+    return {
       ...exercise,
       dayNumber,
       location,
-    });
-  }
+    };
+  });
+  
+  // Esperar a que todos los ejercicios se generen en paralelo
+  const exercises = await Promise.all(exercisePromises);
   
   return exercises;
 }
