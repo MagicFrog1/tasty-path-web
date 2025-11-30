@@ -1,11 +1,25 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 
+// Obtener variables de entorno de Supabase (priorizar NEXT_PUBLIC_ para Vercel)
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 
+                    process.env.VITE_SUPABASE_URL || 
+                    process.env.SUPABASE_URL;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
 // Inicializar Supabase Admin Client (solo en el servidor)
-const supabaseAdmin = createClient(
-  process.env.SUPABASE_URL as string,
-  process.env.SUPABASE_SERVICE_ROLE_KEY as string
-);
+// Se inicializa dentro del handler para validar las variables de entorno
+let supabaseAdmin: ReturnType<typeof createClient> | null = null;
+
+function getSupabaseAdmin() {
+  if (!supabaseAdmin) {
+    if (!supabaseUrl || !supabaseServiceKey) {
+      throw new Error('Supabase URL o Service Role Key no están configurados en las variables de entorno del servidor');
+    }
+    supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+  }
+  return supabaseAdmin;
+}
 
 export default async function handler(
   req: VercelRequest,
@@ -27,6 +41,19 @@ export default async function handler(
   }
 
   try {
+    // Validar variables de entorno
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error('❌ Variables de entorno de Supabase no configuradas:', {
+        SUPABASE_URL: !!supabaseUrl,
+        SUPABASE_SERVICE_ROLE_KEY: !!supabaseServiceKey,
+        NEXT_PUBLIC_SUPABASE_URL: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+        VITE_SUPABASE_URL: !!process.env.VITE_SUPABASE_URL,
+      });
+      return res.status(500).json({
+        error: 'Configuración del servidor incompleta. Por favor, configura SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY en Vercel.'
+      });
+    }
+
     const { userId, userEmail } = req.body;
 
     if (!userId) {
@@ -38,8 +65,11 @@ export default async function handler(
       userEmail: userEmail || 'NO PROPORCIONADO'
     });
 
+    // Obtener cliente de Supabase Admin
+    const supabase = getSupabaseAdmin();
+
     // Verificar si ya existe una suscripción para este usuario
-    const { data: existing } = await supabaseAdmin
+    const { data: existing } = await supabase
       .from('user_subscriptions')
       .select('*')
       .eq('user_id', userId)
@@ -68,7 +98,7 @@ export default async function handler(
       canceled_at: null,
     };
 
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await supabase
       .from('user_subscriptions')
       .insert(subscriptionData)
       .select()
