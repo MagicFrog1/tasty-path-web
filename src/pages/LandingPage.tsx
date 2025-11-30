@@ -999,6 +999,128 @@ const FooterLinks = styled.div`
   }
 `;
 
+const LegalPanel = styled.div`
+  max-width: 1000px;
+  margin: 48px auto 0;
+  padding: 0;
+  background: ${theme.colors.white};
+  border-radius: 20px;
+  border: 1px solid rgba(46, 139, 87, 0.15);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+`;
+
+const LegalTabs = styled.div`
+  display: flex;
+  border-bottom: 2px solid rgba(46, 139, 87, 0.1);
+  background: rgba(46, 139, 87, 0.03);
+`;
+
+const LegalTab = styled.button<{ active: boolean }>`
+  flex: 1;
+  padding: 20px 24px;
+  background: ${({ active }) => (active ? theme.colors.white : 'transparent')};
+  border: none;
+  border-bottom: ${({ active }) => (active ? `3px solid ${theme.colors.primary}` : '3px solid transparent')};
+  color: ${({ active }) => (active ? theme.colors.primary : theme.colors.textSecondary)};
+  font-size: 16px;
+  font-weight: ${({ active }) => (active ? 700 : 500)};
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+
+  &:hover {
+    background: ${({ active }) => (active ? theme.colors.white : 'rgba(46, 139, 87, 0.05)')};
+    color: ${theme.colors.primary};
+  }
+`;
+
+const LegalContent = styled.div`
+  padding: 40px;
+  max-height: 600px;
+  overflow-y: auto;
+  
+  @media (max-width: 768px) {
+    padding: 24px;
+    max-height: 500px;
+  }
+`;
+
+const LegalSection = styled.div`
+  margin-bottom: 32px;
+  
+  &:last-child {
+    margin-bottom: 0;
+  }
+`;
+
+const LegalSectionTitle = styled.h3`
+  color: ${theme.colors.textPrimary};
+  font-size: 1.3rem;
+  margin: 0 0 16px 0;
+  font-weight: 700;
+`;
+
+const LegalText = styled.p`
+  color: ${theme.colors.textSecondary};
+  line-height: 1.8;
+  margin-bottom: 12px;
+  font-size: 15px;
+`;
+
+const LegalSubtitle = styled.p`
+  color: ${theme.colors.primary};
+  font-weight: 700;
+  margin-top: 16px;
+  margin-bottom: 8px;
+  font-size: 15px;
+`;
+
+const LegalBulletList = styled.ul`
+  margin: 12px 0;
+  padding-left: 0;
+  list-style: none;
+`;
+
+const LegalBulletPoint = styled.li`
+  color: ${theme.colors.textSecondary};
+  margin-left: 24px;
+  margin-bottom: 8px;
+  line-height: 1.7;
+  font-size: 15px;
+  position: relative;
+  
+  &::before {
+    content: '•';
+    position: absolute;
+    left: -16px;
+    color: ${theme.colors.primary};
+    font-weight: bold;
+  }
+`;
+
+const LegalIntroCard = styled.div`
+  background: linear-gradient(135deg, rgba(46, 139, 87, 0.1), rgba(99, 102, 241, 0.1));
+  padding: 24px;
+  border-radius: 16px;
+  margin-bottom: 32px;
+  border: 1px solid rgba(46, 139, 87, 0.2);
+  text-align: center;
+`;
+
+const LegalIntroTitle = styled.h2`
+  color: ${theme.colors.primary};
+  margin-bottom: 12px;
+  font-size: 1.5rem;
+`;
+
+const LegalIntroText = styled.p`
+  color: ${theme.colors.textSecondary};
+  line-height: 1.7;
+  font-size: 15px;
+  margin: 0;
+`;
+
 const ContactNote = styled.small`
   display: block;
   margin-top: 0;
@@ -1026,6 +1148,7 @@ const ContactNote = styled.small`
 const LandingPage: React.FC = () => {
   useScrollReveal();
   const { user } = useAuth();
+  const [activeTab, setActiveTab] = React.useState<'terms' | 'privacy'>('terms');
 
   const heroList = [
     'NutriChat: resuelve tus dudas al momento con una IA entrenada por nutricionistas.',
@@ -1353,10 +1476,238 @@ const LandingPage: React.FC = () => {
           © {new Date().getFullYear()} MyTastyPath. Nutrición inteligente impulsada por IA.
         </FooterNote>
 
-        <FooterLinks>
-          <Link to="/terminos">Términos y Condiciones</Link>
-          <Link to="/privacidad">Política de Privacidad</Link>
-        </FooterLinks>
+        <LegalPanel data-reveal>
+          <LegalTabs>
+            <LegalTab active={activeTab === 'terms'} onClick={() => setActiveTab('terms')}>
+              Términos y Condiciones
+            </LegalTab>
+            <LegalTab active={activeTab === 'privacy'} onClick={() => setActiveTab('privacy')}>
+              Política de Privacidad
+            </LegalTab>
+          </LegalTabs>
+          
+          <LegalContent>
+            {activeTab === 'terms' ? (
+              <>
+                <LegalIntroCard>
+                  <LegalIntroTitle>Términos y Condiciones</LegalIntroTitle>
+                  <LegalIntroText>
+                    Estos términos y condiciones regulan el uso de la plataforma TastyPath. Al acceder y utilizar nuestros servicios, aceptas estar sujeto a estos términos.
+                  </LegalIntroText>
+                </LegalIntroCard>
+                
+                <LegalSection>
+                  <LegalSectionTitle>1. Aceptación de los Términos</LegalSectionTitle>
+                  <LegalText>
+                    Al acceder y utilizar TastyPath, aceptas cumplir con estos Términos y Condiciones de Uso. Si no estás de acuerdo con alguna parte de estos términos, no debes utilizar nuestros servicios.
+                  </LegalText>
+                  <LegalText>
+                    Estos términos constituyen un acuerdo legalmente vinculante entre tú y TastyPath. Te recomendamos leerlos cuidadosamente antes de utilizar la plataforma.
+                  </LegalText>
+                </LegalSection>
+
+                <LegalSection>
+                  <LegalSectionTitle>2. Definiciones y Descripción del Servicio</LegalSectionTitle>
+                  <LegalSubtitle>2.1. Definiciones</LegalSubtitle>
+                  <LegalBulletList>
+                    <LegalBulletPoint><strong>"TastyPath"</strong> se refiere a la plataforma digital de nutrición personalizada operada por nosotros.</LegalBulletPoint>
+                    <LegalBulletPoint><strong>"Usuario"</strong> es cualquier persona que accede o utiliza nuestros servicios.</LegalBulletPoint>
+                    <LegalBulletPoint><strong>"Servicios"</strong> incluyen todas las funcionalidades ofrecidas a través de la plataforma TastyPath.</LegalBulletPoint>
+                    <LegalBulletPoint><strong>"Contenido"</strong> se refiere a toda la información, datos, textos, gráficos, imágenes y otros materiales disponibles en la plataforma.</LegalBulletPoint>
+                  </LegalBulletList>
+                  <LegalSubtitle>2.2. Descripción del Servicio</LegalSubtitle>
+                  <LegalText>
+                    TastyPath es una plataforma digital que utiliza inteligencia artificial para generar planes de alimentación personalizados, listas de compras y recomendaciones nutricionales basadas en tus preferencias, objetivos de salud y restricciones alimentarias.
+                  </LegalText>
+                  <LegalText>
+                    Nuestros servicios incluyen, pero no se limitan a: generación de planes de comidas semanales, creación de listas de compras, almacenamiento de planes guardados, y acceso a información nutricional y médica validada.
+                  </LegalText>
+                </LegalSection>
+
+                <LegalSection>
+                  <LegalSectionTitle>3. Registro y Cuenta de Usuario</LegalSectionTitle>
+                  <LegalSubtitle>3.1. Requisitos de Registro</LegalSubtitle>
+                  <LegalText>
+                    Para utilizar ciertas funcionalidades de TastyPath, debes crear una cuenta proporcionando información precisa, actual y completa. Debes ser mayor de 16 años o contar con el consentimiento de tus padres o tutores legales.
+                  </LegalText>
+                  <LegalSubtitle>3.2. Responsabilidad de la Cuenta</LegalSubtitle>
+                  <LegalBulletList>
+                    <LegalBulletPoint>Eres responsable de mantener la confidencialidad de tus credenciales de acceso.</LegalBulletPoint>
+                    <LegalBulletPoint>Eres responsable de todas las actividades que ocurran bajo tu cuenta.</LegalBulletPoint>
+                    <LegalBulletPoint>Debes notificarnos inmediatamente de cualquier uso no autorizado de tu cuenta.</LegalBulletPoint>
+                    <LegalBulletPoint>No debes compartir tu cuenta con terceros.</LegalBulletPoint>
+                  </LegalBulletList>
+                </LegalSection>
+
+                <LegalSection>
+                  <LegalSectionTitle>4. Suscripciones y Pagos</LegalSectionTitle>
+                  <LegalSubtitle>4.1. Planes de Suscripción</LegalSubtitle>
+                  <LegalText>
+                    TastyPath ofrece diferentes planes de suscripción, incluyendo un plan gratuito con funcionalidades limitadas y planes premium con acceso completo a todas las características.
+                  </LegalText>
+                  <LegalSubtitle>4.2. Pagos y Facturación</LegalSubtitle>
+                  <LegalBulletList>
+                    <LegalBulletPoint>Los pagos se procesan de forma segura a través de proveedores de pago autorizados.</LegalBulletPoint>
+                    <LegalBulletPoint>Las suscripciones se renuevan automáticamente a menos que las canceles antes del final del período de facturación.</LegalBulletPoint>
+                    <LegalBulletPoint>Los precios pueden cambiar con previo aviso, pero no afectarán las suscripciones activas hasta su renovación.</LegalBulletPoint>
+                  </LegalBulletList>
+                </LegalSection>
+
+                <LegalSection>
+                  <LegalSectionTitle>5. Uso del Servicio y Limitaciones de Responsabilidad</LegalSectionTitle>
+                  <LegalSubtitle>5.1. Naturaleza de las Recomendaciones</LegalSubtitle>
+                  <LegalText>
+                    <strong>IMPORTANTE:</strong> Las recomendaciones nutricionales proporcionadas por TastyPath son de carácter informativo y educativo. No constituyen asesoramiento médico, diagnóstico o tratamiento. Siempre consulta con un profesional de la salud calificado antes de realizar cambios significativos en tu dieta, especialmente si tienes condiciones médicas preexistentes.
+                  </LegalText>
+                  <LegalSubtitle>5.2. Limitación de Responsabilidad</LegalSubtitle>
+                  <LegalText>
+                    TastyPath no se hace responsable de:
+                  </LegalText>
+                  <LegalBulletList>
+                    <LegalBulletPoint>Decisiones de salud tomadas basándose únicamente en nuestras recomendaciones.</LegalBulletPoint>
+                    <LegalBulletPoint>Reacciones alérgicas o efectos adversos derivados del consumo de alimentos sugeridos.</LegalBulletPoint>
+                    <LegalBulletPoint>Disponibilidad ininterrumpida del servicio (aunque nos esforzamos por mantenerlo disponible).</LegalBulletPoint>
+                  </LegalBulletList>
+                </LegalSection>
+
+                <LegalSection>
+                  <LegalSectionTitle>6. Privacidad y Protección de Datos</LegalSectionTitle>
+                  <LegalText>
+                    Tu privacidad es importante para nosotros. El uso de la aplicación está sujeto a nuestra Política de Privacidad, que se incorpora a estos términos por referencia. Al utilizar TastyPath, consientes la recopilación y el uso de tu información de acuerdo con nuestra Política de Privacidad.
+                  </LegalText>
+                  <LegalText>
+                    Cumplimos con el Reglamento General de Protección de Datos (GDPR) de la Unión Europea y otras normativas aplicables de protección de datos.
+                  </LegalText>
+                </LegalSection>
+
+                <LegalSection>
+                  <LegalSectionTitle>7. Contacto y Reclamaciones</LegalSectionTitle>
+                  <LegalText>
+                    Para cualquier pregunta, comentario o reclamación relacionada con estos términos y condiciones, puedes contactarnos a través de:
+                  </LegalText>
+                  <LegalText style={{ color: theme.colors.primary, fontWeight: 600 }}>
+                    Email: tastypathhelp@gmail.com
+                  </LegalText>
+                  <LegalText>
+                    Nos comprometemos a responder a todas las consultas en un plazo máximo de 30 días hábiles.
+                  </LegalText>
+                </LegalSection>
+              </>
+            ) : (
+              <>
+                <LegalIntroCard>
+                  <LegalIntroTitle>Política de Privacidad</LegalIntroTitle>
+                  <LegalIntroText>
+                    En TastyPath, nos comprometemos a proteger tu privacidad y garantizar la seguridad de tus datos personales. Esta política explica cómo recopilamos, utilizamos y protegemos tu información.
+                  </LegalIntroText>
+                </LegalIntroCard>
+                
+                <LegalSection>
+                  <LegalSectionTitle>1. Información que Recopilamos</LegalSectionTitle>
+                  <LegalSubtitle>1.1. Información Personal</LegalSubtitle>
+                  <LegalText>
+                    Recopilamos información que nos proporcionas directamente, incluyendo:
+                  </LegalText>
+                  <LegalBulletList>
+                    <LegalBulletPoint>Nombre y dirección de correo electrónico</LegalBulletPoint>
+                    <LegalBulletPoint>Información de perfil nutricional (peso, altura, edad, género, objetivos)</LegalBulletPoint>
+                    <LegalBulletPoint>Preferencias dietéticas y alergias</LegalBulletPoint>
+                    <LegalBulletPoint>Planes de comidas y listas de compras guardadas</LegalBulletPoint>
+                  </LegalBulletList>
+                  <LegalSubtitle>1.2. Información de Uso</LegalSubtitle>
+                  <LegalText>
+                    Recopilamos información sobre cómo utilizas nuestro servicio, incluyendo planes generados, interacciones con la plataforma y preferencias de uso.
+                  </LegalText>
+                </LegalSection>
+
+                <LegalSection>
+                  <LegalSectionTitle>2. Cómo Utilizamos tu Información</LegalSectionTitle>
+                  <LegalText>
+                    Utilizamos tu información para:
+                  </LegalText>
+                  <LegalBulletList>
+                    <LegalBulletPoint>Generar planes de alimentación personalizados según tus preferencias y objetivos</LegalBulletPoint>
+                    <LegalBulletPoint>Mejorar nuestros servicios y desarrollar nuevas funcionalidades</LegalBulletPoint>
+                    <LegalBulletPoint>Procesar pagos y gestionar suscripciones</LegalBulletPoint>
+                    <LegalBulletPoint>Enviar comunicaciones importantes sobre tu cuenta y el servicio</LegalBulletPoint>
+                    <LegalBulletPoint>Cumplir con obligaciones legales y proteger nuestros derechos</LegalBulletPoint>
+                  </LegalBulletList>
+                </LegalSection>
+
+                <LegalSection>
+                  <LegalSectionTitle>3. Protección de Datos</LegalSectionTitle>
+                  <LegalText>
+                    Implementamos medidas de seguridad técnicas y organizativas para proteger tu información personal contra acceso no autorizado, alteración, divulgación o destrucción. Esto incluye:
+                  </LegalText>
+                  <LegalBulletList>
+                    <LegalBulletPoint>Encriptación de datos en tránsito y en reposo</LegalBulletPoint>
+                    <LegalBulletPoint>Acceso restringido a información personal solo para personal autorizado</LegalBulletPoint>
+                    <LegalBulletPoint>Monitoreo regular de nuestros sistemas de seguridad</LegalBulletPoint>
+                    <LegalBulletPoint>Cumplimiento con estándares de seguridad de la industria</LegalBulletPoint>
+                  </LegalBulletList>
+                </LegalSection>
+
+                <LegalSection>
+                  <LegalSectionTitle>4. Compartir Información</LegalSectionTitle>
+                  <LegalText>
+                    No vendemos ni alquilamos tu información personal a terceros. Solo compartimos información en las siguientes circunstancias:
+                  </LegalText>
+                  <LegalBulletList>
+                    <LegalBulletPoint>Con proveedores de servicios que nos ayudan a operar la plataforma (procesamiento de pagos, hosting, análisis)</LegalBulletPoint>
+                    <LegalBulletPoint>Cuando sea requerido por ley o para proteger nuestros derechos legales</LegalBulletPoint>
+                    <LegalBulletPoint>Con tu consentimiento explícito</LegalBulletPoint>
+                  </LegalBulletList>
+                </LegalSection>
+
+                <LegalSection>
+                  <LegalSectionTitle>5. Tus Derechos</LegalSectionTitle>
+                  <LegalText>
+                    Tienes derecho a:
+                  </LegalText>
+                  <LegalBulletList>
+                    <LegalBulletPoint>Acceder a tu información personal</LegalBulletPoint>
+                    <LegalBulletPoint>Rectificar información inexacta</LegalBulletPoint>
+                    <LegalBulletPoint>Solicitar la eliminación de tu información</LegalBulletPoint>
+                    <LegalBulletPoint>Oponerte al procesamiento de tu información</LegalBulletPoint>
+                    <LegalBulletPoint>Portabilidad de tus datos</LegalBulletPoint>
+                    <LegalBulletPoint>Retirar tu consentimiento en cualquier momento</LegalBulletPoint>
+                  </LegalBulletList>
+                </LegalSection>
+
+                <LegalSection>
+                  <LegalSectionTitle>6. Retención de Datos</LegalSectionTitle>
+                  <LegalText>
+                    Conservamos tu información personal mientras tu cuenta esté activa o según sea necesario para proporcionarte servicios. Si eliminas tu cuenta, eliminaremos o anonimizaremos tu información personal, excepto cuando la ley requiera que la conservemos.
+                  </LegalText>
+                </LegalSection>
+
+                <LegalSection>
+                  <LegalSectionTitle>7. Cookies y Tecnologías Similares</LegalSectionTitle>
+                  <LegalText>
+                    Utilizamos cookies y tecnologías similares para mejorar tu experiencia, analizar el uso del servicio y personalizar contenido. Puedes gestionar tus preferencias de cookies a través de la configuración de tu navegador.
+                  </LegalText>
+                </LegalSection>
+
+                <LegalSection>
+                  <LegalSectionTitle>8. Cambios a esta Política</LegalSectionTitle>
+                  <LegalText>
+                    Podemos actualizar esta Política de Privacidad ocasionalmente. Te notificaremos de cambios significativos a través de la plataforma o por correo electrónico. Te recomendamos revisar esta política periódicamente.
+                  </LegalText>
+                </LegalSection>
+
+                <LegalSection>
+                  <LegalSectionTitle>9. Contacto</LegalSectionTitle>
+                  <LegalText>
+                    Si tienes preguntas sobre esta Política de Privacidad o sobre cómo manejamos tu información, puedes contactarnos en:
+                  </LegalText>
+                  <LegalText style={{ color: theme.colors.primary, fontWeight: 600 }}>
+                    Email: tastypathhelp@gmail.com
+                  </LegalText>
+                </LegalSection>
+              </>
+            )}
+          </LegalContent>
+        </LegalPanel>
       </Content>
     </Page>
   );
