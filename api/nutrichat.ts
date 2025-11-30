@@ -68,7 +68,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Verificar suscripción del usuario
     const { data: subscription, error: subError } = await supabaseAdmin
-      .from('subscriptions')
+      .from('user_subscriptions')
       .select('*')
       .eq('user_id', user.id)
       .eq('status', 'active')
