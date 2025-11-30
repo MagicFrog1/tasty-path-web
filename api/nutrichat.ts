@@ -55,8 +55,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (!openaiApiKey) {
       console.error('❌ NUTRICHAT_OPENAI_API_KEY no configurada en el servidor');
-      return res.status(500).json({ 
-        error: 'OpenAI API key para NutriChat no está configurada en el servidor. Por favor, configura NUTRICHAT_OPENAI_API_KEY en Vercel (Settings > Environment Variables). Si no está disponible, usará OPENAI_API_KEY como fallback.' 
+      return res.status(401).json({ 
+        error: 'OpenAI API key para NutriChat no está configurada en el servidor. Por favor, configura OPENAI_API_KEY o NUTRICHAT_OPENAI_API_KEY en Vercel (Settings > Environment Variables).' 
       });
     }
 

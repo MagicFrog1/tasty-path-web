@@ -64,9 +64,16 @@ export class DatabaseService {
         .from('user_profiles')
         .select('*')
         .eq('email', email)
-        .single();
+        .maybeSingle(); // Usar maybeSingle en lugar de single para evitar error 406 cuando no existe
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error al obtener perfil de usuario:', error);
+        // Si es un error 406, significa que no hay perfil, retornar null
+        if (error.code === 'PGRST116' || error.message?.includes('406')) {
+          return null;
+        }
+        throw error;
+      }
       return data;
     } catch (error) {
       console.error('Error al obtener perfil de usuario:', error);
@@ -115,9 +122,15 @@ export class DatabaseService {
         .from('user_diet_configs')
         .select('*')
         .eq('user_id', userId)
-        .single();
+        .maybeSingle(); // Usar maybeSingle para evitar error 406 cuando no existe
       
-      if (error) throw error;
+      if (error) {
+        // Si es un error 406, significa que no hay configuración, retornar null
+        if (error.code === 'PGRST116' || error.message?.includes('406')) {
+          return null;
+        }
+        throw error;
+      }
       return data;
     } catch (error) {
       console.error('Error al obtener configuración de dieta:', error);
@@ -231,9 +244,15 @@ export class DatabaseService {
         .select('*')
         .eq('user_id', userId)
         .eq('status', 'active')
-        .single();
+        .maybeSingle(); // Usar maybeSingle para evitar error 406 cuando no existe
       
-      if (error) throw error;
+      if (error) {
+        // Si es un error 406, significa que no hay plan activo, retornar null
+        if (error.code === 'PGRST116' || error.message?.includes('406')) {
+          return null;
+        }
+        throw error;
+      }
       return data;
     } catch (error) {
       console.error('Error al obtener plan activo:', error);
