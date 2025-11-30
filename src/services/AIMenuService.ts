@@ -123,7 +123,7 @@ class AIMenuService {
       apiKeyPresent: !!this.apiKey,
       apiKeyLength: this.apiKey?.length || 0,
       apiKeyPrefix: this.apiKey?.substring(0, 7) || 'N/A',
-      baseUrl: this.baseUrl,
+      apiEndpoint: this.apiEndpoint,
       model: ENV_CONFIG.OPENAI_MODEL || 'gpt-4o-mini'
     });
     
