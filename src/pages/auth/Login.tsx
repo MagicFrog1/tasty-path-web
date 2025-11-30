@@ -511,6 +511,29 @@ const Login: React.FC = () => {
         console.log('Perfil obtenido:', profile);
         const resolvedName = profile?.name || data.user.email?.split('@')[0] || 'Usuario';
 
+        // Asegurar que existe un registro en user_subscriptions
+        // (puede que no se haya creado si el usuario se registró antes de esta actualización)
+        if (data.user?.id) {
+          try {
+            const subResponse = await fetch('/api/create-user-subscription', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                userId: data.user.id,
+                userEmail: email.toLowerCase(),
+              }),
+            });
+            if (subResponse.ok) {
+              console.log('✅ Registro en user_subscriptions verificado/creado');
+            }
+          } catch (subError) {
+            console.error('⚠️ Error verificando registro en user_subscriptions:', subError);
+            // No bloquear el login si esto falla
+          }
+        }
+
         const userData = {
           id: data.user.id,
           email: email.toLowerCase(),
