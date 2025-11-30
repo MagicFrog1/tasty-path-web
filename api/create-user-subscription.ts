@@ -5,10 +5,18 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 
                     process.env.VITE_SUPABASE_URL || 
                     process.env.SUPABASE_URL;
+
 // CRÍTICO: Usar SUPABASE_SERVICE_ROLE_KEY para bypass de RLS
+// NUNCA usar NEXT_PUBLIC_SUPABASE_ANON_KEY o VITE_SUPABASE_ANON_KEY aquí
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 
                           process.env.VITE_SUPABASE_SERVICE_ROLE_KEY ||
                           process.env.SUPABASE_SERVICE_KEY;
+
+// Validar que NO estamos usando la ANON_KEY por error
+const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+if (supabaseServiceKey === anonKey) {
+  console.error('❌ ERROR CRÍTICO: Se está intentando usar ANON_KEY en lugar de SERVICE_ROLE_KEY');
+}
 
 // Inicializar Supabase Admin Client (solo en el servidor)
 // Se inicializa dentro del handler para validar las variables de entorno
@@ -78,12 +86,36 @@ export default async function handler(
       });
     }
     
+    // Validar que estamos usando Service Role Key y NO ANON_KEY
+    const isAnonKey = supabaseServiceKey?.startsWith('eyJ') && supabaseServiceKey?.includes('anon');
+    const isServiceRoleKey = supabaseServiceKey?.startsWith('eyJ') && !isAnonKey;
+    
     console.log('🔐 Verificando Service Role Key:', {
       hasServiceKey: !!supabaseServiceKey,
       keyLength: supabaseServiceKey?.length || 0,
       keyPrefix: supabaseServiceKey?.substring(0, 20) + '...',
-      isServiceRole: supabaseServiceKey?.startsWith('eyJ') || false // JWT tokens empiezan con eyJ
+      isJWT: supabaseServiceKey?.startsWith('eyJ') || false,
+      isAnonKey: isAnonKey,
+      isServiceRoleKey: isServiceRoleKey,
+      usingCorrectKey: isServiceRoleKey && !isAnonKey,
+      // Verificar variables de entorno disponibles
+      envVars: {
+        SUPABASE_SERVICE_ROLE_KEY: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+        VITE_SUPABASE_SERVICE_ROLE_KEY: !!process.env.VITE_SUPABASE_SERVICE_ROLE_KEY,
+        SUPABASE_SERVICE_KEY: !!process.env.SUPABASE_SERVICE_KEY,
+        // NO deberían estar presentes aquí, pero verificamos
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+        VITE_SUPABASE_ANON_KEY: !!process.env.VITE_SUPABASE_ANON_KEY
+      }
     });
+    
+    if (isAnonKey || !isServiceRoleKey) {
+      console.error('❌ ERROR CRÍTICO: No se está usando Service Role Key correctamente');
+      console.error('🔑 Key detectada parece ser ANON_KEY:', isAnonKey);
+      return res.status(500).json({
+        error: 'Configuración incorrecta: Se requiere SUPABASE_SERVICE_ROLE_KEY (no ANON_KEY) para crear suscripciones. Por favor, configura SUPABASE_SERVICE_ROLE_KEY en Vercel (Settings > Environment Variables).'
+      });
+    }
 
     const { userId, userEmail } = req.body;
 
@@ -96,8 +128,18 @@ export default async function handler(
       userEmail: userEmail || 'NO PROPORCIONADO'
     });
 
-    // Obtener cliente de Supabase Admin
+    // Obtener cliente de Supabase Admin (con Service Role Key para bypass RLS)
     const supabase = getSupabaseAdmin();
+    
+    // Verificar que el cliente se creó correctamente
+    if (!supabase) {
+      console.error('❌ ERROR: No se pudo crear el cliente de Supabase Admin');
+      return res.status(500).json({
+        error: 'Error al inicializar cliente de Supabase. Por favor, verifica las variables de entorno.'
+      });
+    }
+    
+    console.log('✅ Cliente de Supabase Admin obtenido correctamente (usando Service Role Key)');
 
     // Verificar si ya existe una suscripción para este usuario
     let existing: any = null;
