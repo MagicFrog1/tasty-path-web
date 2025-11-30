@@ -77,15 +77,39 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     console.log('🔍 NutriChat: Verificando suscripción del usuario:', {
       userId: user.id,
+      userEmail: user.email,
       subscriptionFound: !!subscription,
       subscriptionData: subscription ? {
         plan: subscription.plan,
         status: subscription.status,
         is_premium: subscription.is_premium,
-        stripe_subscription_id: subscription.stripe_subscription_id
+        user_id: subscription.user_id,
+        stripe_subscription_id: subscription.stripe_subscription_id,
+        current_period_start: subscription.current_period_start,
+        current_period_end: subscription.current_period_end
       } : null,
-      error: subError?.message
+      error: subError?.message,
+      errorCode: subError?.code
     });
+    
+    // Si no se encontró suscripción, buscar todas las suscripciones del usuario para diagnóstico
+    if (!subscription && !subError) {
+      const { data: allSubscriptions } = await supabaseAdmin
+        .from('user_subscriptions')
+        .select('*')
+        .eq('user_id', user.id);
+      
+      console.log('🔍 NutriChat: Todas las suscripciones del usuario:', {
+        userId: user.id,
+        count: allSubscriptions?.length || 0,
+        subscriptions: allSubscriptions?.map(sub => ({
+          plan: sub.plan,
+          status: sub.status,
+          is_premium: sub.is_premium,
+          user_id: sub.user_id
+        })) || []
+      });
+    }
 
     if (subError) {
       console.error('❌ NutriChat: Error al verificar suscripción:', subError);
@@ -107,11 +131,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!hasActiveSubscription) {
       console.warn('⚠️ NutriChat: Usuario sin suscripción premium:', {
         userId: user.id,
+        userEmail: user.email,
         subscription: subscription ? {
           plan: subscription.plan,
           status: subscription.status,
-          is_premium: subscription.is_premium
-        } : 'NO ENCONTRADA'
+          is_premium: subscription.is_premium,
+          isActiveStatus: isActiveStatus,
+          isNotFree: isNotFree,
+          hasActiveSubscription: false
+        } : 'NO ENCONTRADA',
+        checkDetails: {
+          hasSubscription: !!subscription,
+          isActiveStatus: isActiveStatus,
+          isNotFree: isNotFree,
+          isPremiumFlag: subscription?.is_premium === true
+        }
       });
       return res.status(403).json({ 
         error: 'Esta función requiere una suscripción premium. Por favor, actualiza tu plan para acceder a NutriChat.' 
