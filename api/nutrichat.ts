@@ -4,12 +4,13 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
  * Función serverless de Vercel para NutriChat
  * Actúa como proxy entre el frontend y la API de OpenAI para evitar problemas de CORS
  * y mantener la API key segura en el servidor
+ * Requiere autenticación JWT válida de Supabase
  */
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Configurar CORS headers para permitir requests desde el frontend
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   // Manejar preflight requests (OPTIONS)
   if (req.method === 'OPTIONS') {
@@ -22,6 +23,76 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
+    // Verificar autenticación JWT
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.error('❌ NutriChat: No se proporcionó token de autenticación');
+      return res.status(401).json({ 
+        error: 'Token de autenticación requerido. Por favor, inicia sesión nuevamente.' 
+      });
+    }
+
+    const token = authHeader.substring(7); // Remover "Bearer "
+    
+    // Obtener variables de entorno de Supabase
+    const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
+    
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error('❌ NutriChat: Variables de entorno de Supabase no configuradas');
+      return res.status(500).json({ 
+        error: 'Configuración del servidor incompleta. Por favor, contacta al soporte.' 
+      });
+    }
+
+    // Verificar el token JWT usando Supabase Admin SDK
+    const { createClient } = await import('@supabase/supabase-js');
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    });
+
+    // Verificar el token y obtener el usuario
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
+    
+    if (authError || !user) {
+      console.error('❌ NutriChat: Token inválido o expirado:', authError?.message);
+      return res.status(401).json({ 
+        error: 'Token de autenticación inválido o expirado. Por favor, inicia sesión nuevamente.' 
+      });
+    }
+
+    console.log('✅ NutriChat: Usuario autenticado:', user.id);
+
+    // Verificar suscripción del usuario
+    const { data: subscription, error: subError } = await supabaseAdmin
+      .from('subscriptions')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('status', 'active')
+      .maybeSingle();
+
+    if (subError) {
+      console.error('❌ NutriChat: Error al verificar suscripción:', subError);
+      // No bloquear si hay error, solo loguear
+    }
+
+    // Verificar si el usuario tiene plan premium (no free)
+    const hasActiveSubscription = subscription && 
+      subscription.status === 'active' && 
+      subscription.plan !== 'free';
+
+    if (!hasActiveSubscription) {
+      console.warn('⚠️ NutriChat: Usuario sin suscripción premium:', user.id);
+      return res.status(403).json({ 
+        error: 'Esta función requiere una suscripción premium. Por favor, actualiza tu plan para acceder a NutriChat.' 
+      });
+    }
+
+    console.log('✅ NutriChat: Usuario tiene suscripción premium activa');
+
     const { messages, model, temperature, max_tokens } = req.body;
 
     console.log('📥 NutriChat - Request recibido:', {

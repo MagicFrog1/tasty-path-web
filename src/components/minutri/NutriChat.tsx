@@ -6,6 +6,7 @@ import { AI_CONFIG } from '../../config/ai';
 import { medicalKnowledgeService } from '../../services/MedicalKnowledgeService';
 import { useUserProfile } from '../../context/UserProfileContext';
 import { minutriService } from '../../services/minutriService';
+import { supabase } from '../../services/supabase';
 
 // Usar endpoint del backend en lugar de llamar directamente a OpenAI
 // Esto evita problemas de CORS y mantiene la API key segura en el servidor
@@ -278,11 +279,20 @@ INSTRUCCIONES:
 
 Responde de forma natural y conversacional, como lo haría un nutricionista humano real.`;
 
+      // Obtener el token JWT de la sesión actual de Supabase
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData?.session?.access_token;
+      
+      if (!accessToken) {
+        throw new Error('No hay sesión activa. Por favor, inicia sesión nuevamente.');
+      }
+
       // Llamar al endpoint del backend en lugar de OpenAI directamente
       const response = await fetch(NUTRICHAT_API_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`, // Enviar token JWT
         },
         body: JSON.stringify({
           model: AI_CONFIG.OPENAI_MODEL || 'gpt-4o-mini',
