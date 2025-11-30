@@ -4,6 +4,7 @@ import PaymentService, { PaymentResponse } from '../services/PaymentService';
 import { storage } from '../utils/storage';
 import { getUserSubscription } from '../services/subscriptionService';
 import { supabase } from '../services/supabase';
+import { useAuth } from './AuthContext';
 
 interface SubscriptionContextType {
   currentPlan: SubscriptionDetails | null;
@@ -29,6 +30,7 @@ const SUBSCRIPTION_STORAGE_KEY = 'tastypath:subscription';
 export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ children }) => {
   const [currentPlan, setCurrentPlan] = useState<SubscriptionDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const { user } = useAuth();
 
   // Planes disponibles
   const availablePlans: PlanOption[] = [
@@ -190,10 +192,17 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
     }
   }, []);
 
-  // Verificar estado de suscripción al cargar la app
+  // Verificar estado de suscripción al cargar la app y cuando el usuario cambie
   useEffect(() => {
-    checkSubscriptionStatus();
-  }, [checkSubscriptionStatus]);
+    if (user?.id) {
+      // Si hay un usuario autenticado, verificar su suscripción premium automáticamente
+      console.log('👤 Usuario autenticado detectado, verificando estado premium:', user.id);
+      checkSubscriptionStatus(user.id);
+    } else {
+      // Si no hay usuario, verificar solo localStorage
+      checkSubscriptionStatus();
+    }
+  }, [user?.id, checkSubscriptionStatus]);
 
   const selectPlan = async (plan: SubscriptionPlan) => {
     try {
