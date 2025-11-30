@@ -122,12 +122,30 @@ export default async function handler(
         status: openaiResponse.status,
         statusText: openaiResponse.statusText,
         error: errorData,
+        apiKeyUsed: apiKey ? `${apiKey.substring(0, 10)}...${apiKey.substring(apiKey.length - 4)}` : 'NO CONFIGURADA',
+        apiKeyLength: apiKey?.length || 0,
       });
 
       let errorMessage = 'Error al procesar la solicitud con OpenAI.';
 
       if (openaiResponse.status === 401) {
-        errorMessage = 'Error de autenticación con OpenAI. La API key no es válida o ha expirado.';
+        // Proporcionar más detalles sobre el error 401
+        const openaiErrorMsg = errorData.error?.message || 'Unknown error';
+        console.error('❌ Detalles del error 401 de OpenAI:', {
+          errorType: errorData.error?.type,
+          errorCode: errorData.error?.code,
+          errorMessage: openaiErrorMsg,
+          apiKeyPrefix: apiKey?.substring(0, 10),
+          apiKeySuffix: apiKey?.substring(apiKey.length - 4),
+        });
+        
+        if (openaiErrorMsg.includes('Invalid API key') || openaiErrorMsg.includes('Incorrect API key')) {
+          errorMessage = 'La API key de OpenAI configurada en Vercel no es válida. Por favor, verifica que OPENAI_API_KEY esté configurada correctamente en Vercel (Settings > Environment Variables) y que sea una API key válida de OpenAI.';
+        } else if (openaiErrorMsg.includes('expired')) {
+          errorMessage = 'La API key de OpenAI ha expirado. Por favor, genera una nueva API key en OpenAI y actualiza OPENAI_API_KEY en Vercel.';
+        } else {
+          errorMessage = `Error de autenticación con OpenAI: ${openaiErrorMsg}. Verifica que OPENAI_API_KEY esté configurada correctamente en Vercel.`;
+        }
       } else if (openaiResponse.status === 429) {
         errorMessage = 'Demasiadas solicitudes a OpenAI. Por favor, espera un momento e intenta de nuevo.';
       } else if (openaiResponse.status === 500) {
