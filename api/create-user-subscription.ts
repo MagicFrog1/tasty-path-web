@@ -26,9 +26,6 @@ function getSupabaseAdmin() {
         persistSession: false,
         detectSessionInUrl: false
       },
-      db: {
-        schema: 'public' as const
-      },
       global: {
         headers: {
           'x-client-info': 'create-user-subscription'
