@@ -27,7 +27,7 @@ function getSupabaseAdmin() {
         detectSessionInUrl: false
       },
       db: {
-        schema: 'public'
+        schema: 'public' as const
       },
       global: {
         headers: {
