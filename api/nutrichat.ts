@@ -228,25 +228,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Verificar si el usuario tiene plan premium
     // CRÍTICO: El plan 'trial' SIEMPRE es premium, sin importar status o is_premium
-    // Un usuario tiene premium si:
-    // 1. Tiene plan 'trial' (SIEMPRE premium, sin importar status o is_premium) O
-    // 2. Tiene is_premium = true O
-    // 3. Tiene un plan que NO es 'free' ni 'null' Y (status activo/trialing O status es null/undefined)
-    
     const plan = subscription?.plan;
     const status = subscription?.status;
     const isPremium = subscription?.is_premium;
     
-    // Verificaciones individuales
-    const isTrial = plan === 'trial';
-    const isPremiumFlag = isPremium === true;
-    const isNotFree = plan && plan !== 'free' && plan !== null;
-    const isActiveStatus = status === 'active' || status === 'trialing';
-    const hasNoStatus = !status || status === null;
+    // Verificaciones individuales con conversión a string para comparación segura
+    const planStr = String(plan || '').toLowerCase().trim();
+    const isTrial = planStr === 'trial';
+    const isPremiumFlag = isPremium === true || String(isPremium || '').toLowerCase() === 'true';
+    const isNotFree = plan && planStr !== 'free' && planStr !== 'null' && planStr !== '';
+    const statusStr = String(status || '').toLowerCase().trim();
+    const isActiveStatus = statusStr === 'active' || statusStr === 'trialing' || status === 'active' || status === 'trialing';
+    const hasNoStatus = !status || status === null || statusStr === 'null' || statusStr === '';
     
     // LÓGICA SIMPLIFICADA: Si es trial, SIEMPRE premium. Si no, verificar otras condiciones
+    // CRÍTICO: isTrial debe ser la primera condición y siempre retornar true si es trial
     const hasActiveSubscription = subscription && (
-      isTrial || // Plan trial = SIEMPRE premium (sin importar status o is_premium)
+      isTrial || // Plan trial = SIEMPRE premium (sin importar status o is_premium) - PRIORIDAD MÁXIMA
       isPremiumFlag || // Flag premium = premium
       (isNotFree && (isActiveStatus || hasNoStatus)) // Plan no-free con status activo o sin status
     );
