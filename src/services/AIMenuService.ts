@@ -116,26 +116,14 @@ class AIMenuService {
       allergies: request.allergies
     });
     
-    // Verificar si la IA está configurada correctamente con más detalle
-    const aiConfigured = isAIConfigured();
+    // Nota: La API key está en el servidor, no en el frontend
+    // El frontend solo necesita hacer la solicitud al endpoint
     console.log('🔧 Estado de configuración de IA:', {
-      configured: aiConfigured,
-      apiKeyPresent: !!this.apiKey,
-      apiKeyLength: this.apiKey?.length || 0,
-      apiKeyPrefix: this.apiKey?.substring(0, 7) || 'N/A',
       apiEndpoint: this.apiEndpoint,
       model: ENV_CONFIG.OPENAI_MODEL || 'gpt-4o-mini'
     });
     
-    // Intentar usar IA siempre, incluso si la configuración parece incorrecta
-    // (puede que la API key esté en el servidor pero no sea detectada)
-    if (!aiConfigured) {
-      console.warn('⚠️ ADVERTENCIA: La configuración de IA parece incompleta');
-      console.warn('🔍 API Key detectada:', !!this.apiKey);
-      console.warn('💡 Intentando usar IA de todas formas (puede estar configurada en el servidor)...');
-    } else {
-      console.log('✅ IA configurada correctamente, procediendo con generación...');
-    }
+    console.log('✅ Procediendo con generación - La API key está en el servidor');
     
     try {
       // Intentar generar con IA - hacer múltiples intentos antes de fallar
@@ -171,12 +159,9 @@ class AIMenuService {
 
   // Función interna para intentar generación con IA
   private async attemptAIGeneration(request: AIMenuRequest): Promise<AIMenuResponse> {
-    // Verificar configuración de la API de OpenAI
-    console.log('🔧 VERIFICACIÓN COMPLETA DE CONFIGURACIÓN DE IA (OpenAI):');
-    console.log('🔑 API Key presente:', !!this.apiKey);
-    console.log('🔑 API Key longitud:', this.apiKey?.length || 0);
-    console.log('🔑 API Key empieza con sk- (OpenAI):', this.apiKey?.startsWith('sk-') || false);
-    console.log('🔑 API Key NO es placeholder:', this.apiKey !== 'your-openai-api-key');
+    // Nota: La API key está en el servidor, no en el frontend
+    // El frontend solo necesita hacer la solicitud al endpoint
+    console.log('🔧 VERIFICACIÓN DE CONFIGURACIÓN DE IA (OpenAI):');
     console.log('🌐 Endpoint API:', this.getApiUrl());
     console.log('🤖 Modelo:', ENV_CONFIG.OPENAI_MODEL || 'gpt-4o-mini');
     console.log('📊 Request recibido:', {
@@ -185,24 +170,7 @@ class AIMenuService {
       allergies: request.allergies
     });
     
-    // Verificación más estricta de la API key de OpenAI
-    if (!this.apiKey) {
-      console.error('❌ API Key de OpenAI no está definida');
-      throw new Error('API key de OpenAI no está definida');
-    }
-    
-    if (this.apiKey === 'your-openai-api-key') {
-      console.error('❌ API Key es el placeholder por defecto');
-      throw new Error('API key de OpenAI es el placeholder por defecto');
-    }
-    
-    // Verificar formato de API key de OpenAI
-    if (!this.apiKey.startsWith('sk-')) {
-      console.error('❌ API Key de OpenAI no tiene el formato correcto');
-      throw new Error('API key de OpenAI no tiene el formato correcto (debe empezar con sk-)');
-    }
-    
-    console.log('✅ Configuración de IA verificada correctamente - Procediendo con generación...');
+    console.log('✅ Procediendo con generación - La API key está en el servidor');
     
     // Generar un seed único más robusto para esta generación
     const timestamp = Date.now();
