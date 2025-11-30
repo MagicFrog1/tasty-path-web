@@ -44,6 +44,8 @@ const AppRoutes: React.FC = () => {
               </AuthLayout>
             }
           />
+          <Route path="/terminos" element={<TermsPage />} />
+          <Route path="/privacidad" element={<PrivacyPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </React.Suspense>
