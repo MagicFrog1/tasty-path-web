@@ -1777,7 +1777,7 @@ const normalizedMeals = (plan: any) => {
                 meal?.category ||
                 meal?.slot ||
                 `Comida ${mealIndex + 1}`,
-              name: meal?.name || meal?.title || meal?.dish || 'Receta personalizada',
+              name: meal?.name || meal?.title || meal?.dish || (meal?.type?.toLowerCase().includes('snack') ? 'Snack' : 'Receta personalizada'),
               description: meal?.description || meal?.notes || '',
               calories: meal?.calories || meal?.nutrition?.calories || meal?.kcal,
               macros: meal?.macros || meal?.nutrition,
@@ -1792,7 +1792,7 @@ const normalizedMeals = (plan: any) => {
             .map(([key, value]: [string, any], mealIndex) => ({
               key: value?.id || `${label}-meal-${mealIndex}`,
               type: key.replace(/_/g, ' ').replace(/\b\w/g, letter => letter.toUpperCase()),
-              name: value?.name || value?.title || value?.dish || 'Receta personalizada',
+              name: value?.name || value?.title || value?.dish || (key.toLowerCase().includes('snack') ? 'Snack' : 'Receta personalizada'),
               description: value?.description || value?.notes || '',
               calories: value?.calories || value?.nutrition?.calories || value?.kcal,
               macros: value?.macros || value?.nutrition,
@@ -2041,6 +2041,12 @@ const PlanDetailPage: React.FC = () => {
               <span>Según tu objetivo</span>
               <span>{plan.config?.goal || 'Personalizado'}</span>
             </MealMeta>
+            <Link to="/mi-nutri-personal" style={{ marginTop: '12px', display: 'inline-block' }}>
+              <RecipeButton style={{ width: '100%', justifyContent: 'center' }}>
+                <FiActivity />
+                Ver ejercicios
+              </RecipeButton>
+            </Link>
           </SummaryCard>
         ) : (
           <SummaryCard>
@@ -2364,15 +2370,44 @@ const PlanDetailPage: React.FC = () => {
               <p>{selectedMeal.type}</p>
             </RecipeModalHeader>
             <RecipeModalContent>
-              {selectedMeal.description && (
+              {/* Para snacks simples, mostrar información básica */}
+              {selectedMeal.type?.toLowerCase().includes('snack') && (
+                <div style={{ marginBottom: '32px', padding: '20px', borderRadius: '16px', background: 'rgba(46, 139, 87, 0.05)', borderLeft: '4px solid ' + theme.colors.primary }}>
+                  <h4 style={{ margin: '0 0 12px 0', fontSize: '18px', fontWeight: 700, color: theme.colors.textPrimary, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <FiShoppingBag />
+                    Snack
+                  </h4>
+                  <p style={{ margin: 0, color: theme.colors.textPrimary, lineHeight: '1.8', fontSize: '15px' }}>
+                    {selectedMeal.name || 'Snack simple'}
+                  </p>
+                  {selectedMeal.description && (
+                    <p style={{ margin: '12px 0 0 0', color: theme.colors.textSecondary, lineHeight: '1.6', fontSize: '14px' }}>
+                      {selectedMeal.description}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Instrucciones paso a paso desde description si no hay instructions */}
+              {!selectedMeal.type?.toLowerCase().includes('snack') && formatInstructions(selectedMeal.instructions).length === 0 && selectedMeal.description && (
                 <div style={{ marginBottom: '32px', padding: '20px', borderRadius: '16px', background: 'rgba(46, 139, 87, 0.05)', borderLeft: '4px solid ' + theme.colors.primary }}>
                   <h4 style={{ margin: '0 0 12px 0', fontSize: '18px', fontWeight: 700, color: theme.colors.textPrimary, display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <FiBook />
-                    Descripción detallada
+                    Instrucciones de preparación
                   </h4>
-                  <p style={{ margin: 0, color: theme.colors.textPrimary, lineHeight: '1.8', fontSize: '15px', whiteSpace: 'pre-line' }}>
-                    {selectedMeal.description}
-                  </p>
+                  <div style={{ marginTop: '12px' }}>
+                    {selectedMeal.description.split(/(?=\d+\.)/).filter((step: string) => step.trim()).map((step: string, index: number) => {
+                      const cleanedStep = step.trim().replace(/^\d+\.\s*/, '');
+                      return cleanedStep ? (
+                        <InstructionStep key={`desc-step-${index}`} style={{ marginBottom: '12px' }}>
+                          <StepNumber>{index + 1}</StepNumber>
+                          <StepContent>
+                            <p>{cleanedStep}</p>
+                          </StepContent>
+                        </InstructionStep>
+                      ) : null;
+                    })}
+                  </div>
                 </div>
               )}
 
@@ -2394,29 +2429,31 @@ const PlanDetailPage: React.FC = () => {
                 </IngredientsSection>
               )}
 
-              <InstructionsSection>
-                <h4>
-                  <FiBook />
-                  Instrucciones de preparación
-                </h4>
-                {formatInstructions(selectedMeal.instructions).length > 0 ? (
-                  formatInstructions(selectedMeal.instructions).map((instruction, index) => (
-                    <InstructionStep key={`step-${index}`}>
-                      <StepNumber>{index + 1}</StepNumber>
-                      <StepContent>
-                        <p>{instruction}</p>
-                      </StepContent>
-                    </InstructionStep>
-                  ))
-                ) : (
-                  <NoInstructions>
-                    <p>
-                      No hay instrucciones de preparación disponibles para esta receta. Las instrucciones se generarán
-                      automáticamente cuando se cree el plan.
-                    </p>
-                  </NoInstructions>
-                )}
-              </InstructionsSection>
+              {!selectedMeal.type?.toLowerCase().includes('snack') && (
+                <InstructionsSection>
+                  <h4>
+                    <FiBook />
+                    Instrucciones de preparación
+                  </h4>
+                  {formatInstructions(selectedMeal.instructions).length > 0 ? (
+                    formatInstructions(selectedMeal.instructions).map((instruction, index) => (
+                      <InstructionStep key={`step-${index}`}>
+                        <StepNumber>{index + 1}</StepNumber>
+                        <StepContent>
+                          <p>{instruction}</p>
+                        </StepContent>
+                      </InstructionStep>
+                    ))
+                  ) : (
+                    <NoInstructions>
+                      <p>
+                        No hay instrucciones de preparación disponibles para esta receta. Las instrucciones se generarán
+                        automáticamente cuando se cree el plan.
+                      </p>
+                    </NoInstructions>
+                  )}
+                </InstructionsSection>
+              )}
             </RecipeModalContent>
           </RecipeModal>
         )}

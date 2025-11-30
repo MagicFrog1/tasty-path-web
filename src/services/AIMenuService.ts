@@ -2747,16 +2747,16 @@ EJEMPLOS REALES PARA DIETA VEGETARIANA:
 ` : ''}
 
 📝 DESCRIPCIONES DETALLADAS OBLIGATORIAS:
-- CADA comida DEBE tener un campo "description" con mínimo 4-5 frases completas
-- La descripción debe explicar:
-  * Qué es el plato y su origen/tipo de cocina
-  * Qué ingredientes principales contiene y cómo se combinan
-  * Qué sabor y textura tiene
-  * Qué beneficios nutricionales aporta
-  * Cómo se presenta visualmente
-  * Cualquier detalle relevante (técnica de cocción, temperatura, etc.)
-- EJEMPLO DE DESCRIPCIÓN DETALLADA:
-  "Pechuga de pollo a la plancha con arroz integral y brócoli al vapor. Este plato combina proteína magra de alta calidad con carbohidratos complejos y vegetales ricos en fibra. La pechuga se cocina a fuego medio-alto para obtener una superficie dorada y crujiente mientras mantiene su jugosidad interior. El arroz integral aporta fibra y minerales esenciales, mientras que el brócoli al vapor conserva sus vitaminas y antioxidantes. El resultado es un plato equilibrado, saciante y rico en proteínas que favorece la recuperación muscular y el mantenimiento de la masa magra."
+- CADA comida DEBE tener un campo "description" con instrucciones PASO A PASO para cocinar el plato
+- La descripción debe ser instrucciones numeradas y detalladas (mínimo 5-7 pasos)
+- Cada paso debe ser específico y claro:
+  * Preparación de ingredientes (cortes, medidas, marinados)
+  * Técnica de cocción específica (plancha, horno, vapor, etc.)
+  * Tiempos exactos para cada etapa
+  * Temperaturas si aplica (horno, plancha, etc.)
+  * Consejos de presentación y acabado
+- EJEMPLO DE DESCRIPCIÓN (INSTRUCCIONES PASO A PASO):
+  "1. Salpimenta la pechuga de pollo por ambos lados y déjala reposar 10 minutos a temperatura ambiente. 2. Calienta una plancha o sartén a fuego medio-alto (180°C) con una cucharada de aceite de oliva. 3. Cocina la pechuga 6-7 minutos por cada lado hasta que esté dorada y la temperatura interna alcance 75°C. 4. Mientras tanto, cocina el arroz integral según las instrucciones del paquete (generalmente 40-45 minutos). 5. En los últimos 5 minutos, coloca el brócoli en una vaporera sobre el arroz para cocinarlo al vapor. 6. Retira la pechuga del fuego y déjala reposar 3 minutos antes de cortarla. 7. Sirve la pechuga cortada en rodajas sobre el arroz integral con el brócoli al lado, y adereza con un chorrito de aceite de oliva virgen extra."
 
 🔧 INSTRUCCIONES PASO A PASO DETALLADAS:
 - CADA comida DEBE tener instrucciones numeradas y detalladas (mínimo 5-7 pasos)
@@ -2792,7 +2792,7 @@ FORMATO JSON EXACTO (7 DÍAS):
       "meals": {
         "breakfast": {
           "name": "Texto concreto con nombre REAL del plato",
-          "description": "Descripción DETALLADA punto por punto del plato: explica qué es, cómo se prepara, qué ingredientes principales tiene, qué sabor tiene, qué beneficios nutricionales aporta, y cualquier detalle relevante. Mínimo 4-5 frases completas y descriptivas.",
+          "description": "Instrucciones PASO A PASO detalladas para cocinar el plato. Cada paso debe ser claro y específico. Incluye: 1) Preparación de ingredientes, 2) Técnica de cocción, 3) Tiempos específicos, 4) Temperaturas si aplica, 5) Consejos de presentación. Mínimo 5-7 pasos numerados y detallados. Formato: '1. Paso uno. 2. Paso dos. 3. Paso tres...'",
           "instructions": "Instrucciones PASO A PASO detalladas. Cada paso debe ser claro y específico. Incluye: 1) Preparación de ingredientes, 2) Técnica de cocción, 3) Tiempos específicos, 4) Temperaturas si aplica, 5) Consejos de presentación. Mínimo 5-7 pasos numerados y detallados.",
           "ingredients": ["ingrediente1 con cantidad exacta", "ingrediente2 con cantidad exacta"],
           "prepTime": 5,
@@ -2802,7 +2802,7 @@ FORMATO JSON EXACTO (7 DÍAS):
         },
         "lunch": {
           "name": "Texto concreto con nombre REAL del plato",
-          "description": "Descripción DETALLADA punto por punto del plato: explica qué es, cómo se prepara, qué ingredientes principales tiene, qué sabor tiene, qué beneficios nutricionales aporta, y cualquier detalle relevante. Mínimo 4-5 frases completas y descriptivas.",
+          "description": "Instrucciones PASO A PASO detalladas para cocinar el plato. Cada paso debe ser claro y específico. Incluye: 1) Preparación de ingredientes, 2) Técnica de cocción, 3) Tiempos específicos, 4) Temperaturas si aplica, 5) Consejos de presentación. Mínimo 5-7 pasos numerados y detallados. Formato: '1. Paso uno. 2. Paso dos. 3. Paso tres...'",
           "instructions": "Instrucciones PASO A PASO detalladas. Cada paso debe ser claro y específico. Incluye: 1) Preparación de ingredientes, 2) Técnica de cocción, 3) Tiempos específicos, 4) Temperaturas si aplica, 5) Consejos de presentación. Mínimo 5-7 pasos numerados y detallados.",
           "ingredients": ["ingrediente1 con cantidad exacta", "ingrediente2 con cantidad exacta"],
           "prepTime": 15,
@@ -2812,7 +2812,7 @@ FORMATO JSON EXACTO (7 DÍAS):
         },
         "dinner": {
           "name": "Texto concreto con nombre REAL del plato",
-          "description": "Descripción DETALLADA punto por punto del plato: explica qué es, cómo se prepara, qué ingredientes principales tiene, qué sabor tiene, qué beneficios nutricionales aporta, y cualquier detalle relevante. Mínimo 4-5 frases completas y descriptivas.",
+          "description": "Instrucciones PASO A PASO detalladas para cocinar el plato. Cada paso debe ser claro y específico. Incluye: 1) Preparación de ingredientes, 2) Técnica de cocción, 3) Tiempos específicos, 4) Temperaturas si aplica, 5) Consejos de presentación. Mínimo 5-7 pasos numerados y detallados. Formato: '1. Paso uno. 2. Paso dos. 3. Paso tres...'",
           "instructions": "Instrucciones PASO A PASO detalladas. Cada paso debe ser claro y específico. Incluye: 1) Preparación de ingredientes, 2) Técnica de cocción, 3) Tiempos específicos, 4) Temperaturas si aplica, 5) Consejos de presentación. Mínimo 5-7 pasos numerados y detallados.",
           "ingredients": ["ingrediente1 con cantidad exacta", "ingrediente2 con cantidad exacta"],
           "prepTime": 10,
