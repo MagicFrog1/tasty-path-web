@@ -357,11 +357,38 @@ const ShoppingListPage: React.FC = () => {
   // Verificar si el usuario tiene plan premium
   const isPremium = currentPlan && currentPlan.plan !== 'free' && currentPlan.isActive;
 
-  const filteredItems = useMemo(
-    () =>
-      shoppingList.filter(item => (selectedPlan === 'todos' ? true : item.sourcePlan === selectedPlan)),
-    [shoppingList, selectedPlan]
-  );
+  // Obtener el presupuesto del plan seleccionado
+  const planBudget = useMemo(() => {
+    if (selectedPlan === 'todos' && shoppingList.length > 0) {
+      const firstPlanId = shoppingList[0]?.sourcePlan;
+      if (firstPlanId) {
+        const plan = weeklyPlans.find(p => p.id === firstPlanId);
+        return plan?.config?.weeklyBudget || null;
+      }
+    } else if (selectedPlan !== 'todos') {
+      const plan = weeklyPlans.find(p => p.id === selectedPlan);
+      return plan?.config?.weeklyBudget || null;
+    }
+    return null;
+  }, [selectedPlan, shoppingList, weeklyPlans]);
+
+  const filteredItems = useMemo(() => {
+    let items = shoppingList.filter(item => (selectedPlan === 'todos' ? true : item.sourcePlan === selectedPlan));
+    
+    // Si hay un presupuesto, ajustar los precios proporcionalmente
+    if (planBudget && items.length > 0) {
+      const totalCost = items.reduce((sum, item) => sum + (item.price || 0), 0);
+      if (totalCost > planBudget) {
+        const adjustmentFactor = planBudget / totalCost;
+        items = items.map(item => ({
+          ...item,
+          price: (item.price || 0) * adjustmentFactor
+        }));
+      }
+    }
+    
+    return items;
+  }, [shoppingList, selectedPlan, planBudget]);
 
   // Orden lógico de supermercado (no alfabético)
   const categoryOrder = [
