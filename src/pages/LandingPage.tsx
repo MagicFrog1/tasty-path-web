@@ -967,6 +967,38 @@ const FooterNote = styled.p`
   padding-top: 48px;
 `;
 
+const FooterLinks = styled.div`
+  margin: 0;
+  padding: 24px 0 48px 0;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+  justify-content: center;
+
+  @media (min-width: 768px) {
+    flex-direction: row;
+    gap: 24px;
+  }
+
+  a {
+    color: ${theme.colors.primary};
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    padding: 4px 8px;
+    border-radius: 4px;
+
+    &:hover {
+      color: ${theme.colors.primaryLight};
+      text-decoration: underline;
+      background-color: rgba(46, 139, 87, 0.05);
+    }
+  }
+`;
+
 const ContactNote = styled.small`
   display: block;
   margin-top: 0;
@@ -1320,6 +1352,11 @@ const LandingPage: React.FC = () => {
         <FooterNote>
           © {new Date().getFullYear()} MyTastyPath. Nutrición inteligente impulsada por IA.
         </FooterNote>
+
+        <FooterLinks>
+          <Link to="/terminos">Términos y Condiciones</Link>
+          <Link to="/privacidad">Política de Privacidad</Link>
+        </FooterLinks>
       </Content>
     </Page>
   );
