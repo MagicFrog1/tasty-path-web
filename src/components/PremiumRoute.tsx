@@ -38,3 +38,4 @@ export const PremiumRoute: React.FC<PremiumRouteProps> = ({ children, allowFree 
 
 export default PremiumRoute;
 
+

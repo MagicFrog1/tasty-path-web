@@ -121,3 +121,4 @@ Si después de ejecutar el script sigue habiendo problemas:
 **Archivo del script:** `database/fix_webhook_rls_issue.sql`  
 **Última actualización:** 2025-11-29
 
+
