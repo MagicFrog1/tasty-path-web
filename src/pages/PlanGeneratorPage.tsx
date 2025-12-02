@@ -17,6 +17,17 @@ const PageWrapper = styled.div`
   gap: 32px;
   max-width: 1200px;
   margin: 0 auto;
+  padding: 32px 24px 40px;
+
+  @media (max-width: 768px) {
+    padding: 32px 16px 40px;
+    gap: 24px;
+  }
+
+  @media (max-width: 480px) {
+    padding: 24px 12px 32px;
+    gap: 20px;
+  }
 `;
 
 const Header = styled.div`
@@ -100,9 +111,15 @@ const StepLayout = styled.div`
   display: grid;
   gap: 24px;
   grid-template-columns: minmax(0, 1fr) 360px;
+  align-items: flex-start;
 
   @media (max-width: 960px) {
     grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  @media (max-width: 768px) {
+    gap: 18px;
   }
 `;
 
@@ -114,6 +131,18 @@ const StepCard = styled.section`
   background: rgba(255, 255, 255, 0.94);
   border: 1px solid rgba(46, 139, 87, 0.12);
   box-shadow: 0 26px 60px rgba(46, 139, 87, 0.16);
+
+  @media (max-width: 768px) {
+    padding: 22px 18px;
+    border-radius: 22px;
+    gap: 16px;
+  }
+
+  @media (max-width: 480px) {
+    padding: 18px 14px;
+    border-radius: 18px;
+    gap: 14px;
+  }
 `;
 
 const StepHeading = styled.div`
@@ -184,6 +213,16 @@ const SidebarCard = styled.aside`
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
   color: ${theme.colors.textPrimary};
   position: relative;
+
+  @media (max-width: 960px) {
+    padding: 22px 18px;
+    border-radius: 18px;
+  }
+
+  @media (max-width: 480px) {
+    padding: 18px 14px;
+    border-radius: 16px;
+  }
 `;
 
 const SidebarTitle = styled.h4`

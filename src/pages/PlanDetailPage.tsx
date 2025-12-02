@@ -64,16 +64,16 @@ const rotate = keyframes`
 
 const PageWrapper = styled.div`
   display: grid;
-  gap: 32px;
+  gap: 24px;
   padding: 0;
 
   @media (max-width: 1024px) {
-    gap: 24px;
+    gap: 20px;
     padding: 0 16px;
   }
 
   @media (max-width: 768px) {
-    gap: 20px;
+    gap: 18px;
     padding: 0 12px;
   }
 
@@ -187,7 +187,7 @@ const SummaryGrid = styled.div`
 const SummaryCard = styled.div`
   display: grid;
   gap: 12px;
-  padding: 24px;
+  padding: 18px 20px;
   border-radius: 26px;
   background: linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(236, 253, 245, 0.9));
   border: 1px solid rgba(46, 139, 87, 0.16);
@@ -260,7 +260,7 @@ const ProgressBar = styled.div<{ percentage: number }>`
 
 const WeekGrid = styled.div`
   display: grid;
-  gap: 22px;
+  gap: 18px;
 `;
 
 const WeekHeader = styled.div`
@@ -302,7 +302,7 @@ const WeekHeader = styled.div`
 const CalendarContainer = styled.div`
   display: grid;
   gap: 16px;
-  padding: 24px;
+  padding: 18px 20px;
   border-radius: 24px;
   background: linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(236, 253, 245, 0.9));
   border: 1px solid rgba(46, 139, 87, 0.16);
@@ -1724,6 +1724,7 @@ const formatDate = (value?: string) => {
       weekday: 'long',
       day: '2-digit',
       month: 'long',
+      year: 'numeric',
     }).format(new Date(value));
   } catch {
     return value;

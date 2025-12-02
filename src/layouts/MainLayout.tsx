@@ -361,11 +361,11 @@ const ContentWrapper = styled.main`
   position: relative;
   background: #ffffff;
   width: calc(100% - 280px);
-  padding: 64px 64px 48px 48px;
+  padding: 40px 56px 40px 40px;
   overflow-x: hidden;
 
   @media (max-width: 1280px) {
-    padding: 56px 56px 40px 40px;
+    padding: 40px 40px 32px 32px;
   }
 
   @media (max-width: 1024px) {

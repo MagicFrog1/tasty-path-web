@@ -24,7 +24,7 @@ const fadeInUp = keyframes`
 const PageWrapper = styled.div`
   max-width: 1400px;
   margin: 0 auto;
-  padding: 32px 24px;
+  padding: 24px 24px 32px;
   width: 100%;
   animation: ${fadeInUp} 0.6s ease-out;
 
@@ -38,7 +38,7 @@ const PageWrapper = styled.div`
 `;
 
 const Header = styled.div`
-  margin-bottom: 40px;
+  margin-bottom: 28px;
   text-align: center;
 
   @media (max-width: 768px) {
