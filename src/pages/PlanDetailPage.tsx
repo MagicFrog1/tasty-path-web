@@ -1762,7 +1762,22 @@ const normalizedMeals = (plan: any) => {
   if (!Array.isArray(days)) return [];
 
   return days.map((day: any, index: number) => {
-    const label = day?.day || day?.title || day?.date || `Día ${day?.dayNumber || index + 1}`;
+    // Formatear la fecha si existe, de lo contrario usar el label por defecto
+    let label = day?.day || day?.title || `Día ${day?.dayNumber || index + 1}`;
+    if (day?.date && !day?.day && !day?.title) {
+      // Si solo hay date, formatearla correctamente
+      try {
+        const dateObj = new Date(day.date);
+        label = new Intl.DateTimeFormat('es-ES', {
+          weekday: 'long',
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+        }).format(dateObj);
+      } catch {
+        label = day.date;
+      }
+    }
     const desc = day?.summary || day?.description || null;
     const meals = day?.meals;
 
@@ -2131,8 +2146,19 @@ const PlanDetailPage: React.FC = () => {
           <DayGrid>
             {mealsByDay
               .filter(day => day.key === selectedDayKey)
-              .map(day => {
+              .map((day, dayIndex) => {
                 const isDayExpanded = true; // Siempre expandido cuando está seleccionado
+                const dayIndexInPlan = mealsByDay.findIndex(d => d.key === day.key);
+                const dateInfo = getDayDate(dayIndexInPlan >= 0 ? dayIndexInPlan : 0);
+                // Usar la fecha formateada del calendario si está disponible, de lo contrario usar el label
+                const displayLabel = dateInfo.fullDate 
+                  ? new Intl.DateTimeFormat('es-ES', {
+                      weekday: 'long',
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric',
+                    }).format(dateInfo.fullDate)
+                  : day.label;
                 return (
                   <DayCard key={day.key} isChecked={checkedDays[day.key]} isExpanded={isDayExpanded} data-day-key={day.key}>
                     <CheckInButton
@@ -2154,7 +2180,7 @@ const PlanDetailPage: React.FC = () => {
                     </CheckInButton>
 
                     <DayHeader>
-                      <h3>{day.label}</h3>
+                      <h3>{displayLabel}</h3>
                       <CloseDayButton onClick={() => setSelectedDayKey(null)}>
                         <FiX />
                         Cerrar
