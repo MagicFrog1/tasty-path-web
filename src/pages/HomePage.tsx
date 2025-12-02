@@ -350,11 +350,11 @@ const Hero = styled.section`
     padding: 0 24px;
 
     @media (min-width: 768px) {
-      padding: 0 48px;
+      padding: 0 32px;
     }
 
     @media (min-width: 1024px) {
-      padding: 0 64px;
+      padding: 0 56px;
     }
   }
 `;
@@ -364,8 +364,9 @@ const HeroGrid = styled.div`
   grid-template-columns: minmax(0, 1fr) 360px;
   gap: 48px;
 
-  @media (max-width: 1100px) {
+  @media (max-width: 1024px) {
     grid-template-columns: 1fr;
+    gap: 32px;
   }
 `;
 
@@ -692,11 +693,11 @@ const Section = styled.section`
     padding: 0 24px;
 
     @media (min-width: 768px) {
-      padding: 0 48px;
+      padding: 0 24px;
     }
 
     @media (min-width: 1024px) {
-      padding: 0 64px;
+      padding: 0 56px;
     }
   }
 `;
@@ -750,7 +751,7 @@ const FeaturesGrid = styled.div`
 
 const FeatureCard = styled.div`
   position: relative;
-  padding: 36px;
+  padding: 28px;
   border-radius: 0;
   background: transparent;
   border: none;
@@ -763,6 +764,10 @@ const FeatureCard = styled.div`
 
   &:hover {
     transform: translateY(-4px);
+  }
+
+  @media (max-width: 768px) {
+    padding: 22px 18px;
   }
 
   h3 {
@@ -819,7 +824,7 @@ const QuickLinkCard = styled(Link)`
   display: flex;
   flex-direction: column;
   gap: 24px;
-  padding: 36px;
+  padding: 30px;
   border-radius: 20px;
   text-decoration: none;
   color: #1b1f24;
@@ -839,6 +844,10 @@ const QuickLinkCard = styled(Link)`
       0 18px 45px rgba(15, 23, 42, 0.16),
       0 0 0 1px rgba(46, 139, 87, 0.18);
     border-color: ${theme.colors.primary};
+  }
+
+  @media (max-width: 768px) {
+    padding: 22px 18px;
   }
 `;
 
