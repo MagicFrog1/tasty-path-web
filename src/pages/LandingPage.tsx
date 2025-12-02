@@ -17,6 +17,8 @@ import {
   FiFeather,
   FiBook,
   FiCoffee,
+  FiMenu,
+  FiX,
 } from 'react-icons/fi';
 
 // Animaciones profesionales y modernas
@@ -262,6 +264,11 @@ const Header = styled.header`
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
   animation: ${fadeIn} 0.6s ease-out;
   border-radius: 0 0 16px 16px;
+
+  @media (max-width: 768px) {
+    padding: 14px 18px;
+    border-radius: 0 0 12px 12px;
+  }
 `;
 
 const Brand = styled.div`
@@ -274,6 +281,10 @@ const Brand = styled.div`
   color: #1b1f24;
   font-family: ${theme.fonts.heading};
   animation: ${slideInLeft} 0.8s ease-out;
+
+  @media (max-width: 768px) {
+    font-size: 16px;
+  }
 `;
 
 const Nav = styled.nav`
@@ -281,7 +292,12 @@ const Nav = styled.nav`
   gap: 8px;
   align-items: center;
   animation: ${slideInRight} 0.8s ease-out;
+  white-space: nowrap;
   
+  @media (max-width: 768px) {
+    display: none;
+  }
+
   a {
     padding: 8px 16px;
     color: #4a5568;
@@ -310,6 +326,106 @@ const Nav = styled.nav`
     &::after {
       width: 60%;
     }
+  }
+`;
+
+// Navegación móvil
+const MobileNavToggle = styled.button`
+  display: none;
+
+  @media (max-width: 768px) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    margin-left: auto;
+    border-radius: 999px;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    background: rgba(255, 255, 255, 0.9);
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+    color: #1b1f24;
+    cursor: pointer;
+    padding: 0;
+  }
+`;
+
+const MobileNavOverlay = styled.div<{ open: boolean }>`
+  display: none;
+
+  @media (max-width: 768px) {
+    display: ${({ open }) => (open ? 'block' : 'none')};
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(circle at top, rgba(15, 23, 42, 0.35), rgba(15, 23, 42, 0.75));
+    backdrop-filter: blur(12px);
+    z-index: 18;
+  }
+`;
+
+const MobileNavMenu = styled.nav<{ open: boolean }>`
+  display: none;
+
+  @media (max-width: 768px) {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    position: fixed;
+    top: 12px;
+    right: 12px;
+    left: 12px;
+    padding: 14px 14px 12px;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.98);
+    border: 1px solid rgba(15, 23, 42, 0.06);
+    box-shadow:
+      0 18px 45px rgba(15, 23, 42, 0.25),
+      0 0 0 1px rgba(15, 23, 42, 0.02);
+    z-index: 19;
+    transform: translateY(${({ open }) => (open ? '0' : '-8px')});
+    opacity: ${({ open }) => (open ? 1 : 0)};
+    pointer-events: ${({ open }) => (open ? 'auto' : 'none')};
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+`;
+
+const MobileNavRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 10px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+
+  span {
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+  }
+`;
+
+const MobileNavClose = styled.button`
+  border: none;
+  background: rgba(15, 23, 42, 0.04);
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+`;
+
+const MobileNavLinks = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  a {
+    padding: 8px 10px;
+    border-radius: 999px;
+    font-size: 14px;
+    color: #1f2933;
   }
 `;
 
@@ -1148,6 +1264,7 @@ const ContactNote = styled.small`
 const LandingPage: React.FC = () => {
   useScrollReveal();
   const { user } = useAuth();
+  const [isMobileNavOpen, setIsMobileNavOpen] = React.useState(false);
   const [activeTab, setActiveTab] = React.useState<'terms' | 'privacy'>('terms');
 
   const heroList = [
@@ -1324,7 +1441,34 @@ const LandingPage: React.FC = () => {
             <a href="#contacto">Contacto</a>
             <NavButton to={user ? "/dashboard" : "/auth"}>Entrar</NavButton>
           </Nav>
+          <MobileNavToggle
+            type="button"
+            aria-label={isMobileNavOpen ? 'Cerrar menú' : 'Abrir menú'}
+            onClick={() => setIsMobileNavOpen((v) => !v)}
+          >
+            {isMobileNavOpen ? <FiX /> : <FiMenu />}
+          </MobileNavToggle>
         </Header>
+
+        <MobileNavOverlay open={isMobileNavOpen} onClick={() => setIsMobileNavOpen(false)} />
+        <MobileNavMenu open={isMobileNavOpen}>
+          <MobileNavRow>
+            <span>MENÚ</span>
+            <MobileNavClose type="button" onClick={() => setIsMobileNavOpen(false)}>
+              <FiX />
+            </MobileNavClose>
+          </MobileNavRow>
+          <MobileNavLinks>
+            <a href="#beneficios" onClick={() => setIsMobileNavOpen(false)}>Beneficios</a>
+            <a href="#como-funciona" onClick={() => setIsMobileNavOpen(false)}>Cómo funciona</a>
+            <a href="#precios" onClick={() => setIsMobileNavOpen(false)}>Precios</a>
+            <a href="#testimonios" onClick={() => setIsMobileNavOpen(false)}>Experiencias</a>
+            <a href="#contacto" onClick={() => setIsMobileNavOpen(false)}>Contacto</a>
+            <NavButton to={user ? "/dashboard" : "/auth"} onClick={() => setIsMobileNavOpen(false)}>
+              Entrar
+            </NavButton>
+          </MobileNavLinks>
+        </MobileNavMenu>
 
         <Hero data-reveal>
           <HeroLayout>
