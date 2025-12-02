@@ -1016,7 +1016,12 @@ const PlanGeneratorPage: React.FC = () => {
       setLoadingStep(0);
       setShowSuccessNotification(true);
       
-      // Ocultar notificación después de 5 segundos
+      // En móvil, llevar directamente a "Mis Planes" para evitar pantallas en blanco
+      if (typeof window !== 'undefined' && window.innerWidth < 768) {
+        navigate('/planes');
+      }
+      
+      // Ocultar notificación después de 5 segundos (para escritorio)
       setTimeout(() => {
         setShowSuccessNotification(false);
       }, 5000);
