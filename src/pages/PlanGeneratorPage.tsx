@@ -14,41 +14,42 @@ import MonthlyLimitBlock from '../components/MonthlyLimitBlock';
 
 const PageWrapper = styled.div`
   display: grid;
-  gap: 32px;
+  gap: 20px;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 32px 24px 40px;
+  padding: 24px 24px 32px;
 
   @media (max-width: 768px) {
-    padding: 32px 16px 40px;
-    gap: 24px;
+    padding: 24px 16px 32px;
+    gap: 18px;
   }
 
   @media (max-width: 480px) {
-    padding: 24px 12px 32px;
-    gap: 20px;
+    padding: 20px 12px 28px;
+    gap: 16px;
   }
 `;
 
 const Header = styled.div`
   display: grid;
-  gap: 10px;
+  gap: 6px;
 
   h1 {
     margin: 0;
-    font-size: clamp(2.5rem, 5vw, 3.5rem);
+    font-size: clamp(2.1rem, 3.6vw, 2.8rem);
     font-weight: 800;
     color: #0a0e13;
     font-family: ${theme.fonts.heading};
     letter-spacing: -0.03em;
-    line-height: 1.2;
+    line-height: 1.15;
   }
 
   p {
     margin: 0;
     color: ${theme.colors.textSecondary};
-    max-width: 720px;
-    line-height: 1.7;
+    max-width: 560px;
+    line-height: 1.5;
+    font-size: 15px;
   }
 `;
 

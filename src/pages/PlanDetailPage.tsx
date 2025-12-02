@@ -64,7 +64,7 @@ const rotate = keyframes`
 
 const PageWrapper = styled.div`
   display: grid;
-  gap: 24px;
+  gap: 18px;
   padding: 0;
 
   @media (max-width: 1024px) {
@@ -132,11 +132,11 @@ const BackLink = styled(Link)`
 
 const Header = styled.div`
   display: grid;
-  gap: 18px;
+  gap: 10px;
 
   h1 {
     margin: 0;
-    font-size: clamp(1.8rem, 4vw, 2.8rem);
+    font-size: clamp(1.6rem, 3.4vw, 2.4rem);
     color: ${theme.colors.textPrimary};
     line-height: 1.2;
 
@@ -186,8 +186,8 @@ const SummaryGrid = styled.div`
 
 const SummaryCard = styled.div`
   display: grid;
-  gap: 12px;
-  padding: 18px 20px;
+  gap: 8px;
+  padding: 14px 16px;
   border-radius: 26px;
   background: linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(236, 253, 245, 0.9));
   border: 1px solid rgba(46, 139, 87, 0.16);
@@ -260,7 +260,7 @@ const ProgressBar = styled.div<{ percentage: number }>`
 
 const WeekGrid = styled.div`
   display: grid;
-  gap: 18px;
+  gap: 14px;
 `;
 
 const WeekHeader = styled.div`
