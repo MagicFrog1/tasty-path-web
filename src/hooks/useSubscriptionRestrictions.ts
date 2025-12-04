@@ -47,6 +47,38 @@ const getNextGenerationDate = (): string => {
   return nextMonth.toISOString();
 };
 
+/**
+ * Lee de almacenamiento local la información de uso mensual del plan gratuito
+ * para que borrar planes NO reinicie el contador mensual.
+ */
+const getFreePlanMonthlyUsage = () => {
+  if (typeof window === 'undefined') {
+    return {
+      hasGeneratedThisMonth: false,
+      nextDateFromStorage: null as string | null,
+    };
+  }
+
+  try {
+    const now = new Date();
+    const currentKey = `${now.getFullYear()}-${now.getMonth() + 1}`;
+    const lastMonthKey = window.localStorage.getItem('tastypath:freePlan:lastMonthKey');
+    const nextDateFromStorage = window.localStorage.getItem('tastypath:freePlan:nextGenerationDate');
+
+    const hasGeneratedThisMonth = lastMonthKey === currentKey;
+
+    return {
+      hasGeneratedThisMonth,
+      nextDateFromStorage: nextDateFromStorage || null,
+    };
+  } catch {
+    return {
+      hasGeneratedThisMonth: false,
+      nextDateFromStorage: null as string | null,
+    };
+  }
+};
+
 export const useSubscriptionRestrictions = (): SubscriptionRestrictions => {
   const { currentPlan } = useSubscription();
   const { weeklyPlans } = useWeeklyPlan();
@@ -56,8 +88,27 @@ export const useSubscriptionRestrictions = (): SubscriptionRestrictions => {
                      ['trial', 'weekly', 'monthly', 'annual'].includes(currentPlan.plan || 'free');
     
     const plansCreated = weeklyPlans.length;
-    const plansCreatedThisMonth = getPlansCreatedThisMonth(weeklyPlans);
-    const canGenerateThisMonth = isPremium ? true : plansCreatedThisMonth < 1;
+
+    // Cálculo por defecto basado en planes existentes
+    let plansCreatedThisMonth = getPlansCreatedThisMonth(weeklyPlans);
+    let canGenerateThisMonth = isPremium ? true : plansCreatedThisMonth < 1;
+    let nextGenerationDate: string | null = null;
+
+    // Para usuarios gratuitos usamos un contador mensual independiente de los planes guardados:
+    // aunque borre el plan, sigue contando como que ya ha usado el plan de este mes.
+    if (!isPremium) {
+      const { hasGeneratedThisMonth, nextDateFromStorage } = getFreePlanMonthlyUsage();
+
+      if (hasGeneratedThisMonth) {
+        plansCreatedThisMonth = 1;
+        canGenerateThisMonth = false;
+        nextGenerationDate = nextDateFromStorage || getNextGenerationDate();
+      } else {
+        plansCreatedThisMonth = 0;
+        canGenerateThisMonth = true;
+        nextGenerationDate = null;
+      }
+    }
     
     // Restricciones para usuarios NO premium
     const freePlanRestrictions: SubscriptionRestrictions = {
@@ -78,7 +129,7 @@ export const useSubscriptionRestrictions = (): SubscriptionRestrictions => {
       upgradeRequired: !canGenerateThisMonth,
       isPremium: false,
       canGenerateThisMonth,
-      nextGenerationDate: canGenerateThisMonth ? null : getNextGenerationDate(),
+      nextGenerationDate: canGenerateThisMonth ? null : (nextGenerationDate ?? getNextGenerationDate()),
     };
 
     // Sin restricciones para usuarios premium

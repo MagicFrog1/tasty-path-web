@@ -7,6 +7,7 @@ import { useWeeklyPlan } from '../context/WeeklyPlanContext';
 import { theme } from '../styles/theme';
 import { useShoppingList } from '../context/ShoppingListContext';
 import { storage } from '../utils/storage';
+import { useSubscriptionRestrictions } from '../hooks/useSubscriptionRestrictions';
 
 const PageWrapper = styled.div`
   display: grid;
@@ -379,6 +380,7 @@ const SavedPlansPage: React.FC = () => {
   const [editingPlanId, setEditingPlanId] = useState<string | null>(null);
   const [draftPlanName, setDraftPlanName] = useState('');
   const [nameError, setNameError] = useState<string | null>(null);
+  const restrictions = useSubscriptionRestrictions();
 
   const orderedPlans = useMemo(
     () =>
@@ -426,11 +428,18 @@ const SavedPlansPage: React.FC = () => {
 
   const handleBulkDelete = async () => {
     if (selectedIds.length === 0) return;
-    const confirmed = window.confirm(
+    const baseMessage =
       selectedIds.length === 1
         ? '¿Eliminar el plan seleccionado y su lista asociada?'
-        : `¿Eliminar los ${selectedIds.length} planes seleccionados y sus listas asociadas?`,
-    );
+        : `¿Eliminar los ${selectedIds.length} planes seleccionados y sus listas asociadas?`;
+
+    const freeWarning = !restrictions.isPremium
+      ? '\n\nIMPORTANTE (plan gratuito): Aunque borres los planes, solo puedes generar 1 plan nuevo por mes. ' +
+        'Borrar el plan no reinicia el límite mensual. Cuando llegue el siguiente mes y quieras crear otro, ' +
+        'tendrás que borrar también el plan del mes anterior.'
+      : '';
+
+    const confirmed = window.confirm(baseMessage + freeWarning);
     if (!confirmed) return;
 
     for (const planId of selectedIds) {
@@ -449,7 +458,13 @@ const SavedPlansPage: React.FC = () => {
   };
 
   const handleDeletePlan = async (plan: any) => {
-    const confirmed = window.confirm(`¿Eliminar "${plan.name}" y su lista asociada?`);
+    const freeWarning = !restrictions.isPremium
+      ? '\n\nIMPORTANTE (plan gratuito): Aunque borres este plan, seguirás teniendo solo 1 plan gratuito por mes. ' +
+        'Borrar el plan NO te permitirá crear más planes en el mismo mes. Cuando llegue el siguiente mes y quieras crear otro, ' +
+        'tendrás que borrar también el plan del mes anterior.'
+      : '';
+
+    const confirmed = window.confirm(`¿Eliminar "${plan.name}" y su lista asociada?${freeWarning}`);
     if (!confirmed) return;
 
     await deleteWeeklyPlan(plan.id);

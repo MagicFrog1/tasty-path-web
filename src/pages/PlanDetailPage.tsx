@@ -2078,7 +2078,12 @@ const PlanDetailPage: React.FC = () => {
             Total estimado
           </SummaryLabel>
           <SummaryValue>
-            {plan.estimatedCalories || plan.totalCalories} kcal / semana
+            {(() => {
+              const weeklyCalories = plan.estimatedCalories || plan.totalCalories || 0;
+              const days = totalDays || 7;
+              const dailyCalories = days > 0 ? weeklyCalories / days : weeklyCalories;
+              return `${Math.round(dailyCalories)} kcal / día`;
+            })()}
           </SummaryValue>
           <span>
             {plan.totalMeals} comidas programadas

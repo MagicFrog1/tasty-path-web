@@ -874,20 +874,16 @@ const PlanGeneratorPage: React.FC = () => {
       return;
     }
 
-    // Validación adicional: verificar límite mensual antes de iniciar generación
+    // Validación adicional para usuarios gratuitos:
+    // 1) No pueden tener más de 1 plan guardado a la vez.
+    // 2) El límite mensual se controla con restricciones.canCreatePlan (no se resetea al borrar).
     if (!restrictions.isPremium) {
-      const plansThisMonth = weeklyPlans.filter(plan => {
-        if (!plan.createdAt) return false;
-        const planDate = new Date(plan.createdAt);
-        const now = new Date();
-        return planDate.getMonth() === now.getMonth() && 
-               planDate.getFullYear() === now.getFullYear();
-      }).length;
-      
-      if (plansThisMonth >= 1) {
-        setStatus(`Solo puedes generar 1 plan gratuito al mes. Ya generaste ${plansThisMonth} este mes. ¡Actualiza a Premium para planes ilimitados!`);
+      if (weeklyPlans.length >= 1) {
+        setStatus(
+          'Con el plan gratuito solo puedes tener 1 plan semanal guardado. ' +
+          'Para crear un nuevo plan (cada mes), primero elimina el plan anterior desde "Mis Planes".'
+        );
         setStatusType('error');
-        setShowUpgradePrompt(true);
         return;
       }
     }
@@ -1006,6 +1002,19 @@ const PlanGeneratorPage: React.FC = () => {
       };
 
       addWeeklyPlan(weeklyPlan);
+
+      // Registrar uso mensual del plan gratuito:
+      // aunque borre el plan luego, seguirá contando como que ya ha usado su plan de este mes.
+      if (!restrictions.isPremium && typeof window !== 'undefined') {
+        try {
+          const monthKey = `${now.getFullYear()}-${now.getMonth() + 1}`;
+          const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+          window.localStorage.setItem('tastypath:freePlan:lastMonthKey', monthKey);
+          window.localStorage.setItem('tastypath:freePlan:nextGenerationDate', nextMonth.toISOString());
+        } catch (error) {
+          console.warn('No se pudo registrar el uso mensual del plan gratuito:', error);
+        }
+      }
 
       setLoadingStep(3);
       setStatus('Generando lista de compras...');
