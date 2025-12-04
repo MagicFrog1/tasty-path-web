@@ -608,7 +608,7 @@ const SavedPlansPage: React.FC = () => {
                 </MetaRow>
                 <MetaRow>
                   <FiClock />
-                  {plan.totalMeals} comidas · {plan.estimatedCalories || plan.totalCalories} kcal/semana
+                  {plan.totalMeals} comidas · {Math.round(plan.estimatedCalories || plan.totalCalories || 0)} kcal/día
                 </MetaRow>
                 <MetaRow>
                   <FiTrendingUp />
