@@ -35,8 +35,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const token = authHeader.substring(7); // Remover "Bearer "
     
     // Obtener variables de entorno de Supabase
-    const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
+    // SOLO usar process.env - nunca variables VITE_ o NEXT_PUBLIC_ para secretos
+    const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     
     if (!supabaseUrl || !supabaseServiceKey) {
       console.error('❌ NutriChat: Variables de entorno de Supabase no configuradas');
@@ -342,52 +343,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'messages array is required' });
     }
 
-    // Obtener la API key de OpenAI desde las variables de entorno del servidor
-    // Priorizar OPENAI_API_KEY (más común), luego variables específicas de NutriChat
-    const openaiApiKey = process.env.OPENAI_API_KEY ||
-                        process.env.VITE_OPENAI_API_KEY || 
-                        process.env.NEXT_PUBLIC_OPENAI_API_KEY ||
-                        process.env.NUTRICHAT_OPENAI_API_KEY ||
-                        process.env.VITE_NUTRICHAT_OPENAI_API_KEY ||
-                        process.env.NEXT_PUBLIC_NUTRICHAT_OPENAI_API_KEY;
-
-    console.log('🔍 Verificando API key de NutriChat OpenAI en el servidor:', {
-      OPENAI_API_KEY: process.env.OPENAI_API_KEY ? `${process.env.OPENAI_API_KEY.substring(0, 10)}...` : 'NO ENCONTRADO',
-      VITE_OPENAI_API_KEY: process.env.VITE_OPENAI_API_KEY ? `${process.env.VITE_OPENAI_API_KEY.substring(0, 10)}...` : 'NO ENCONTRADO',
-      NEXT_PUBLIC_OPENAI_API_KEY: process.env.NEXT_PUBLIC_OPENAI_API_KEY ? `${process.env.NEXT_PUBLIC_OPENAI_API_KEY.substring(0, 10)}...` : 'NO ENCONTRADO',
-      NUTRICHAT_OPENAI_API_KEY: process.env.NUTRICHAT_OPENAI_API_KEY ? `${process.env.NUTRICHAT_OPENAI_API_KEY.substring(0, 10)}...` : 'NO ENCONTRADO',
-      key_final: openaiApiKey ? `${openaiApiKey.substring(0, 10)}...` : 'NO ENCONTRADO',
-      hasKey: !!openaiApiKey,
-      keyLength: openaiApiKey?.length || 0,
-      startsWithSk: openaiApiKey?.startsWith('sk-') || false,
-    });
+    // Obtener la API key de OpenAI SOLO desde process.env (nunca del cliente)
+    const openaiApiKey = process.env.OPENAI_API_KEY;
 
     if (!openaiApiKey) {
-      console.error('❌ OPENAI_API_KEY no configurada en el servidor para NutriChat');
-      return res.status(401).json({ 
+      return res.status(500).json({ 
         error: 'OpenAI API key no está configurada en el servidor. Por favor, configura OPENAI_API_KEY en Vercel (Settings > Environment Variables).' 
       });
     }
 
     if (!openaiApiKey.startsWith('sk-')) {
-      console.error('❌ OPENAI_API_KEY tiene formato incorrecto');
-      return res.status(401).json({ 
+      return res.status(500).json({ 
         error: 'OpenAI API key tiene formato incorrecto. Debe empezar con "sk-".' 
       });
     }
-    
-    console.log('✅ API key de NutriChat encontrada y validada correctamente');
 
     // URL de la API de OpenAI
-    const openaiUrl = process.env.OPENAI_API_URL || 
-                     process.env.VITE_OPENAI_API_URL || 
-                     process.env.NEXT_PUBLIC_OPENAI_API_URL ||
-                     'https://api.openai.com/v1/chat/completions';
-
-    console.log('🔄 Enviando solicitud a OpenAI...');
-    console.log('🔗 URL:', openaiUrl);
-    console.log('🤖 Modelo:', model || 'gpt-4o-mini');
-    console.log('💬 Mensajes:', messages.length);
+    const openaiUrl = process.env.OPENAI_API_URL || 'https://api.openai.com/v1/chat/completions';
 
     // Hacer la llamada a la API de OpenAI
     const openaiResponse = await fetch(openaiUrl, {
@@ -404,19 +376,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }),
     });
 
-    console.log('📥 Respuesta de OpenAI recibida:', {
-      status: openaiResponse.status,
-      statusText: openaiResponse.statusText,
-    });
-
     // Manejar errores de OpenAI
     if (!openaiResponse.ok) {
       const errorData = await openaiResponse.json().catch(() => ({}));
-      console.error('❌ Error en respuesta de OpenAI:', {
-        status: openaiResponse.status,
-        statusText: openaiResponse.statusText,
-        error: errorData,
-      });
 
       let errorMessage = 'Error al procesar la solicitud con OpenAI.';
       
@@ -438,8 +400,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Obtener los datos de la respuesta
     const data = await openaiResponse.json();
-    
-    console.log('✅ Respuesta de OpenAI procesada exitosamente');
 
     // Devolver la respuesta al frontend
     return res.status(200).json({

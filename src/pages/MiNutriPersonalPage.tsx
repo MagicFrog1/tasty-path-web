@@ -7,6 +7,7 @@ import { useUserProfile } from '../context/UserProfileContext';
 import { useWeeklyPlan } from '../context/WeeklyPlanContext';
 import { useNavigate } from 'react-router-dom';
 import { generateExercisesForPlan } from '../services/exerciseService';
+import PremiumBlock from '../components/PremiumBlock';
 
 // Animaciones
 const fadeInUp = keyframes`
@@ -371,6 +372,20 @@ const MiNutriPersonalPage: React.FC = () => {
   const [trainingFocus, setTrainingFocus] = useState<string>('auto');
   const [isGenerating, setIsGenerating] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+
+  // Verificar si el usuario tiene plan premium
+  const isPremium = currentPlan && currentPlan.plan !== 'free' && currentPlan.isActive;
+
+  // Si no es premium, mostrar bloque de upgrade
+  if (!isPremium) {
+    return (
+      <PremiumBlock
+        title="Mi NutriPersonal requiere Premium"
+        message="Desbloquea ejercicios personalizados y seguimiento completo de tu progreso con una suscripción Premium."
+        featureName="Mi NutriPersonal"
+      />
+    );
+  }
 
   // Filtrar solo planes semanales (no mensuales)
   const weeklyPlansOnly = weeklyPlans.filter(plan => plan.config?.type !== 'monthly');

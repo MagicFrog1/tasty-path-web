@@ -62,23 +62,10 @@ export const isAIConfigured = (): boolean => {
   
   const isConfigured = hasApiKey && notPlaceholder && validFormat && minLength;
   
-  console.log('🔧 Verificando configuración de IA (OpenAI):');
-  console.log('🔑 API Key presente:', hasApiKey);
-  console.log('🔑 No es placeholder:', notPlaceholder);
-  console.log('🔑 Formato válido (sk- para OpenAI):', validFormat);
-  console.log('🔑 Longitud suficiente (>=20):', minLength);
-  console.log('🔑 Longitud de API Key:', apiKey?.length || 0);
-  console.log('🔑 Prefijo:', apiKey?.substring(0, 10) || 'N/A');
-  console.log('✅ Configuración completa:', isConfigured);
-  
+  // La API key ya no se expone al cliente - todas las llamadas van a /api/openai
+  // La verificación de configuración se hace en el servidor
   if (!isConfigured) {
-    console.error('❌ API Key de OpenAI no configurada correctamente.');
-    console.error('💡 Para configurarla en Vercel:');
-    console.error('   1. Ve a Settings → Environment Variables');
-    console.error('   2. Agrega: VITE_OPENAI_API_KEY = sk-tu-clave-aqui');
-    console.error('   3. O usa: NEXT_PUBLIC_OPENAI_API_KEY (ambos funcionan)');
-    console.error('   4. Redespliega la aplicación');
-    console.error('📖 Ver DIAGNOSTICO_FALLBACK_IA.md para más detalles');
+    console.warn('⚠️ La configuración de IA no está completa, pero las llamadas se harán a través de /api/openai');
   }
   
   return isConfigured;

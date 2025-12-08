@@ -190,11 +190,10 @@ RESPONDE EN FORMATO JSON:
   "muscleFocus": "${muscleGroup.focus}"
 }`;
 
-      const response = await fetch(AI_CONFIG.OPENAI_BASE_URL + '/v1/chat/completions', {
+      const response = await fetch('/api/openai', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${AI_CONFIG.OPENAI_API_KEY}`,
         },
         body: JSON.stringify({
           model: AI_CONFIG.OPENAI_MODEL || 'gpt-4o-mini',

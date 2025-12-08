@@ -541,11 +541,10 @@ La receta debe incluir:
 
 Responde SOLO con la receta, sin explicaciones adicionales.`;
 
-      const response = await fetch(AI_CONFIG.OPENAI_BASE_URL + '/v1/chat/completions', {
+      const response = await fetch('/api/openai', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${AI_CONFIG.OPENAI_API_KEY}`,
         },
         body: JSON.stringify({
           model: AI_CONFIG.OPENAI_MODEL,
@@ -644,11 +643,10 @@ RESPONDE EN FORMATO JSON:
   "recommendations": ["Recomendación 1", "Recomendación 2", ...]
 }`;
 
-      const response = await fetch(AI_CONFIG.OPENAI_BASE_URL + '/v1/chat/completions', {
+      const response = await fetch('/api/openai', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${AI_CONFIG.OPENAI_API_KEY}`,
         },
         body: JSON.stringify({
           model: AI_CONFIG.OPENAI_MODEL || 'gpt-4o-mini',

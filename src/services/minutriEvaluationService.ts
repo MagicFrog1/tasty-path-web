@@ -56,7 +56,7 @@ const minutriEvaluationService = {
       : undefined;
 
     // Generar evaluación con IA si está configurada
-    if (AI_CONFIG.ENABLED && ENV_CONFIG.OPENAI_API_KEY) {
+    if (AI_CONFIG.ENABLED) {
       try {
         const evaluation = await this.generateAIEvaluation(request, {
           mealCompletionPercentage,
@@ -118,11 +118,10 @@ Responde ÚNICAMENTE con JSON válido en este formato:
 }`;
 
     try {
-      const response = await fetch(ENV_CONFIG.OPENAI_API_URL + '/v1/chat/completions', {
+      const response = await fetch('/api/openai', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${ENV_CONFIG.OPENAI_API_KEY}`,
         },
         body: JSON.stringify({
           model: ENV_CONFIG.OPENAI_MODEL || 'gpt-4o-mini',

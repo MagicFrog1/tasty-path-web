@@ -7,6 +7,7 @@ import { useShoppingList } from '../context/ShoppingListContext';
 import { useWeeklyPlan } from '../context/WeeklyPlanContext';
 import { useSubscription } from '../context/SubscriptionContext';
 import { theme } from '../styles/theme';
+import PremiumBlock from '../components/PremiumBlock';
 
 const PageWrapper = styled.div`
   display: grid;
@@ -356,6 +357,17 @@ const ShoppingListPage: React.FC = () => {
 
   // Verificar si el usuario tiene plan premium
   const isPremium = currentPlan && currentPlan.plan !== 'free' && currentPlan.isActive;
+
+  // Si no es premium, mostrar bloque de upgrade
+  if (!isPremium) {
+    return (
+      <PremiumBlock
+        title="Lista de Compras requiere Premium"
+        message="Desbloquea acceso a listas de compras inteligentes y automáticas con una suscripción Premium."
+        featureName="Lista de Compras"
+      />
+    );
+  }
 
   // Obtener el presupuesto del plan seleccionado
   const planBudget = useMemo(() => {

@@ -85,10 +85,9 @@ export interface Meal {
 }
 
 class AIMenuService {
-  private apiKey: string = ENV_CONFIG.OPENAI_API_KEY; // Usar la API key de OpenAI
-  private baseUrl: string = ENV_CONFIG.OPENAI_API_URL; // Usar la URL de OpenAI
   // Usar endpoint API de Vercel como proxy para evitar CORS
-  private apiEndpoint: string = '/api/generate-menu';
+  // La API key se mantiene segura en el servidor
+  private apiEndpoint: string = '/api/openai';
   
   // Obtener la URL del endpoint API
   private getApiUrl(): string {
@@ -117,14 +116,8 @@ class AIMenuService {
       allergies: request.allergies
     });
     
-    // Nota: La API key está en el servidor, no en el frontend
+    // La API key está en el servidor, no en el frontend
     // El frontend solo necesita hacer la solicitud al endpoint
-    console.log('🔧 Estado de configuración de IA:', {
-      apiEndpoint: this.apiEndpoint,
-      model: ENV_CONFIG.OPENAI_MODEL || 'gpt-4o-mini'
-    });
-    
-    console.log('✅ Procediendo con generación - La API key está en el servidor');
     
     try {
       // Intentar generar con IA - hacer múltiples intentos antes de fallar
@@ -132,8 +125,6 @@ class AIMenuService {
       
       if (!result.success) {
         console.error('❌ RESULTADO FINAL: Todos los intentos con IA fallaron');
-        console.error('💡 Verifica que VITE_OPENAI_API_KEY esté configurada correctamente en Vercel');
-        console.error('💡 O usa NEXT_PUBLIC_OPENAI_API_KEY como alternativa');
         // Retornar error en lugar de fallback para que el usuario sepa qué pasó
         return {
           success: false,
@@ -158,20 +149,10 @@ class AIMenuService {
     }
   }
 
-  // Función interna para intentar generación con IA
+    // Función interna para intentar generación con IA
   private async attemptAIGeneration(request: AIMenuRequest): Promise<AIMenuResponse> {
-    // Nota: La API key está en el servidor, no en el frontend
+    // La API key está en el servidor, no en el frontend
     // El frontend solo necesita hacer la solicitud al endpoint
-    console.log('🔧 VERIFICACIÓN DE CONFIGURACIÓN DE IA (OpenAI):');
-    console.log('🌐 Endpoint API:', this.getApiUrl());
-    console.log('🤖 Modelo:', ENV_CONFIG.OPENAI_MODEL || 'gpt-4o-mini');
-    console.log('📊 Request recibido:', {
-      totalCalories: request.totalCalories,
-      dietaryPreferences: request.dietaryPreferences,
-      allergies: request.allergies
-    });
-    
-    console.log('✅ Procediendo con generación - La API key está en el servidor');
     
     // Generar un seed único más robusto para esta generación
     const timestamp = Date.now();
@@ -189,10 +170,6 @@ class AIMenuService {
     
       const apiUrl = this.getApiUrlWithParams();
       const apiHeaders = this.getApiHeaders();
-      
-      console.log('📤 Enviando solicitud sin timeout...');
-      console.log('🔗 Endpoint API:', apiUrl);
-      console.log('🔑 API Key (primeros 10 chars):', this.apiKey?.substring(0, 10) || 'N/A');
       
       // Preparar el body para OpenAI API
       const requestBody = {
@@ -224,9 +201,14 @@ class AIMenuService {
         console.log('📋 Headers:', Object.fromEntries(response.headers.entries()));
 
         if (!response.ok) {
-          const errorText = await response.text();
-          console.error('❌ Error en la API de OpenAI:', errorText);
-          const errorMsg = `Error en la API de OpenAI (${response.status}). Verifica que VITE_OPENAI_API_KEY esté configurada correctamente en Vercel. Error: ${errorText}`;
+          let errorMsg = `Error en la API de OpenAI (${response.status})`;
+          try {
+            const errorData = await response.json();
+            errorMsg = errorData.error || errorMsg;
+          } catch {
+            const errorText = await response.text();
+            errorMsg = errorText || errorMsg;
+          }
           throw new Error(errorMsg);
         }
 

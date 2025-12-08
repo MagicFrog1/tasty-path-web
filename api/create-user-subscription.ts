@@ -8,9 +8,8 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ||
 
 // CRÍTICO: Usar SUPABASE_SERVICE_ROLE_KEY para bypass de RLS
 // NUNCA usar NEXT_PUBLIC_SUPABASE_ANON_KEY o VITE_SUPABASE_ANON_KEY aquí
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 
-                          process.env.VITE_SUPABASE_SERVICE_ROLE_KEY ||
-                          process.env.SUPABASE_SERVICE_KEY;
+// SOLO usar process.env - nunca variables VITE_ o NEXT_PUBLIC_ para secretos
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 // Validar que NO estamos usando la ANON_KEY por error
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
@@ -45,13 +44,7 @@ export default async function handler(
       console.error('❌ Variables de entorno de Supabase no configuradas:', {
         SUPABASE_URL: !!supabaseUrl,
         SUPABASE_SERVICE_ROLE_KEY: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
-        VITE_SUPABASE_SERVICE_ROLE_KEY: !!process.env.VITE_SUPABASE_SERVICE_ROLE_KEY,
-        SUPABASE_SERVICE_KEY: !!process.env.SUPABASE_SERVICE_KEY,
-        NEXT_PUBLIC_SUPABASE_URL: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
-        VITE_SUPABASE_URL: !!process.env.VITE_SUPABASE_URL,
-        serviceKeyFinal: !!supabaseServiceKey,
-        serviceKeyLength: supabaseServiceKey?.length || 0,
-        serviceKeyPrefix: supabaseServiceKey?.substring(0, 10) || 'N/A'
+        serviceKeyFinal: !!supabaseServiceKey
       });
       return res.status(500).json({
         error: 'Configuración del servidor incompleta. Por favor, configura SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY en Vercel (Settings > Environment Variables).'
@@ -73,8 +66,6 @@ export default async function handler(
       // Verificar variables de entorno disponibles
       envVars: {
         SUPABASE_SERVICE_ROLE_KEY: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
-        VITE_SUPABASE_SERVICE_ROLE_KEY: !!process.env.VITE_SUPABASE_SERVICE_ROLE_KEY,
-        SUPABASE_SERVICE_KEY: !!process.env.SUPABASE_SERVICE_KEY
       }
     });
     

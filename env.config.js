@@ -1,22 +1,46 @@
+// Lista de variables secretas que NUNCA deben exponerse al cliente
+const SECRET_PATTERNS = [
+  /SECRET/i,
+  /sk_/i,
+  /SERVICE_ROLE/i,
+  /PRIVATE/i,
+  /WEBHOOK_SECRET/i,
+  /OPENAI_API_KEY/i,
+];
+
+// Función para verificar si una variable es secreta
+function isSecretVar(varName) {
+  return SECRET_PATTERNS.some(pattern => pattern.test(varName));
+}
+
 // Función helper para obtener variables de entorno de múltiples formas
 // PRIORIDAD: NEXT_PUBLIC_* (Vercel) > VITE_* (desarrollo local) > valores por defecto
+// BLOQUEA automáticamente variables secretas
 function getEnvVar(varName, spanishName = null) {
+  // BLOQUEAR variables secretas - nunca exponer al cliente
+  if (isSecretVar(varName) || (spanishName && isSecretVar(spanishName))) {
+    console.warn(`⚠️ Intento de acceder a variable secreta bloqueada: ${varName}`);
+    return null;
+  }
+  
   // Intentar acceder desde import.meta.env (Vite)
   if (typeof import.meta !== 'undefined' && import.meta.env) {
     // PRIORIDAD 1: Intentar con prefijo NEXT_PUBLIC_* (lo que tienes en Vercel)
-    if (import.meta.env[`NEXT_PUBLIC_${varName}`]) {
-      return import.meta.env[`NEXT_PUBLIC_${varName}`];
+    const nextPublicKey = `NEXT_PUBLIC_${varName}`;
+    if (!isSecretVar(nextPublicKey) && import.meta.env[nextPublicKey]) {
+      return import.meta.env[nextPublicKey];
     }
     // PRIORIDAD 2: Intentar con nombre en español (Vercel)
-    if (spanishName && import.meta.env[spanishName]) {
+    if (spanishName && !isSecretVar(spanishName) && import.meta.env[spanishName]) {
       return import.meta.env[spanishName];
     }
     // PRIORIDAD 3: Intentar con prefijo VITE_* (desarrollo local)
-    if (import.meta.env[`VITE_${varName}`]) {
-      return import.meta.env[`VITE_${varName}`];
+    const viteKey = `VITE_${varName}`;
+    if (!isSecretVar(viteKey) && import.meta.env[viteKey]) {
+      return import.meta.env[viteKey];
     }
     // PRIORIDAD 4: Intentar sin prefijo (puede estar definido en define de vite.config)
-    if (import.meta.env[varName]) {
+    if (!isSecretVar(varName) && import.meta.env[varName]) {
       return import.meta.env[varName];
     }
   }
@@ -24,19 +48,21 @@ function getEnvVar(varName, spanishName = null) {
   // Intentar acceder desde window (si está disponible en runtime)
   if (typeof window !== 'undefined' && window.__ENV__) {
     // PRIORIDAD 1: NEXT_PUBLIC_* en Vercel
-    if (window.__ENV__[`NEXT_PUBLIC_${varName}`]) {
-      return window.__ENV__[`NEXT_PUBLIC_${varName}`];
+    const nextPublicKey = `NEXT_PUBLIC_${varName}`;
+    if (!isSecretVar(nextPublicKey) && window.__ENV__[nextPublicKey]) {
+      return window.__ENV__[nextPublicKey];
     }
     // PRIORIDAD 2: Nombre en español (Vercel)
-    if (spanishName && window.__ENV__[spanishName]) {
+    if (spanishName && !isSecretVar(spanishName) && window.__ENV__[spanishName]) {
       return window.__ENV__[spanishName];
     }
     // PRIORIDAD 3: VITE_* como fallback
-    if (window.__ENV__[`VITE_${varName}`]) {
-      return window.__ENV__[`VITE_${varName}`];
+    const viteKey = `VITE_${varName}`;
+    if (!isSecretVar(viteKey) && window.__ENV__[viteKey]) {
+      return window.__ENV__[viteKey];
     }
     // PRIORIDAD 4: Sin prefijo
-    if (window.__ENV__[varName]) {
+    if (!isSecretVar(varName) && window.__ENV__[varName]) {
       return window.__ENV__[varName];
     }
   }
@@ -62,23 +88,9 @@ if (typeof window !== 'undefined' && typeof import.meta !== 'undefined' && impor
 
 export const ENV_CONFIG = {
   // OpenAI API Configuration
-  // Priorizar VITE_OPENAI_API_KEY (como está configurado en Vercel) sobre NEXT_PUBLIC_*
-  OPENAI_API_KEY: (() => {
-    // PRIORIDAD 1: VITE_OPENAI_API_KEY (configurado en Vercel)
-    if (typeof import.meta !== 'undefined' && import.meta.env?.VITE_OPENAI_API_KEY) {
-      return import.meta.env.VITE_OPENAI_API_KEY;
-    }
-    // PRIORIDAD 2: NEXT_PUBLIC_OPENAI_API_KEY (alternativa)
-    if (typeof import.meta !== 'undefined' && import.meta.env?.NEXT_PUBLIC_OPENAI_API_KEY) {
-      return import.meta.env.NEXT_PUBLIC_OPENAI_API_KEY;
-    }
-    // PRIORIDAD 3: getEnvVar (busca en múltiples lugares)
-    const fromGetEnvVar = getEnvVar('OPENAI_API_KEY');
-    if (fromGetEnvVar) {
-      return fromGetEnvVar;
-    }
-    return '';
-  })(),
+  // NOTA: La API key ya NO se expone al cliente. Todas las llamadas a OpenAI
+  // se hacen a través de /api/openai que mantiene la clave segura en el servidor.
+  OPENAI_API_KEY: '', // Ya no se usa en el cliente - todas las llamadas van a /api/openai
   
   // NutriChat API Key (específica para el chat de nutrición)
   // Configurar en Vercel como VITE_NUTRICHAT_API_KEY o NEXT_PUBLIC_NUTRICHAT_API_KEY

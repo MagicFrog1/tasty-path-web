@@ -73,13 +73,12 @@ export interface RecipeResponse {
 }
 
 class NutritionService {
-  private apiKey: string;
   private apiUrl: string;
   private model: string;
 
   constructor() {
-    this.apiKey = ENV_CONFIG.OPENAI_API_KEY;
-    this.apiUrl = ENV_CONFIG.OPENAI_API_URL;
+    // La API key ya no se expone al cliente - todas las llamadas van a /api/openai
+    this.apiUrl = '/api/openai';
     this.model = ENV_CONFIG.OPENAI_MODEL;
   }
 
@@ -312,7 +311,6 @@ IMPORTANTE: Asegúrate de que el JSON sea válido. No incluyas texto adicional f
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.apiKey}`,
         },
         body: JSON.stringify({
           model: this.model,

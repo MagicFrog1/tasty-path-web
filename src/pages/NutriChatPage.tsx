@@ -7,6 +7,7 @@ import { useSubscription } from '../context/SubscriptionContext';
 import { useUserProfile } from '../context/UserProfileContext';
 import NutriChat from '../components/minutri/NutriChat';
 import { minutriService } from '../services/minutriService';
+import PremiumBlock from '../components/PremiumBlock';
 
 const PageWrapper = styled.div`
   max-width: 1200px;
@@ -129,6 +130,17 @@ const NutriChatPage: React.FC = () => {
 
   // Verificar si el usuario tiene plan premium
   const isPremium = currentPlan && currentPlan.plan !== 'free' && currentPlan.isActive;
+
+  // Si no es premium, mostrar bloque de upgrade
+  if (!isPremium) {
+    return (
+      <PremiumBlock
+        title="NutriChat requiere Premium"
+        message="Desbloquea acceso a tu asistente virtual especializado en alimentación y nutrición con una suscripción Premium."
+        featureName="NutriChat"
+      />
+    );
+  }
 
   // Obtener información del roadmap si existe
   const roadmap = minutriService.getRoadmap();

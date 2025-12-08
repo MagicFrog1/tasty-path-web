@@ -229,7 +229,6 @@ const NutriChat: React.FC<NutriChatProps> = ({ adherence, currentDay, totalDays 
 
       // Generar respuesta con IA real usando el endpoint del backend
       console.log('🤖 NutriChat: Enviando solicitud al backend...');
-      console.log('📝 Modelo:', AI_CONFIG.OPENAI_MODEL || 'gpt-4o-mini');
       console.log('💬 Mensaje del usuario:', userMessage);
       
       const systemPrompt = `Eres NutriChat, un asistente virtual EXCLUSIVAMENTE especializado en alimentación y nutrición. Te comportas como un nutricionista profesional pero amigable y conversacional.

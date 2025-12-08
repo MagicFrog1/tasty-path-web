@@ -14,12 +14,14 @@ export interface SubscriptionRestrictions {
   canSetCustomCookingTime: boolean;
   canSetFamilySize: boolean;
   maxPlansAllowed: number;
+  maxSavedPlans: number; // Máximo de planes guardados simultáneamente
   plansCreated: number;
   plansCreatedThisMonth: number;
   remainingPlans: number;
   upgradeRequired: boolean;
   isPremium: boolean;
   canGenerateThisMonth: boolean;
+  canHaveMoreSavedPlans: boolean; // Si puede tener más planes guardados
   nextGenerationDate: string | null;
 }
 
@@ -110,9 +112,12 @@ export const useSubscriptionRestrictions = (): SubscriptionRestrictions => {
       }
     }
     
+    // Para usuarios gratuitos: solo pueden tener 1 plan guardado a la vez
+    const canHaveMoreSavedPlans = isPremium ? true : plansCreated < 1;
+    
     // Restricciones para usuarios NO premium
     const freePlanRestrictions: SubscriptionRestrictions = {
-      canCreatePlan: canGenerateThisMonth, // Solo 1 plan al mes permitido
+      canCreatePlan: canGenerateThisMonth && canHaveMoreSavedPlans, // Solo 1 plan al mes Y solo 1 plan guardado a la vez
       canUseAdvancedFeatures: false,
       canUseAllGoals: false,
       canUseAllDietaryPreferences: false,
@@ -123,12 +128,14 @@ export const useSubscriptionRestrictions = (): SubscriptionRestrictions => {
       canSetCustomCookingTime: false,
       canSetFamilySize: false,
       maxPlansAllowed: 1, // 1 plan al mes
+      maxSavedPlans: 1, // Solo 1 plan guardado a la vez
       plansCreated,
       plansCreatedThisMonth,
       remainingPlans: Math.max(0, 1 - plansCreatedThisMonth),
-      upgradeRequired: !canGenerateThisMonth,
+      upgradeRequired: !canGenerateThisMonth || !canHaveMoreSavedPlans,
       isPremium: false,
       canGenerateThisMonth,
+      canHaveMoreSavedPlans,
       nextGenerationDate: canGenerateThisMonth ? null : (nextGenerationDate ?? getNextGenerationDate()),
     };
 
@@ -145,12 +152,14 @@ export const useSubscriptionRestrictions = (): SubscriptionRestrictions => {
       canSetCustomCookingTime: true,
       canSetFamilySize: true,
       maxPlansAllowed: -1, // Ilimitado
+      maxSavedPlans: -1, // Ilimitado
       plansCreated,
       plansCreatedThisMonth,
       remainingPlans: -1, // Ilimitado
       upgradeRequired: false,
       isPremium: true,
       canGenerateThisMonth: true,
+      canHaveMoreSavedPlans: true,
       nextGenerationDate: null,
     };
 

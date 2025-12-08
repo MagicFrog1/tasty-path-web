@@ -861,31 +861,31 @@ const PlanGeneratorPage: React.FC = () => {
     
     // Verificar restricciones antes de generar - Validación CRÍTICA para usuarios gratuitos
     if (!restrictions.canCreatePlan) {
-      if (!restrictions.isPremium && !restrictions.canGenerateThisMonth) {
-        // Usuario gratuito que ya generó su plan mensual
-        setStatus(`Has alcanzado tu límite de 1 plan gratuito este mes. Puedes generar un nuevo plan el ${restrictions.nextGenerationDate ? new Date(restrictions.nextGenerationDate).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' }) : 'próximo mes'}. ¡Actualiza a Premium para planes ilimitados!`);
-        setStatusType('error');
-        setShowUpgradePrompt(true);
-        return;
+      if (!restrictions.isPremium) {
+        // Usuario gratuito: verificar qué restricción está bloqueando
+        if (!restrictions.canHaveMoreSavedPlans) {
+          // Ya tiene 1 plan guardado
+          setStatus(
+            'Con el plan gratuito solo puedes tener 1 plan semanal guardado a la vez. ' +
+            'Para crear un nuevo plan (cada mes), primero elimina el plan anterior desde "Mis Planes". ' +
+            'Ten en cuenta que aunque borres el plan, seguirá contando como tu plan gratuito de este mes.'
+          );
+          setStatusType('error');
+          setShowUpgradePrompt(true);
+          return;
+        }
+        if (!restrictions.canGenerateThisMonth) {
+          // Ya generó su plan mensual
+          setStatus(`Has alcanzado tu límite de 1 plan gratuito este mes. Puedes generar un nuevo plan el ${restrictions.nextGenerationDate ? new Date(restrictions.nextGenerationDate).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' }) : 'próximo mes'}. ¡Actualiza a Premium para planes ilimitados!`);
+          setStatusType('error');
+          setShowUpgradePrompt(true);
+          return;
+        }
       }
       setStatus('Has alcanzado el límite de planes gratuitos. ¡Actualiza a Premium!');
       setStatusType('error');
       setShowUpgradePrompt(true);
       return;
-    }
-
-    // Validación adicional para usuarios gratuitos:
-    // 1) No pueden tener más de 1 plan guardado a la vez.
-    // 2) El límite mensual se controla con restricciones.canCreatePlan (no se resetea al borrar).
-    if (!restrictions.isPremium) {
-      if (weeklyPlans.length >= 1) {
-        setStatus(
-          'Con el plan gratuito solo puedes tener 1 plan semanal guardado. ' +
-          'Para crear un nuevo plan (cada mes), primero elimina el plan anterior desde "Mis Planes".'
-        );
-        setStatusType('error');
-        return;
-      }
     }
 
     if (currentStep < 3) {

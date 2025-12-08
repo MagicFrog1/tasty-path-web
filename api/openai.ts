@@ -1,5 +1,9 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
+/**
+ * Función serverless genérica para llamadas a OpenAI API
+ * La API key se mantiene segura en el servidor usando process.env.OPENAI_API_KEY
+ */
 export default async function handler(
   req: VercelRequest,
   res: VercelResponse
@@ -7,70 +11,53 @@ export default async function handler(
   // Configurar CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  // Manejar preflight (OPTIONS) primero
+  // Manejar preflight (OPTIONS)
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
 
-  // Solo permitir POST después de manejar OPTIONS
+  // Solo permitir POST
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-
     // Obtener API key de OpenAI SOLO desde process.env (nunca del cliente)
     const apiKey = process.env.OPENAI_API_KEY;
 
     if (!apiKey) {
       return res.status(500).json({ 
-        error: 'API key de OpenAI no configurada en el servidor. Por favor, configura OPENAI_API_KEY en Vercel (Settings > Environment Variables).' 
+        error: 'OpenAI API key no configurada en el servidor. Por favor, configura OPENAI_API_KEY en Vercel (Settings > Environment Variables).' 
       });
     }
 
     if (!apiKey.startsWith('sk-')) {
       return res.status(500).json({ 
-        error: 'API key de OpenAI tiene formato incorrecto. Debe empezar con "sk-".' 
+        error: 'OpenAI API key tiene formato incorrecto. Debe empezar con "sk-".' 
       });
     }
-    
-    // Obtener el body de la solicitud - aceptar tanto 'prompt' como 'messages'
-    const { prompt, messages, model, temperature, max_tokens } = req.body;
 
+    // Obtener parámetros del body
+    const { messages, model, temperature, max_tokens } = req.body;
 
-    let finalMessages;
-    
-    // Si se envía 'messages', usarlo directamente
-    if (messages && Array.isArray(messages) && messages.length > 0) {
-      finalMessages = messages;
-    } 
-    // Si se envía 'prompt', construir el array de mensajes
-    else if (prompt) {
-      finalMessages = [
-        {
-          role: 'system',
-          content: 'Eres un chef experto que crea menús semanales. CRÍTICO: Debes responder ÚNICAMENTE con JSON válido y completo. El JSON debe estar perfectamente formateado, sin errores de sintaxis, con todas las llaves y corchetes cerrados correctamente. NO incluyas texto adicional antes o después del JSON. El JSON debe comenzar con { y terminar con }. Verifica que todos los arrays estén cerrados con ] y todos los objetos con }.'
-        },
-        {
-          role: 'user',
-          content: prompt
-        }
-      ];
-    } else {
-      return res.status(400).json({ error: 'Se requiere "prompt" o "messages" en el body' });
+    if (!messages || !Array.isArray(messages) || messages.length === 0) {
+      return res.status(400).json({ error: 'Se requiere "messages" como array en el body' });
     }
 
+    // URL de OpenAI API
     const openaiUrl = process.env.OPENAI_API_URL || 'https://api.openai.com/v1/chat/completions';
 
+    // Preparar request body
     const requestBody = {
       model: model || 'gpt-4o-mini',
-      messages: finalMessages,
-      temperature: temperature !== undefined ? temperature : 0.2,
-      max_tokens: max_tokens !== undefined ? max_tokens : 8000,
+      messages,
+      temperature: temperature !== undefined ? temperature : 0.7,
+      max_tokens: max_tokens !== undefined ? max_tokens : 4000,
     };
 
+    // Llamar a OpenAI API
     const openaiResponse = await fetch(openaiUrl, {
       method: 'POST',
       headers: {
@@ -88,11 +75,11 @@ export default async function handler(
       if (openaiResponse.status === 401) {
         const openaiErrorMsg = errorData.error?.message || 'Unknown error';
         if (openaiErrorMsg.includes('Invalid API key') || openaiErrorMsg.includes('Incorrect API key')) {
-          errorMessage = 'La API key de OpenAI configurada en Vercel no es válida. Por favor, verifica que OPENAI_API_KEY esté configurada correctamente en Vercel (Settings > Environment Variables) y que sea una API key válida de OpenAI.';
+          errorMessage = 'La API key de OpenAI no es válida. Por favor, verifica que OPENAI_API_KEY esté configurada correctamente en Vercel.';
         } else if (openaiErrorMsg.includes('expired')) {
           errorMessage = 'La API key de OpenAI ha expirado. Por favor, genera una nueva API key en OpenAI y actualiza OPENAI_API_KEY en Vercel.';
         } else {
-          errorMessage = `Error de autenticación con OpenAI: ${openaiErrorMsg}. Verifica que OPENAI_API_KEY esté configurada correctamente en Vercel.`;
+          errorMessage = `Error de autenticación con OpenAI: ${openaiErrorMsg}`;
         }
       } else if (openaiResponse.status === 429) {
         errorMessage = 'Demasiadas solicitudes a OpenAI. Por favor, espera un momento e intenta de nuevo.';
@@ -114,13 +101,14 @@ export default async function handler(
       success: true,
       choices: data.choices,
       usage: data.usage,
+      model: data.model,
     });
 
   } catch (error: any) {
-    console.error('Error en generate-menu:', error);
+    console.error('Error en api/openai:', error);
     return res.status(500).json({ 
       error: 'Error interno del servidor',
-      message: error.message 
+      message: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 }

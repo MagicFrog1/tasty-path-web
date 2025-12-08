@@ -103,8 +103,8 @@ export interface EnhancedMeal {
 }
 
 class EnhancedAIMenuService {
-  private apiKey: string = ENV_CONFIG.OPENAI_API_KEY;
-  private baseUrl: string = ENV_CONFIG.OPENAI_API_URL;
+  // La API key ya no se expone al cliente - todas las llamadas van a /api/openai
+  private baseUrl: string = '/api/openai';
 
   /**
    * Genera menú semanal usando la base de datos completa de alimentos
@@ -113,9 +113,7 @@ class EnhancedAIMenuService {
     try {
       console.log('🔧 Iniciando generación de menú con base de datos completa de alimentos...');
       
-      if (!this.apiKey || this.apiKey === 'your-openai-api-key') {
-        throw new Error('API key de OpenAI no configurada correctamente');
-      }
+      // La API key se maneja en el servidor a través de /api/openai
 
       // 1. Obtener alimentos recomendados basados en el perfil del usuario
       const recommendedFoods = this.getRecommendedFoodsForUser(request);
@@ -451,7 +449,6 @@ IMPORTANTE:
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.apiKey}`
         },
         body: JSON.stringify({
           model: ENV_CONFIG.OPENAI_MODEL || 'gpt-4o-mini',

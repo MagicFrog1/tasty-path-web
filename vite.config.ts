@@ -5,30 +5,49 @@ import path from 'path';
 export default defineConfig(({ mode }) => {
   // Cargar variables de entorno con múltiples prefijos
   // Priorizar NEXT_PUBLIC_* (Vercel) sobre VITE_* (desarrollo local)
+  // FILTRAR variables secretas - nunca exponer variables con SECRET, sk_, SERVICE_ROLE, PRIVATE, etc.
   const env = loadEnv(mode, process.cwd(), ['VITE_', 'NEXT_PUBLIC_']);
+  
+  // Lista de variables secretas que NUNCA deben exponerse al cliente
+  const secretPatterns = [
+    /SECRET/i,
+    /sk_/i,
+    /SERVICE_ROLE/i,
+    /PRIVATE/i,
+    /WEBHOOK_SECRET/i,
+    /OPENAI_API_KEY/i, // Ya protegida, pero por seguridad
+  ];
+  
+  // Filtrar variables secretas del objeto env
+  const filteredEnv = Object.fromEntries(
+    Object.entries(env).filter(([key]) => {
+      return !secretPatterns.some(pattern => pattern.test(key));
+    })
+  );
   
   // Preparar variables para definir
   const defineVars = {};
   
   // Obtener valores (priorizar NEXT_PUBLIC_* sobre VITE_*)
-  const supabaseUrl = env.NEXT_PUBLIC_SUPABASE_URL || env.VITE_SUPABASE_URL || '';
-  const supabaseAnonKey = env.NEXT_PUBLIC_SUPABASE_ANON_KEY || env.VITE_SUPABASE_ANON_KEY || '';
+  // Usar filteredEnv para evitar exponer secretos
+  const supabaseUrl = filteredEnv.NEXT_PUBLIC_SUPABASE_URL || filteredEnv.VITE_SUPABASE_URL || '';
+  const supabaseAnonKey = filteredEnv.NEXT_PUBLIC_SUPABASE_ANON_KEY || filteredEnv.VITE_SUPABASE_ANON_KEY || '';
   
-  // Exponer variables NEXT_PUBLIC_* primero
-  if (env.NEXT_PUBLIC_SUPABASE_URL) {
-    defineVars['import.meta.env.NEXT_PUBLIC_SUPABASE_URL'] = JSON.stringify(env.NEXT_PUBLIC_SUPABASE_URL);
+  // Exponer variables NEXT_PUBLIC_* primero (solo si no son secretas)
+  if (filteredEnv.NEXT_PUBLIC_SUPABASE_URL) {
+    defineVars['import.meta.env.NEXT_PUBLIC_SUPABASE_URL'] = JSON.stringify(filteredEnv.NEXT_PUBLIC_SUPABASE_URL);
     // También exponer como VITE_* para compatibilidad
-    defineVars['import.meta.env.VITE_SUPABASE_URL'] = JSON.stringify(env.NEXT_PUBLIC_SUPABASE_URL);
-  } else if (env.VITE_SUPABASE_URL) {
-    defineVars['import.meta.env.VITE_SUPABASE_URL'] = JSON.stringify(env.VITE_SUPABASE_URL);
+    defineVars['import.meta.env.VITE_SUPABASE_URL'] = JSON.stringify(filteredEnv.NEXT_PUBLIC_SUPABASE_URL);
+  } else if (filteredEnv.VITE_SUPABASE_URL) {
+    defineVars['import.meta.env.VITE_SUPABASE_URL'] = JSON.stringify(filteredEnv.VITE_SUPABASE_URL);
   }
   
-  if (env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-    defineVars['import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY'] = JSON.stringify(env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+  if (filteredEnv.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    defineVars['import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY'] = JSON.stringify(filteredEnv.NEXT_PUBLIC_SUPABASE_ANON_KEY);
     // También exponer como VITE_* para compatibilidad
-    defineVars['import.meta.env.VITE_SUPABASE_ANON_KEY'] = JSON.stringify(env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
-  } else if (env.VITE_SUPABASE_ANON_KEY) {
-    defineVars['import.meta.env.VITE_SUPABASE_ANON_KEY'] = JSON.stringify(env.VITE_SUPABASE_ANON_KEY);
+    defineVars['import.meta.env.VITE_SUPABASE_ANON_KEY'] = JSON.stringify(filteredEnv.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+  } else if (filteredEnv.VITE_SUPABASE_ANON_KEY) {
+    defineVars['import.meta.env.VITE_SUPABASE_ANON_KEY'] = JSON.stringify(filteredEnv.VITE_SUPABASE_ANON_KEY);
   }
   
   // También exponer como variables directas para acceso fácil
@@ -41,10 +60,9 @@ export default defineConfig(({ mode }) => {
   
   // ===== NUTRICHAT API KEY CONFIGURATION =====
   // Priorizar NEXT_PUBLIC_* (Vercel) sobre VITE_* (desarrollo local)
-  const nutriChatApiKey = process.env.NEXT_PUBLIC_NUTRICHAT_API_KEY || 
-                          env.NEXT_PUBLIC_NUTRICHAT_API_KEY ||
-                          process.env.VITE_NUTRICHAT_API_KEY || 
-                          env.VITE_NUTRICHAT_API_KEY || '';
+  // Usar filteredEnv para evitar exponer secretos
+  const nutriChatApiKey = filteredEnv.NEXT_PUBLIC_NUTRICHAT_API_KEY || 
+                          filteredEnv.VITE_NUTRICHAT_API_KEY || '';
   
   // Exponer variables de NutriChat
   if (nutriChatApiKey) {
@@ -66,30 +84,20 @@ export default defineConfig(({ mode }) => {
   
   // ===== STRIPE CONFIGURATION =====
   // PRIORIDAD: VITE_* (Vite expone automáticamente) > NEXT_PUBLIC_* (fallback) > sin prefijo (legacy)
-  // En Vercel, process.env tiene acceso a todas las variables durante el build
-  const stripePublishableKey = process.env.VITE_STRIPE_PUBLISHABLE_KEY || 
-                                env.VITE_STRIPE_PUBLISHABLE_KEY ||
-                                process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || 
-                                env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '';
+  // IMPORTANTE: Solo exponer STRIPE_PUBLISHABLE_KEY (pública), nunca STRIPE_SECRET_KEY
+  // Usar filteredEnv para evitar exponer secretos
+  const stripePublishableKey = filteredEnv.VITE_STRIPE_PUBLISHABLE_KEY || 
+                                filteredEnv.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '';
   
   // Variables de precio: Priorizar VITE_* (Vite expone automáticamente)
-  const stripePriceWeekly = process.env.VITE_STRIPE_PRICE_WEEKLY || 
-                            env.VITE_STRIPE_PRICE_WEEKLY ||
-                            process.env.NEXT_PUBLIC_STRIPE_PRICE_WEEKLY || 
-                            env.NEXT_PUBLIC_STRIPE_PRICE_WEEKLY ||
-                            process.env.STRIPE_PRICE_WEEKLY || '';
+  const stripePriceWeekly = filteredEnv.VITE_STRIPE_PRICE_WEEKLY || 
+                            filteredEnv.NEXT_PUBLIC_STRIPE_PRICE_WEEKLY || '';
   
-  const stripePriceMonthly = process.env.VITE_STRIPE_PRICE_MONTHLY || 
-                              env.VITE_STRIPE_PRICE_MONTHLY ||
-                              process.env.NEXT_PUBLIC_STRIPE_PRICE_MONTHLY || 
-                              env.NEXT_PUBLIC_STRIPE_PRICE_MONTHLY ||
-                              process.env.STRIPE_PRICE_MONTHLY || '';
+  const stripePriceMonthly = filteredEnv.VITE_STRIPE_PRICE_MONTHLY || 
+                              filteredEnv.NEXT_PUBLIC_STRIPE_PRICE_MONTHLY || '';
   
-  const stripePriceAnnual = process.env.VITE_STRIPE_PRICE_ANNUAL || 
-                            env.VITE_STRIPE_PRICE_ANNUAL ||
-                            process.env.NEXT_PUBLIC_STRIPE_PRICE_ANNUAL || 
-                            env.NEXT_PUBLIC_STRIPE_PRICE_ANNUAL ||
-                            process.env.STRIPE_PRICE_ANNUAL || '';
+  const stripePriceAnnual = filteredEnv.VITE_STRIPE_PRICE_ANNUAL || 
+                            filteredEnv.NEXT_PUBLIC_STRIPE_PRICE_ANNUAL || '';
   
   // Exponer variables de Stripe
   // PRIORIDAD: VITE_* (Vite expone automáticamente) > NEXT_PUBLIC_* (fallback) > sin prefijo (legacy)
@@ -121,9 +129,10 @@ export default defineConfig(({ mode }) => {
   }
   
   // Log durante build (tanto en desarrollo como en producción para debugging)
-  console.log('🔧 Vite Config - Variables de entorno cargadas:');
-  console.log('  - NEXT_PUBLIC_SUPABASE_URL:', env.NEXT_PUBLIC_SUPABASE_URL ? '✓' : '✗');
-  console.log('  - NEXT_PUBLIC_SUPABASE_ANON_KEY:', env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? '✓' : '✗');
+  // NO mostrar variables secretas en los logs
+  console.log('🔧 Vite Config - Variables de entorno cargadas (secretas filtradas):');
+  console.log('  - NEXT_PUBLIC_SUPABASE_URL:', filteredEnv.NEXT_PUBLIC_SUPABASE_URL ? '✓' : '✗');
+  console.log('  - NEXT_PUBLIC_SUPABASE_ANON_KEY:', filteredEnv.NEXT_PUBLIC_SUPABASE_ANON_KEY ? '✓' : '✗');
   console.log('🔧 Stripe Configuration durante BUILD:');
   console.log('  - process.env.VITE_STRIPE_PUBLISHABLE_KEY:', process.env.VITE_STRIPE_PUBLISHABLE_KEY ? `${String(process.env.VITE_STRIPE_PUBLISHABLE_KEY).substring(0, 20)}...` : 'NO ENCONTRADO');
   console.log('  - env.VITE_STRIPE_PUBLISHABLE_KEY:', env.VITE_STRIPE_PUBLISHABLE_KEY ? `${String(env.VITE_STRIPE_PUBLISHABLE_KEY).substring(0, 20)}...` : 'NO ENCONTRADO');
