@@ -86,6 +86,43 @@ export const useSubscriptionRestrictions = (): SubscriptionRestrictions => {
   const { weeklyPlans } = useWeeklyPlan();
 
   return useMemo(() => {
+    // ============================================
+    // ⚠️ MODO TESTING: TODAS LAS FUNCIONES GRATIS
+    // Para revertir, descomentar el código original abajo
+    // ============================================
+    const plansCreated = weeklyPlans.length;
+    const plansCreatedThisMonth = getPlansCreatedThisMonth(weeklyPlans);
+    
+    // Temporalmente: todos los usuarios tienen acceso premium
+    const premiumPlanRestrictions: SubscriptionRestrictions = {
+      canCreatePlan: true,
+      canUseAdvancedFeatures: true,
+      canUseAllGoals: true,
+      canUseAllDietaryPreferences: true,
+      canUseAllAllergens: true,
+      canUseSpecialRequirements: true,
+      canUseExoticIngredients: true,
+      canUseInternationalSpices: true,
+      canSetCustomCookingTime: true,
+      canSetFamilySize: true,
+      maxPlansAllowed: -1, // Ilimitado
+      maxSavedPlans: -1, // Ilimitado
+      plansCreated,
+      plansCreatedThisMonth,
+      remainingPlans: -1, // Ilimitado
+      upgradeRequired: false,
+      isPremium: true,
+      canGenerateThisMonth: true,
+      canHaveMoreSavedPlans: true,
+      nextGenerationDate: null,
+    };
+    
+    return premiumPlanRestrictions;
+    // ============================================
+    // FIN MODO TESTING
+    // ============================================
+
+    /* CÓDIGO ORIGINAL - DESCOMENTAR PARA REVERTIR:
     const isPremium = currentPlan?.isActive === true && 
                      ['weekly', 'monthly', 'annual'].includes(currentPlan.plan || 'free');
     
@@ -169,6 +206,7 @@ export const useSubscriptionRestrictions = (): SubscriptionRestrictions => {
     }
 
     return freePlanRestrictions;
+    */
   }, [currentPlan, weeklyPlans]);
 };
 
