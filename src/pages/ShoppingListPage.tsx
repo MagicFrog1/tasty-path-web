@@ -355,19 +355,8 @@ const ShoppingListPage: React.FC = () => {
   const navigate = useNavigate();
   const [selectedPlan, setSelectedPlan] = useState<string>('todos');
 
-  // ============================================
-  // ⚠️ MODO TESTING: PERMITIR ACCESO A TODOS
-  // Para revertir, descomentar el código original abajo
-  // ============================================
-  const isPremium = true; // Temporalmente todos tienen acceso
-  // ============================================
-  // FIN MODO TESTING
-  // ============================================
-
-  /* CÓDIGO ORIGINAL - DESCOMENTAR PARA REVERTIR:
   // Verificar si el usuario tiene plan premium
   const isPremium = currentPlan && currentPlan.plan !== 'free' && currentPlan.isActive;
-  */
 
   // Si no es premium, mostrar bloque de upgrade
   if (!isPremium) {

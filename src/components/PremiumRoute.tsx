@@ -19,16 +19,6 @@ export const PremiumRoute: React.FC<PremiumRouteProps> = ({ children, allowFree 
     return <div>Cargando...</div>;
   }
 
-  // ============================================
-  // ⚠️ MODO TESTING: PERMITIR ACCESO A TODOS
-  // Para revertir, descomentar el código original abajo
-  // ============================================
-  return <>{children}</>;
-  // ============================================
-  // FIN MODO TESTING
-  // ============================================
-
-  /* CÓDIGO ORIGINAL - DESCOMENTAR PARA REVERTIR:
   const isPremium = currentPlan?.isActive === true && 
                    ['weekly', 'monthly', 'annual'].includes(currentPlan.plan || 'free');
 
@@ -44,7 +34,6 @@ export const PremiumRoute: React.FC<PremiumRouteProps> = ({ children, allowFree 
 
   // Si no es premium y no permite acceso gratuito, mostrar bloqueo
   return <PremiumBlock />;
-  */
 };
 
 export default PremiumRoute;
