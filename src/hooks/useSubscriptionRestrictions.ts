@@ -87,7 +87,7 @@ export const useSubscriptionRestrictions = (): SubscriptionRestrictions => {
 
   return useMemo(() => {
     const isPremium = currentPlan?.isActive === true && 
-                     ['trial', 'weekly', 'monthly', 'annual'].includes(currentPlan.plan || 'free');
+                     ['weekly', 'monthly', 'annual'].includes(currentPlan.plan || 'free');
     
     const plansCreated = weeklyPlans.length;
 

@@ -20,7 +20,7 @@ export const PremiumRoute: React.FC<PremiumRouteProps> = ({ children, allowFree 
   }
 
   const isPremium = currentPlan?.isActive === true && 
-                   ['trial', 'weekly', 'monthly', 'annual'].includes(currentPlan.plan || 'free');
+                   ['weekly', 'monthly', 'annual'].includes(currentPlan.plan || 'free');
 
   // Si es premium, permitir acceso completo
   if (isPremium) {

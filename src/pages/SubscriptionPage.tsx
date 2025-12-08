@@ -609,8 +609,9 @@ const SubscriptionPage: React.FC = () => {
   }, [location.search, user?.id, user?.email, navigate, selectPlan, checkSubscriptionStatus]);
 
   const handleSelectPlan = async (planId: 'weekly' | 'monthly' | 'annual' | 'free') => {
+    // El plan gratuito es solo visual, no se puede seleccionar
     if (planId === 'free') {
-      await selectPlan('free');
+      console.log('ℹ️ Plan gratuito es solo visual');
       return;
     }
 

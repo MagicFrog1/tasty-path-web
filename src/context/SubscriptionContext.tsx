@@ -15,8 +15,6 @@ interface SubscriptionContextType {
   cancelSubscription: () => Promise<void>;
   updateSubscription: (plan: SubscriptionPlan) => Promise<void>;
   checkSubscriptionStatus: (userId?: string | null) => Promise<void>;
-  isTrialActive: () => boolean;
-  daysLeftInTrial: () => number;
 }
 
 const SubscriptionContext = createContext<SubscriptionContextType | undefined>(undefined);
@@ -191,6 +189,12 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
 
   const selectPlan = async (plan: SubscriptionPlan) => {
     try {
+      // El plan gratuito no se puede seleccionar, es solo visual
+      if (plan === 'free') {
+        console.log('ℹ️ Plan gratuito es solo visual, no se puede seleccionar');
+        return;
+      }
+
       const selectedPlan = availablePlans.find(p => p.id === plan);
       if (!selectedPlan) throw new Error('Plan no encontrado');
 
@@ -198,9 +202,6 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
       let endDate: Date;
 
       switch (plan) {
-        case 'free':
-          endDate = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000); // 3 días
-          break;
         case 'weekly':
           endDate = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // 1 semana
           break;
@@ -219,10 +220,10 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
         startDate: now.toISOString(),
         endDate: endDate.toISOString(),
         isActive: true,
-        autoRenew: plan !== 'free',
+        autoRenew: true,
         price: selectedPlan.price,
         currency: 'EUR',
-        trialDays: selectedPlan.trialDays,
+        trialDays: 0,
       };
 
       setCurrentPlan(subscription);
@@ -266,15 +267,20 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
 
   const cancelSubscription = async () => {
     try {
-      if (currentPlan) {
-        const updatedPlan: SubscriptionDetails = {
-          ...currentPlan,
-          isActive: false,
-          autoRenew: false,
-        };
-        setCurrentPlan(updatedPlan);
-        storage.set(SUBSCRIPTION_STORAGE_KEY, updatedPlan);
-      }
+      // Al cancelar, volver al plan gratuito
+      const freePlan: SubscriptionDetails = {
+        plan: 'free',
+        startDate: new Date().toISOString(),
+        endDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 días
+        isActive: true,
+        autoRenew: false,
+        price: 0,
+        currency: 'EUR',
+        trialDays: 3,
+      };
+      setCurrentPlan(freePlan);
+      storage.set(SUBSCRIPTION_STORAGE_KEY, freePlan);
+      console.log('✅ Suscripción cancelada, volviendo al plan gratuito');
     } catch (error) {
       console.error('Error canceling subscription:', error);
       throw error;
@@ -290,23 +296,6 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
     }
   };
 
-  const isTrialActive = (): boolean => {
-    if (!currentPlan || currentPlan.plan !== 'free') return false;
-    const now = new Date();
-    const endDate = new Date(currentPlan.endDate);
-    return now < endDate;
-  };
-
-  const daysLeftInTrial = (): number => {
-    if (!isTrialActive()) return 0;
-    const now = new Date();
-    const endDate = new Date(currentPlan!.endDate);
-    const diffTime = endDate.getTime() - now.getTime();
-    const days = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    // Asegurar que no devuelva valores negativos
-    return Math.max(0, days);
-  };
-
   const value: SubscriptionContextType = {
     currentPlan,
     availablePlans,
@@ -316,8 +305,8 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
     cancelSubscription,
     updateSubscription,
     checkSubscriptionStatus,
-    isTrialActive,
-    daysLeftInTrial,
+    isTrialActive: () => false,
+    daysLeftInTrial: () => 0,
   };
 
   return (

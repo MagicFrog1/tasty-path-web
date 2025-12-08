@@ -41,7 +41,7 @@ interface ProfileScreenProps {
 const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
   const { profile, updateProfile } = useUserProfile();
   const { user, logout } = useAuth();
-  const { currentPlan, availablePlans, isTrialActive, daysLeftInTrial } = useSubscription();
+  const { currentPlan, availablePlans } = useSubscription();
   
   // Debug log
   console.log('ProfileScreen - currentPlan:', currentPlan);
@@ -51,16 +51,6 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
 
   const [isEditingName, setIsEditingName] = useState(false);
   const [editingName, setEditingName] = useState(profile.name);
-  const [trialDaysLeft, setTrialDaysLeft] = useState(daysLeftInTrial());
-
-  // Actualizar contador de días restantes cada minuto
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setTrialDaysLeft(daysLeftInTrial());
-    }, 60000); // Actualizar cada minuto
-
-    return () => clearInterval(interval);
-  }, [daysLeftInTrial]);
 
   
 
@@ -330,7 +320,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
                   </Text>
                   <Text style={styles.planStatusDescription}>
                     {currentPlan.plan === 'free' 
-                      ? (isTrialActive() ? `${trialDaysLeft} días de prueba restantes` : 'Plan básico gratuito')
+                      ? 'Plan básico gratuito'
                       : `€${currentPlan.price}/${availablePlans.find(p => p.id === currentPlan.plan)?.period || 'mes'}`
                     }
                   </Text>
@@ -348,10 +338,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
                   <View style={styles.freeTrialInfo}>
                     <Ionicons name="information-circle-outline" size={16} color="#6B7280" />
                     <Text style={styles.freeTrialText}>
-                      {isTrialActive() 
-                        ? 'Disfruta de todas las funciones durante tu período de prueba'
-                        : 'Acceso limitado a funciones básicas'
-                      }
+                      Acceso limitado a funciones básicas
                     </Text>
                   </View>
                 ) : (
