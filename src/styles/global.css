@@ -81,3 +81,55 @@ input:focus, select:focus, textarea:focus {
   }
 }
 
+/* Mejoras para móvil */
+@media (max-width: 768px) {
+  body {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+  }
+
+  button {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  button:hover {
+    transform: none; /* Desactivar hover en móvil */
+  }
+
+  a {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  /* Mejorar área táctil mínima */
+  button, a, input[type="button"], input[type="submit"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Prevenir zoom en inputs en iOS */
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+
+  /* Mejorar scroll en móvil */
+  * {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Prevenir selección de texto accidental en móvil */
+@media (max-width: 480px) {
+  button, a {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  /* Asegurar que los botones sean fácilmente clickeables */
+  button {
+    padding: 12px 16px;
+    min-height: 48px;
+  }
+}
+

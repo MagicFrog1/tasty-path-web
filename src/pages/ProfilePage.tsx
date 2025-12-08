@@ -16,6 +16,7 @@ const PageWrapper = styled.div`
   margin: 0 auto;
   padding: 24px;
   width: 100%;
+  box-sizing: border-box;
 
   @media (max-width: 768px) {
     padding: 16px;
@@ -23,6 +24,8 @@ const PageWrapper = styled.div`
 
   @media (max-width: 480px) {
     padding: 12px;
+    min-height: 100vh;
+    padding-bottom: 24px; /* Espacio extra en la parte inferior para móvil */
   }
 `;
 
@@ -62,6 +65,7 @@ const ProfileCard = styled.div`
   box-shadow: ${theme.shadows.md};
   border: 1px solid rgba(139, 92, 246, 0.1);
   margin-bottom: 24px;
+  box-sizing: border-box;
 
   @media (max-width: 768px) {
     padding: 24px;
@@ -70,7 +74,7 @@ const ProfileCard = styled.div`
   }
 
   @media (max-width: 480px) {
-    padding: 20px;
+    padding: 20px 16px;
     border-radius: 16px;
     margin-bottom: 16px;
   }
@@ -127,10 +131,14 @@ const Input = styled.input`
   transition: all 0.2s ease;
   background: ${theme.colors.white};
   width: 100%;
+  box-sizing: border-box;
+  -webkit-appearance: none;
+  appearance: none;
 
   @media (max-width: 480px) {
     padding: 12px 14px;
     font-size: 16px; /* Previene zoom en iOS */
+    border-width: 1.5px;
   }
 
   &:focus {
@@ -141,6 +149,12 @@ const Input = styled.input`
 
   &:hover {
     border-color: rgba(139, 92, 246, 0.3);
+  }
+
+  @media (max-width: 480px) {
+    &:hover {
+      border-color: rgba(139, 92, 246, 0.15);
+    }
   }
 `;
 
@@ -318,6 +332,7 @@ const ActionButton = styled.button<{ variant?: 'danger' | 'primary' | 'secondary
   align-items: center;
   justify-content: space-between;
   width: 100%;
+  min-height: 56px; /* Área táctil mínima para móvil (44px + padding) */
   padding: 18px 20px;
   border: 2px solid ${props => 
     props.variant === 'danger' ? 'rgba(239, 68, 68, 0.3)' :
@@ -338,46 +353,54 @@ const ActionButton = styled.button<{ variant?: 'danger' | 'primary' | 'secondary
   transition: all 0.25s ease;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+  position: relative;
+  z-index: 1;
 
   @media (max-width: 768px) {
+    min-height: 52px;
     padding: 16px 18px;
     border-radius: 14px;
   }
 
   @media (max-width: 480px) {
+    min-height: 48px;
     padding: 14px 16px;
     border-radius: 12px;
+    font-size: 15px;
   }
 
-  &:hover {
-    transform: translateY(-2px);
-    border-color: ${props => 
-      props.variant === 'danger' ? 'rgba(239, 68, 68, 0.5)' :
-      props.variant === 'primary' ? 'rgba(139, 92, 246, 0.5)' :
-      'rgba(139, 92, 246, 0.3)'};
-    background: ${props => 
-      props.variant === 'danger' ? 'linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.1))' :
-      props.variant === 'primary' ? 'linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(168, 85, 247, 0.15))' :
-      'linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(168, 85, 247, 0.1))'};
-    box-shadow: 0 4px 12px ${props => 
-      props.variant === 'danger' ? 'rgba(239, 68, 68, 0.2)' :
-      'rgba(139, 92, 246, 0.15)'};
-  }
-
-  @media (max-width: 768px) {
-    &:hover {
-      transform: none;
+  /* Mejorar feedback táctil en móvil */
+  @media (hover: none) and (pointer: coarse) {
+    &:active {
+      transform: scale(0.97);
+      opacity: 0.8;
     }
   }
 
-  &:active {
-    transform: translateY(0) scale(0.98);
+  @media (hover: hover) {
+    &:hover {
+      transform: translateY(-2px);
+      border-color: ${props => 
+        props.variant === 'danger' ? 'rgba(239, 68, 68, 0.5)' :
+        props.variant === 'primary' ? 'rgba(139, 92, 246, 0.5)' :
+        'rgba(139, 92, 246, 0.3)'};
+      background: ${props => 
+        props.variant === 'danger' ? 'linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.1))' :
+        props.variant === 'primary' ? 'linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(168, 85, 247, 0.15))' :
+        'linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(168, 85, 247, 0.1))'};
+      box-shadow: 0 4px 12px ${props => 
+        props.variant === 'danger' ? 'rgba(239, 68, 68, 0.2)' :
+        'rgba(139, 92, 246, 0.15)'};
+    }
   }
 
   &:disabled {
     opacity: 0.6;
     cursor: not-allowed;
     transform: none;
+    pointer-events: none;
   }
 `;
 
@@ -390,6 +413,8 @@ const ActionButtonContent = styled.div`
 const ActionButtonIcon = styled.div<{ variant?: 'danger' | 'primary' | 'secondary' }>`
   width: 40px;
   height: 40px;
+  min-width: 40px;
+  min-height: 40px;
   border-radius: 12px;
   display: flex;
   align-items: center;
@@ -404,10 +429,13 @@ const ActionButtonIcon = styled.div<{ variant?: 'danger' | 'primary' | 'secondar
     theme.colors.primary};
   font-size: 20px;
   flex-shrink: 0;
+  pointer-events: none; /* Evitar que el icono interfiera con el click del botón */
 
   @media (max-width: 480px) {
     width: 36px;
     height: 36px;
+    min-width: 36px;
+    min-height: 36px;
     font-size: 18px;
     border-radius: 10px;
   }
@@ -483,7 +511,13 @@ const ProfilePage: React.FC = () => {
     { to: '/legal', icon: FiInfo, label: 'Información Legal' },
   ];
 
-  const handleLogout = async () => {
+  const handleLogout = async (e?: React.MouseEvent | React.TouchEvent) => {
+    // Prevenir comportamiento por defecto
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
     if (!window.confirm('¿Estás seguro de que deseas cerrar sesión?')) {
       return;
     }
@@ -506,7 +540,13 @@ const ProfilePage: React.FC = () => {
     }
   };
 
-  const handleDeleteAccount = async () => {
+  const handleDeleteAccount = async (e?: React.MouseEvent | React.TouchEvent) => {
+    // Prevenir comportamiento por defecto
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
     const confirmMessage = '¿Estás seguro de que deseas eliminar tu cuenta?\n\nEsta acción es IRREVERSIBLE y eliminará:\n- Tu perfil\n- Todos tus planes semanales\n- Tus listas de compras\n- Tu configuración de dieta\n\n¿Deseas continuar?';
     
     if (!window.confirm(confirmMessage)) {
@@ -784,7 +824,12 @@ const ProfilePage: React.FC = () => {
           <ActionButton
             variant="secondary"
             onClick={handleLogout}
+            onTouchEnd={(e) => {
+              e.preventDefault();
+              handleLogout(e);
+            }}
             disabled={isLoggingOut}
+            type="button"
           >
             <ActionButtonContent>
               <ActionButtonIcon>
@@ -800,7 +845,12 @@ const ProfilePage: React.FC = () => {
           <ActionButton
             variant="danger"
             onClick={handleDeleteAccount}
+            onTouchEnd={(e) => {
+              e.preventDefault();
+              handleDeleteAccount(e);
+            }}
             disabled={isDeleting}
+            type="button"
           >
             <ActionButtonContent>
               <ActionButtonIcon variant="danger">
